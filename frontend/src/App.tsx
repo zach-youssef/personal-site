@@ -1,24 +1,33 @@
 import React from 'react';
-import Navigation from './features/Navigation'
+import {BrowserRouter as Router, Switch, Route} from 'react-router-dom';
+import Navigation from './features/Navigation';
 import './App.css';
-import { Jumbotron, Container, Row } from 'react-bootstrap';
-import {SiteText, SiteTextContents} from './content/text/SiteText'
+import { Container } from 'react-bootstrap';
+import ProjectDisplayContainer from './features/projectDisplay/ProjectDisplayContainer';
+import Home from './features/Home';
+import ProjectsPage from './features/projectDisplay/ProjectsPage';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <Navigation />
-        <Container fluid>
-          <Row>
-            <Jumbotron>
-              <h1>{SiteTextContents[SiteText.AboutMeHeader]}</h1>
-              <p> {SiteTextContents[SiteText.AboutDesc]} </p>
-            </Jumbotron>
-          </Row>
-        </Container>
-      </header>
-    </div>
+    <Router>
+      <div className="App">
+        <header className="App-header">
+          <Navigation />
+        </header>
+        <body>
+          <Container fluid>
+            <Switch>
+              <Route path="/projects">
+                <ProjectsPage />
+              </Route>
+              <Route path="/">
+                <Home />
+              </Route>
+            </Switch>
+          </Container>
+        </body>
+      </div>
+    </Router>
   );
 }
 
