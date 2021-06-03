@@ -14,6 +14,26 @@ function ProjectsPage() {
     return(
         <Router>
             <Switch>
+                <Route path={`${match.path}/sokoban`}>
+                    <div>
+                        Sokoban Coming soon!
+                    </div>
+                </Route>
+                <Route path={`${match.path}/raytracer`}>
+                    <div>
+                        Raytracer Coming soon!
+                    </div>
+                </Route>
+                <Route path={`${match.path}/seamCarver`}>
+                    <div>
+                        Seam Carver Coming soon!
+                    </div>
+                </Route>
+                <Route path={`${match.path}/webglDemo`}>
+                    <div>
+                        WebGL Demo Coming soon!
+                    </div>
+                </Route>
                 <Route path={match.path}>
                     <h1>{SiteTextContents[SiteText.ProjectHeader]}</h1>
                     <ProjectDisplayContainer />
