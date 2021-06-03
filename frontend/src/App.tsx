@@ -3,7 +3,6 @@ import {BrowserRouter as Router, Switch, Route} from 'react-router-dom';
 import Navigation from './features/Navigation';
 import './App.css';
 import { Container } from 'react-bootstrap';
-import ProjectDisplayContainer from './features/projectDisplay/ProjectDisplayContainer';
 import Home from './features/Home';
 import ProjectsPage from './features/projectDisplay/ProjectsPage';
 
@@ -15,7 +14,7 @@ function App() {
           <Navigation />
         </header>
         <body>
-          <Container fluid>
+          <Container >
             <Switch>
               <Route path="/projects">
                 <ProjectsPage />
