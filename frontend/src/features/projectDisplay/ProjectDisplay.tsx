@@ -4,33 +4,36 @@ import ProjectInfo from './ProjectInfo';
 import { Card, Col, Row } from 'react-bootstrap';
 
 export function ProjectDisplayCard({projectInfo, index}: Props) {
+    const {title, description, imagePath} = projectInfo;
 
     return (
         <Card>
-            <Card.Img variant="top" src={projectInfo.getImageFilePath()}/>
-            <Card.Title>{projectInfo.getTitle()}</Card.Title>
-            <Card.Text>{projectInfo.getDescriptionText()}</Card.Text>
+            <Card.Img variant="top" src={imagePath}/>
+            <Card.Title>{title}</Card.Title>
+            <Card.Text>{description}</Card.Text>
         </Card>
     );
 }
 
 export function ProjectDisplayFeatured({projectInfo, index}: Props) {
+    const {title, description, imagePath} = projectInfo;
+
     let imageCol = (
         <Col>
-            <img src={projectInfo.getImageFilePath()} alt={projectInfo.getTitle()}/>
+            <img src={imagePath} alt={title}/>
         </Col>
     )
     
     let descCol = (
         <Col>
-            <p>{projectInfo.getDescriptionText()}</p>
+            <p>{description}</p>
         </Col>
     )
 
     return (
         <Card>
             <Card.Header>
-                Featured: {projectInfo.getTitle()}
+                Featured: {title}
             </Card.Header>
             <Row>
                 {descCol}
@@ -45,18 +48,8 @@ interface Props {
     index: number
 }
 
-ProjectDisplayCard.propTypes = {
-    projectInfo: PropTypes.instanceOf(ProjectInfo).isRequired,
-    index: PropTypes.number.isRequired
-}
-
 ProjectDisplayCard.defaultProps = {
     index: 0
-}
-
-ProjectDisplayFeatured.propTypes = {
-    projectInfo: PropTypes.instanceOf(ProjectInfo).isRequired,
-    index: PropTypes.number.isRequired
 }
 
 ProjectDisplayFeatured.defaultProps = {

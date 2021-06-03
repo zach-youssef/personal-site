@@ -7,10 +7,10 @@ import { CardGroup } from 'react-bootstrap';
 function ProjectDisplayContainer(){
     // TODO replace with load from somewhere else
     let projectInfos = [
-        new ProjectInfo("Sokoban AI", "An A* and Q learning implementation to solve the game Sokoban", logo192),
-        new ProjectInfo("SeamCarver", "An implementation of the seam carving algorithm used to change an image's aspect ratio", logo192),
-        new ProjectInfo("Simple Raytracer", "A simple raytracing render algorithim", logo192),
-        new ProjectInfo("WebGL Demo", "A small interactive WebGL animation from my Graphics class", logo192),
+        {title: "Sokoban AI", description: "An A* and Q learning implementation to solve the game Sokoban", imagePath: logo192, id: "sokoban"},
+        {title: "SeamCarver", description: "An implementation of the seam carving algorithm used to change an image's aspect ratio", imagePath: logo192, id: "seamCarver"},
+        {title: "Simple Raytracer", description: "A simple raytracing render algorithim", imagePath: logo192, id: "raytracer"},
+        {title: "WebGL Demo", description: "A small interactive WebGL animation from my Graphics class", imagePath: logo192, id: "webglDemo"},
     ]
     
     return(
