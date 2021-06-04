@@ -1,5 +1,4 @@
 import React from 'react'
-import ProjectInfo from './ProjectInfo';
 import { ProjectDisplayCard } from './ProjectDisplay';
 import logo192 from '../../logo192.png';
 import { CardGroup } from 'react-bootstrap';

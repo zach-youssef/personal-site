@@ -1,5 +1,4 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 import ProjectInfo from './ProjectInfo';
 import { Card, Col, Row } from 'react-bootstrap';
 import { useRouteMatch } from 'react-router-dom';
@@ -20,8 +19,7 @@ export function ProjectDisplayCard({projectInfo, index}: Props) {
 }
 
 export function ProjectDisplayFeatured({projectInfo, index}: Props) {
-    const {title, description, imagePath, id} = projectInfo;
-    let url = useRouteMatch().url;
+    const { title, description, imagePath } = projectInfo;
 
     let imageCol = (
         <Col>

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Row, Jumbotron } from 'react-bootstrap';
 import { SiteTextContents, SiteText } from '../content/text/SiteText';
-import ProjectInfo from './projectDisplay/ProjectInfo';
 import { ProjectDisplayFeatured } from './projectDisplay/ProjectDisplay';
 import logo192 from '../logo192.png';
 
