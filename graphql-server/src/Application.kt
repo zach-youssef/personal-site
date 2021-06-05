@@ -1,9 +1,10 @@
 package com.zyoussef
 
 import com.apurebase.kgraphql.GraphQL
+import com.zyoussef.Models.ProjectInfo.ProjectInfo
+import com.zyoussef.Respositories.IProjectInfoRepository
+import com.zyoussef.Respositories.SimpleProjectInfoRepository
 import io.ktor.application.*
-import io.ktor.response.*
-import io.ktor.request.*
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -13,8 +14,26 @@ fun Application.module(testing: Boolean = false) {
     install(GraphQL) {
         playground = true
         schema {
-            query("hello") {
-                resolver { -> "World"}
+            val projectInfoRepository: IProjectInfoRepository = SimpleProjectInfoRepository()
+
+            type<ProjectInfo> {
+                description = "Metadata for a project featured on the website"
+            }
+
+            query("projectInfo") {
+                description = "Retrieve a projects metadata by id"
+                resolver { id: String ->
+                    projectInfoRepository.getProject(id)
+                }
+            }
+
+            query("projectInfos") {
+                description = "Retrieve all project metadata, with optional filter for featured projects"
+                resolver { featured: Boolean ->
+                    projectInfoRepository.getAllProjects(featured)
+                }.withArgs {
+                    arg <Boolean> { name = "featured"; defaultValue = false }
+                }
             }
         }
     }
