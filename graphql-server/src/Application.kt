@@ -5,12 +5,23 @@ import com.zyoussef.Models.ProjectInfo.ProjectInfo
 import com.zyoussef.Respositories.IProjectInfoRepository
 import com.zyoussef.Respositories.SimpleProjectInfoRepository
 import io.ktor.application.*
+import io.ktor.features.*
+import io.ktor.http.*
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
+    install(CORS) {
+        method(HttpMethod.Options)
+        method(HttpMethod.Post)
+
+        header("Content-Type");
+
+        anyHost()
+        allowCredentials = true
+    }
     install(GraphQL) {
         playground = true
         schema {
