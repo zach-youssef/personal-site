@@ -1,5 +1,6 @@
 package com.zyoussef.Sokoban
 
+import com.zyoussef.Models.Sokoban.SokobanLevel
 import com.zyoussef.Models.Sokoban.SokobanMove
 import com.zyoussef.Models.Sokoban.SokobanSquare
 import java.util.*
@@ -14,23 +15,23 @@ class State {
     val numRows: Int
     val numCols: Int
 
-    constructor(level: List<List<SokobanSquare>>) {
+    constructor(level: SokobanLevel) {
         boxes = HashSet()
         spots = HashSet()
         walls = HashSet()
         validBoxPositions = HashSet()
         player = Pair(-1, -1)
 
-        numRows = level.count()
-        numCols = level.maxOf { row -> row.count() }
+        numRows = level.level.count()
+        numCols = level.level.maxOf { row -> row.row.count() }
 
         NODES_EXPANDED = 0
 
-        level.forEachIndexed { rowIndex, row ->
-            row.forEachIndexed { colIndex, sokobanSquare ->
+        level.level.forEachIndexed { rowIndex, row ->
+            row.row.forEachIndexed { colIndex, sokobanSquare ->
                 val curPos = Pair(rowIndex, colIndex)
                 when(sokobanSquare) {
-                    SokobanSquare.EMPTY -> {}
+                    SokobanSquare.EMPTY, SokobanSquare.UNKNOWN -> {}
                     SokobanSquare.WALL -> walls.add(curPos)
                     SokobanSquare.SPOT -> spots.add(curPos)
                     SokobanSquare.BOX -> boxes.add(curPos)
