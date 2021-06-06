@@ -2,8 +2,11 @@ package com.zyoussef
 
 import com.apurebase.kgraphql.GraphQL
 import com.zyoussef.Models.ProjectInfo.ProjectInfo
+import com.zyoussef.Models.Sokoban.*
 import com.zyoussef.Respositories.IProjectInfoRepository
+import com.zyoussef.Respositories.ISokobanRepository
 import com.zyoussef.Respositories.SimpleProjectInfoRepository
+import com.zyoussef.Respositories.SokobanEngine
 import io.ktor.application.*
 import io.ktor.features.*
 import io.ktor.http.*
@@ -25,6 +28,7 @@ fun Application.module(testing: Boolean = false) {
     install(GraphQL) {
         playground = true
         schema {
+            // Project Metadata
             val projectInfoRepository: IProjectInfoRepository = SimpleProjectInfoRepository()
 
             type<ProjectInfo> {
@@ -45,6 +49,51 @@ fun Application.module(testing: Boolean = false) {
                 }.withArgs {
                     arg <Boolean> { name = "featured"; defaultValue = false }
                 }
+            }
+
+            // Sokoban AI
+            val sokobanRepository: ISokobanRepository = SokobanEngine()
+
+            enum<SokobanMove> {
+                description = "A possible move by an agent playing sokoban"
+            }
+
+            enum<SokobanSquare> {
+                description = "A square on the board of a sokoban level"
+            }
+
+            enum<SokobanLevelId> {
+                description = "A unique identifier for each available sokoban level"
+            }
+
+            type<SokobanLevel> {
+                description = "A single sokoban puzzle, composed of a grid of squares"
+            }
+
+            query("aStarSolution") {
+                description = "Get a list of moves to solve a level found by an AStar agent"
+                resolver { levelId: SokobanLevelId ->
+                    sokobanRepository.solveAStar(levelId)
+                }
+            }
+
+            query("qLearningSolution") {
+                description = "Get a list of moves to solve a level after a q learning agent solves it"
+                resolver { levelId: SokobanLevelId ->
+                    sokobanRepository.solveQAgent(levelId)
+                }
+            }
+
+            query("sokobanLevel") {
+                description = "Get the layout of a particular level"
+                resolver { levelId: SokobanLevelId ->
+                    sokobanRepository.getLevel(levelId)
+                }
+            }
+
+            query("levels") {
+                description = "Returns the ids of all available levels"
+                resolver { -> sokobanRepository.getAvailableLevels() }
             }
         }
     }
