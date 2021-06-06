@@ -40,8 +40,8 @@ fun Application.module(testing: Boolean = false) {
 
             query("projectInfos") {
                 description = "Retrieve all project metadata, with optional filter for featured projects"
-                resolver { featured: Boolean ->
-                    projectInfoRepository.getAllProjects(featured)
+                resolver { featured: Boolean? ->
+                    projectInfoRepository.getAllProjects(featured ?: false)
                 }.withArgs {
                     arg <Boolean> { name = "featured"; defaultValue = false }
                 }
