@@ -1,16 +1,37 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { ProjectDisplayCard } from './ProjectDisplay';
 import logo192 from '../../logo192.png';
 import { CardGroup } from 'react-bootstrap';
+import { fetchGraphQL } from '../../FetchHelper'
+import ProjectInfo from './ProjectInfo';
 
 function ProjectDisplayContainer(){
-    // TODO replace with load from somewhere else
-    let projectInfos = [
-        {title: "Sokoban AI", description: "An A* and Q learning implementation to solve the game Sokoban", imagePath: logo192, id: "sokoban"},
-        {title: "SeamCarver", description: "An implementation of the seam carving algorithm used to change an image's aspect ratio", imagePath: logo192, id: "seamCarver"},
-        {title: "Simple Raytracer", description: "A simple raytracing render algorithim", imagePath: logo192, id: "raytracer"},
-        {title: "WebGL Demo", description: "A small interactive WebGL animation from my Graphics class", imagePath: logo192, id: "webglDemo"},
-    ]
+    const [projectInfos, setProjectInfos] = useState([]);
+
+    useEffect(() => {
+        let isMounted = true;
+        fetchGraphQL(`
+            query FetchProjectsQuery {
+                projectInfos {
+                    name,
+                    description,
+                    id
+                }
+            }
+        `, {}).then(response => {
+            if(!isMounted){
+                return;
+            }
+            const data = response.data;
+            setProjectInfos(data.projectInfos);
+        }).catch(error => {
+            console.error(error);
+        });
+        
+        return () => {
+            isMounted = false;
+        };
+    }, [fetchGraphQL])
     
     return(
         <CardGroup>

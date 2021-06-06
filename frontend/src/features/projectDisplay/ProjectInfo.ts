@@ -1,5 +1,5 @@
 interface ProjectInfo {
-    title: string,
+    name: string,
     description: string,
     imagePath: string,
     id: string

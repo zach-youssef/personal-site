@@ -7,7 +7,7 @@ import logo192 from '../logo192.png';
 function Home() {
     // TODO For the love of god load this from somewhere
     let featured = {
-        title: "Sokoban AI",
+        name: "Sokoban AI",
         description: "An A* and Q learning implementation to solve the game Sokoban",
         imagePath: logo192,
         id: "sokoban",

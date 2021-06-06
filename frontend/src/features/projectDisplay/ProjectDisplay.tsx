@@ -4,14 +4,14 @@ import { Card, Col, Row } from 'react-bootstrap';
 import { useRouteMatch } from 'react-router-dom';
 
 export function ProjectDisplayCard({projectInfo, index}: Props) {
-    const {title, description, imagePath, id} = projectInfo;
+    const {name, description, imagePath, id} = projectInfo;
     
     let url = useRouteMatch().url;
 
     return (
         <Card>
             <Card.Img variant="top" src={imagePath}/>
-            <Card.Title>{title}</Card.Title>
+            <Card.Title>{name}</Card.Title>
             <Card.Text>{description}</Card.Text>
             <Card.Link href={`${url}/${id}`}>View</Card.Link>
         </Card>
@@ -19,11 +19,11 @@ export function ProjectDisplayCard({projectInfo, index}: Props) {
 }
 
 export function ProjectDisplayFeatured({projectInfo, index}: Props) {
-    const { title, description, imagePath } = projectInfo;
+    const { name, description, imagePath } = projectInfo;
 
     let imageCol = (
         <Col>
-            <img src={imagePath} alt={title}/>
+            <img src={imagePath} alt={name}/>
         </Col>
     )
     
@@ -36,7 +36,7 @@ export function ProjectDisplayFeatured({projectInfo, index}: Props) {
     return (
         <Card>
             <Card.Header>
-                Featured: {title}
+                Featured: {name}
             </Card.Header>
             <Row>
                 {descCol}
