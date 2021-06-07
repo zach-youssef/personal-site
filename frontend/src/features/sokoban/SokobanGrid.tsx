@@ -11,7 +11,7 @@ function SokobanGrid({data}: Props) {
     return (
         <Stage 
             height={sideLength * data.length} 
-            width={sideLength * data.map(row => row.length).reduce((a,b) => Math.max(a,b))}
+            width={data.length === 0? 0 : sideLength * data.map(row => row.length).reduce((a,b) => Math.max(a,b))}
         >
             <Layer>
                 {/* Draw the squares of the grid */}
