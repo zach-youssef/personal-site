@@ -8,6 +8,14 @@ interface Props {
 }
 
 function SokobanGrid({data}: Props) {
+    if (data.length === 0) {
+        return (
+            <div>
+                <p> Select a level to begin </p>
+            </div>
+        )
+    }
+
     return (
         <Stage 
             height={sideLength * data.length} 

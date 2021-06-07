@@ -10,7 +10,7 @@ class PriorityQueueFrontier() : IFrontier {
 
 
     override fun push(state: State, path: List<SokobanMove>, heuristicVal: Int) {
-        queue.add(Triple(state, path, heuristicVal))
+        queue.add(Triple(state, path, heuristicVal + path.count()))
     }
 
     override fun pop(): Pair<State, List<SokobanMove>> {
