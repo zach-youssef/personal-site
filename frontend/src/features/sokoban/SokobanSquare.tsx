@@ -25,26 +25,11 @@ function SokobanSquare({type, row, col}: Props) {
             y={row * sideLength}
             width={sideLength}
             height={sideLength}
-            fill= {fillForType(type)}
+            fill= {type === SquareType.WALL? 'grey' : 'tan'}
+            strokeWidth={2}
+            stroke="black"
         />
     )
-}
-
-function fillForType(type: SquareType): string {
-    switch(type) {
-        case SquareType.WALL:
-            return 'black'
-        case SquareType.EMPTY:
-            return 'tan'
-        case SquareType.PLAYER:
-            return 'blue'
-        case SquareType.BOX:
-            return 'brown'
-        case SquareType.SPOT:
-            return 'red'
-        case SquareType.FILLED_SPOT:
-            return 'green'
-    }
 }
 
 export default SokobanSquare;
