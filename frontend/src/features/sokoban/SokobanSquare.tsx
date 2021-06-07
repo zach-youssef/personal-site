@@ -20,8 +20,6 @@ interface Props {
 export const sideLength = 60
 
 function SokobanSquare({type, row, col}: Props) {
-    console.log("In square")
-    console.log(type === SquareType.WALL)
     return (
         <Rect
             x={col * sideLength}

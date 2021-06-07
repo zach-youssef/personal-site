@@ -38,22 +38,39 @@ function forceMapSquare(raw: string): SquareType {
     }
 }
 
+
 function Sokoban() {
     const nullLevel: SquareType[][] = []
     const nullSolutionData: Move[] = []
-    
-    const dummyLevel = [
-        [SquareType.BOX, SquareType.WALL]
-    ]
 
     // Id and state of current level
     const [levelId, setLevelId] = useState(null)
     const [levelData, setLevelData] = useState(nullLevel)
     const [solutionData, setSolutionData] = useState(nullSolutionData)
+    const [solutionIndex, setSolutionIndex] = useState(0)
+    // const [loadNextState, setLoadNextState] = useState(false)
+
+    function loadNextState(index: number) {
+        console.log(index)
+        fetchGraphQL(`
+            query GetStateAfterActionsQuery($level: SokobanLevelId!, $actions: [SokobanMove!]!) {
+                levelAfterActions(levelId: $level, actions: $actions) {
+                    level {
+                        row
+                    }
+                }
+            }
+        `, {
+            "level" : levelId,
+            "actions" : solutionData.filter((_, idx) => idx < index)
+        }).then(response => {
+            const sokobanLevel: SokobanLevel = response.data.levelAfterActions
+            setLevelData(sokobanLevel.level.map(row => row.row.map(square => forceMapSquare(square))))
+            setSolutionIndex(index)
+        }).catch(console.log)
+    }
+
     useEffect(() => {
-        console.log("In the effect")
-        console.log(levelData)
-        console.log(levelId)
         if (levelData.length === 0 && levelId != null){
             fetchGraphQL(`
                 query GetLevelAndSolution($level: SokobanLevelId!) {
@@ -65,14 +82,13 @@ function Sokoban() {
                     aStarSolution(levelId: $level)
                 }
             `, {"level": levelId}).then(response => {
-                console.log("In the response clause")
-                console.log(response)
                 const sokobanLevel: SokobanLevel = response.data.sokobanLevel
                 setLevelData(sokobanLevel.level.map(row => row.row.map(square => forceMapSquare(square))))
                 
                 const aiMoves: Move[] = response.data.aStarSolution
                 setSolutionData(aiMoves)
-            })
+                setSolutionIndex(0)
+            }).catch(console.log);
         }
     })
     
@@ -133,8 +149,23 @@ function Sokoban() {
             <SokobanGrid data={levelData}/>
 
             <ButtonGroup>
-                <Button> Next Move </Button>
-                <Button variant="secondary"> Undo </Button>
+                <Button 
+                    disabled={solutionIndex >= solutionData.length}
+                    onClick={ () => {
+                        loadNextState(solutionIndex + 1)
+                    }}
+                > 
+                    Next Move 
+                </Button>
+                <Button 
+                    disabled={solutionIndex <= 0} 
+                    variant="secondary"
+                    onClick={() => {
+                        loadNextState(solutionIndex - 1)
+                    }}
+                > 
+                    Undo 
+                </Button>
             </ButtonGroup>
         </Container>
     );
