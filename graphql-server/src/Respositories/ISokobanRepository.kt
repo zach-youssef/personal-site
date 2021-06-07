@@ -11,5 +11,7 @@ interface ISokobanRepository {
 
     fun getLevel(levelId: SokobanLevelId): SokobanLevel
 
-    fun getAvailableLevels(): List<SokobanLevelId>
+    fun getAvailableLevels(): Array<SokobanLevelId>
+
+    fun getLevelAfterActions(levelId: SokobanLevelId, actions: List<SokobanMove>): SokobanLevel
 }

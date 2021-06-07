@@ -22,9 +22,12 @@ class SokobanEngine : ISokobanRepository {
         return loadLevel(levelId)
     }
 
-    override fun getAvailableLevels(): List<SokobanLevelId> {
-        //TODO("Not yet implemented")
-        return emptyList()
+    override fun getAvailableLevels(): Array<SokobanLevelId> {
+        return SokobanLevelId.values()
+    }
+
+    override fun getLevelAfterActions(levelId: SokobanLevelId, actions: List<SokobanMove>): SokobanLevel {
+        return actions.fold(State(loadLevel(levelId))){ state: State, move: SokobanMove -> state.getSuccessor(move)!! }.asLevel(levelId)
     }
 
     companion object {

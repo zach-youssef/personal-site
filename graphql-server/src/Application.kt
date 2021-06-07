@@ -95,6 +95,13 @@ fun Application.module(testing: Boolean = false) {
                 description = "Returns the ids of all available levels"
                 resolver { -> sokobanRepository.getAvailableLevels() }
             }
+
+            query("levelAfterActions") {
+                description = "Returns the state of the requested level after the specified actions are taken. Will fail if moves are illegal"
+                resolver { levelId: SokobanLevelId, actions: List<SokobanMove> ->
+                    sokobanRepository.getLevelAfterActions(levelId, actions)
+                }
+            }
         }
     }
 }

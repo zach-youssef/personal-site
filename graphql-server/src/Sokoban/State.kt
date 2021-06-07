@@ -1,8 +1,6 @@
 package com.zyoussef.Sokoban
 
-import com.zyoussef.Models.Sokoban.SokobanLevel
-import com.zyoussef.Models.Sokoban.SokobanMove
-import com.zyoussef.Models.Sokoban.SokobanSquare
+import com.zyoussef.Models.Sokoban.*
 import java.util.*
 import kotlin.collections.HashSet
 
@@ -60,6 +58,22 @@ class State {
 
         this.numRows = copy.numRows
         this.numCols = copy.numCols
+    }
+
+    fun asLevel(id: SokobanLevelId): SokobanLevel {
+        return SokobanLevel(id, (0 until numRows).map{ row ->
+            SokobanRow((0 until numCols).map { col ->
+                val pos = Pair(row, col)
+                when {
+                    player == pos -> SokobanSquare.PLAYER
+                    pos in walls -> SokobanSquare.WALL
+                    pos in spots && pos in boxes -> SokobanSquare.FILLED_SPOT
+                    pos in spots -> SokobanSquare.SPOT
+                    pos in boxes -> SokobanSquare.BOX
+                    else -> SokobanSquare.EMPTY
+                }
+            })
+        })
     }
 
     // Precalculate the box positions that cannot be part of the solution
