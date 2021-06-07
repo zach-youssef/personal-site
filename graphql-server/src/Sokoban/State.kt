@@ -10,10 +10,12 @@ class State {
     val boxes: MutableSet<Pair<Int, Int>>
     val spots: MutableSet<Pair<Int, Int>>
     val walls: MutableSet<Pair<Int, Int>>
-    val validBoxPositions: MutableSet<Pair<Int,Int>>
+
+    private val validBoxPositions: MutableSet<Pair<Int,Int>>
+    private val numRows: Int
+    private val numCols: Int
+
     var player: Pair<Int, Int>
-    val numRows: Int
-    val numCols: Int
 
     constructor(level: SokobanLevel) {
         boxes = HashSet()
@@ -133,32 +135,28 @@ class State {
         return boxes.all { box -> spots.contains(box) }
     }
 
-    fun countPlacedBoxes(): Int {
-        return boxes.count { box -> spots.contains(box) }
-    }
-
     override fun toString(): String {
         val stringBuilder = StringBuilder()
         for(row: Int in 0 until numRows) {
             val line = StringBuilder()
             for (col: Int in 0 until numCols) {
                 val pos = Pair(row, col)
-                line.append(when (pos){
-                    player -> "@"
-                    in walls -> "#"
-                    in spots, in boxes -> "?"
-                    in spots -> "."
-                    in boxes -> "$"
+                line.append(when {
+                    player == pos -> "@"
+                    pos in walls -> "#"
+                    pos in spots && pos in boxes -> "?"
+                    pos in spots -> "."
+                    pos in boxes -> "$"
                     else -> " "
                 })
-                stringBuilder.append(line.toString() + "\n")
             }
+            stringBuilder.append(line.toString() + "\n")
         }
         return stringBuilder.toString()
     }
 
     fun isSolvable(): Boolean {
-        return noBoxInDeadSpace() && noBoxesFrozen()
+        return noBoxInDeadSpace() // && noBoxesFrozen()
     }
 
     private fun noBoxInDeadSpace(): Boolean {

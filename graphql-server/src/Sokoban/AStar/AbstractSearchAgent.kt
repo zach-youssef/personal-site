@@ -40,7 +40,7 @@ abstract class AbstractSearchAgent : ISearchAgent {
             currentState.getSuccessors().forEach { succ ->
                 val newState = succ.value
                 val dir = succ.key
-                if (!explored.contains(newState)){
+                if (!explored.contains(newState)) {
                     val newPath = LinkedList(currentPath)
                     newPath.add(dir)
                     frontier.push(newState, newPath, applyHeuristic(newState))

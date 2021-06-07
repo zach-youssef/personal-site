@@ -8,7 +8,9 @@ import java.io.File
 
 object SokobanParser {
     private val LEVEL_SRC = mapOf(
-        SokobanLevelId.LEVEL_1 to "resources/sokobanLevels/level1.sokoban" // TODO
+        SokobanLevelId.LEVEL_0 to "resources/sokobanLevels/level0.sokoban",
+        SokobanLevelId.LEVEL_1 to "resources/sokobanLevels/level1.sokoban",
+        SokobanLevelId.LEVEL_2 to "resources/sokobanLevels/level2.sokoban",
     )
 
     fun loadLevel(levelId: SokobanLevelId): SokobanLevel {
