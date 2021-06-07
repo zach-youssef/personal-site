@@ -1,18 +1,37 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Row, Jumbotron } from 'react-bootstrap';
 import { SiteTextContents, SiteText } from '../content/text/SiteText';
 import { ProjectDisplayFeatured } from './projectDisplay/ProjectDisplay';
 import logo192 from '../logo192.png';
+import { fetchGraphQL } from '../FetchHelper';
 
 function Home() {
-    // TODO For the love of god load this from somewhere
-    let featured = {
-        name: "Sokoban AI",
-        description: "An A* and Q learning implementation to solve the game Sokoban",
-        imagePath: logo192,
-        id: "sokoban",
-    };
+    const [featuredProject, setFeaturedProject] = useState(null)
 
+    useEffect(() => {
+      let isMounted = true;
+      fetchGraphQL(`
+        query FetchFeaturedProjectsQuery {
+          projectInfos(featured: true) {
+            name,
+            description,
+            id
+          }
+        }
+      `, {}).then(response => {
+        if(!isMounted) {
+          return;
+        }
+        const data = response.data;
+        setFeaturedProject(data.projectInfos[0]);
+      }).catch(error => {
+        console.error(error);
+      });
+      
+      return() => {
+        isMounted = false;
+      };
+    }, [fetchGraphQL]);
 
     return (
         <div>
@@ -22,7 +41,9 @@ function Home() {
               <p> {SiteTextContents[SiteText.AboutDesc]} </p>
             </Jumbotron>
           </Row>
-          <ProjectDisplayFeatured projectInfo={featured}/>
+          {
+            featuredProject != null ?  <ProjectDisplayFeatured projectInfo={featuredProject!!}/> : <div />
+          }
         </div>
     );
 }
