@@ -7,6 +7,7 @@ import {
 } from 'react-router-dom';
 import { SiteText, SiteTextContents } from '../../content/text/SiteText';
 import ProjectDisplayContainer from './ProjectDisplayContainer';
+import SokobanPage from '../sokoban/SokobanPage';
 
 function ProjectsPage() {
     let match = useRouteMatch();
@@ -15,9 +16,7 @@ function ProjectsPage() {
         <Router>
             <Switch>
                 <Route path={`${match.path}/sokoban`}>
-                    <div>
-                        Sokoban Coming soon!
-                    </div>
+                    <SokobanPage />
                 </Route>
                 <Route path={`${match.path}/raytracer`}>
                     <div>
