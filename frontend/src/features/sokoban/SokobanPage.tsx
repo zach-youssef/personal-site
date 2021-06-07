@@ -6,7 +6,7 @@ import SokobanGrid from './SokobanGrid';
 import SokobanSquare, { SquareType } from './SokobanSquare';
 
 interface SokobanRow {
-    row: SquareType[]
+    row: string[]
 }
 
 interface SokobanLevel {
@@ -17,9 +17,34 @@ enum Move {
     UP, DOWN, LEFT, RIGHT
 }
 
+function forceMapSquare(raw: string): SquareType {
+    switch(raw) {
+        case "WALL":
+            return SquareType.WALL
+        case "EMPTY":
+            return SquareType.EMPTY
+        case "SPOT":
+            return SquareType.SPOT
+        case "BOX":
+            return SquareType.BOX
+        case "PLAYER":
+            return SquareType.PLAYER
+        case "PLAYER_ON_SPOT":
+            return SquareType.PLAYER_ON_SPOT
+        case "FILLED_SPOT":
+            return SquareType.FILLED_SPOT
+        default: 
+            return SquareType.EMPTY
+    }
+}
+
 function Sokoban() {
     const nullLevel: SquareType[][] = []
     const nullSolutionData: Move[] = []
+    
+    const dummyLevel = [
+        [SquareType.BOX, SquareType.WALL]
+    ]
 
     // Id and state of current level
     const [levelId, setLevelId] = useState(null)
@@ -43,7 +68,7 @@ function Sokoban() {
                 console.log("In the response clause")
                 console.log(response)
                 const sokobanLevel: SokobanLevel = response.data.sokobanLevel
-                setLevelData(sokobanLevel.level.map(row => row.row))
+                setLevelData(sokobanLevel.level.map(row => row.row.map(square => forceMapSquare(square))))
                 
                 const aiMoves: Move[] = response.data.aStarSolution
                 setSolutionData(aiMoves)

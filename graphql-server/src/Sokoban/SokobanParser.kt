@@ -16,7 +16,7 @@ object SokobanParser {
     fun loadLevel(levelId: SokobanLevelId): SokobanLevel {
         return SokobanLevel(levelId,
             File(LEVEL_SRC[levelId]!!).readLines().map { line ->
-                SokobanRow(line.trim().filter{it in setOf(' ', '#', '.', '@', '?', '$', '%')}.map { char ->
+                SokobanRow(line.filter{it in setOf(' ', '#', '.', '@', '?', '$', '%')}.map { char ->
                     when(char){
                         ' ' -> SokobanSquare.EMPTY
                         '#' -> SokobanSquare.WALL
