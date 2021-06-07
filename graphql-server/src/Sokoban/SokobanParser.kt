@@ -24,6 +24,7 @@ object SokobanParser {
                         '@' -> SokobanSquare.PLAYER
                         '?' -> SokobanSquare.FILLED_SPOT
                         '$' -> SokobanSquare.BOX
+                        '%' -> SokobanSquare.PLAYER_ON_SPOT
                         else -> SokobanSquare.UNKNOWN
                     }
                 })

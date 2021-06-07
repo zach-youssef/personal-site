@@ -7,7 +7,8 @@ export enum SquareType {
     PLAYER,
     BOX,
     SPOT,
-    FILLED_SPOT
+    FILLED_SPOT,
+    PLAYER_ON_SPOT
 }
 
 interface Props {

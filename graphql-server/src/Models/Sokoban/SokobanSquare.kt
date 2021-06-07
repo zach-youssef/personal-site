@@ -7,5 +7,6 @@ enum class SokobanSquare {
     BOX,
     SPOT,
     FILLED_SPOT,
+    PLAYER_ON_SPOT,
     UNKNOWN
 }

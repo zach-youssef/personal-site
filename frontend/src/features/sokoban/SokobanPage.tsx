@@ -8,6 +8,7 @@ function Sokoban() {
     const dummyLevel = [
         [SquareType.WALL, SquareType.WALL, SquareType.WALL, SquareType.WALL, SquareType.WALL, SquareType.WALL, SquareType.WALL],
         [SquareType.WALL, SquareType.PLAYER, SquareType.EMPTY, SquareType.BOX, SquareType.EMPTY, SquareType.SPOT, SquareType.WALL],
+        [SquareType.WALL, SquareType.PLAYER_ON_SPOT, SquareType.EMPTY, SquareType.FILLED_SPOT, SquareType.EMPTY, SquareType.SPOT, SquareType.WALL],
         [SquareType.WALL, SquareType.WALL, SquareType.WALL, SquareType.WALL, SquareType.WALL, SquareType.WALL, SquareType.WALL],
     ]
     return (

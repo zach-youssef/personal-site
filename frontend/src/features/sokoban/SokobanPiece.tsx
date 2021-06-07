@@ -22,13 +22,17 @@ function SokobanPiece({type, row, col}: Props) {
                 stroke="black"
             />
         )
-    } else if(type === SquareType.PLAYER || type === SquareType.SPOT) {
+    } else if(type === SquareType.PLAYER || type === SquareType.SPOT || type === SquareType.PLAYER_ON_SPOT) {
         return (
             <Circle 
                 x = {(col * sideLength) + (sideLength / 2)}
                 y = {(row * sideLength) + (sideLength / 2)}
-                radius = {sideLength / (type === SquareType.PLAYER? 2.5 : 4.5)}
-                fill = {type === SquareType.PLAYER? 'blue' : 'red'}
+                radius = {sideLength / (type === SquareType.SPOT? 4.5 : 2.5)}
+                fill = {
+                    type === SquareType.PLAYER? 'blue' : (
+                        type === SquareType.SPOT ? 'red' : 'purple'
+                    )
+                }
                 strokeWidth = {2}
                 stroke="black"
             />

@@ -40,6 +40,10 @@ class State {
                         spots.add(curPos)
                         boxes.add(curPos)
                     }
+                    SokobanSquare.PLAYER_ON_SPOT -> {
+                        spots.add(curPos)
+                        player = curPos
+                    }
                 }
             }
         }
@@ -65,9 +69,10 @@ class State {
             SokobanRow((0 until numCols).map { col ->
                 val pos = Pair(row, col)
                 when {
+                    pos in spots && pos in boxes -> SokobanSquare.FILLED_SPOT
+                    pos in spots && player == pos -> SokobanSquare.PLAYER_ON_SPOT
                     player == pos -> SokobanSquare.PLAYER
                     pos in walls -> SokobanSquare.WALL
-                    pos in spots && pos in boxes -> SokobanSquare.FILLED_SPOT
                     pos in spots -> SokobanSquare.SPOT
                     pos in boxes -> SokobanSquare.BOX
                     else -> SokobanSquare.EMPTY
@@ -156,9 +161,10 @@ class State {
             for (col: Int in 0 until numCols) {
                 val pos = Pair(row, col)
                 line.append(when {
+                    pos in spots && pos in boxes -> "?"
+                    pos in spots && pos == player -> "%"
                     player == pos -> "@"
                     pos in walls -> "#"
-                    pos in spots && pos in boxes -> "?"
                     pos in spots -> "."
                     pos in boxes -> "$"
                     else -> " "
