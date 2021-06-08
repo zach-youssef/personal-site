@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { Container, Dropdown, Row, Col, ButtonGroup, Button, ButtonToolbar } from 'react-bootstrap';
-import { Stage, Layer } from 'react-konva';
+import React, { useState } from 'react';
+import { Container,  ButtonToolbar } from 'react-bootstrap';
 import { fetchGraphQL } from '../../FetchHelper';
 import SokobanGrid from './SokobanGrid';
-import SokobanSquare, { SquareType } from './SokobanSquare';
+import { SquareType } from './SokobanSquare';
 import SokobanStepperControls from './SokobanStepperControls';
 import { GetStateAfterActionsQuery, GetLevelAndSolutionQuery, GetAvailableLevelsQuery } from '././../../graphql/SokobanQuieries'
 import LevelSelector from './dropdowns/LevelSelector';
@@ -64,7 +63,8 @@ function Sokoban() {
         }).catch(console.log)
     }
     
-    function loadLevel(levelId: never) {
+    function loadLevel(levelId: any) {
+        setLevelData([]) // Clear existing data to show loading screen
         fetchGraphQL(GetLevelAndSolutionQuery, {
             "level": levelId
         }).then(response => {
@@ -80,17 +80,20 @@ function Sokoban() {
     return (
         <Container>
             <ButtonToolbar>
+
                 <LevelSelector 
                   onLevelSelect={id => {
                     setLevelId(id);
                     loadLevel(id)
                   }}
                 />
+
                 <AgentSelector />
+
             </ButtonToolbar>
 
             <SokobanGrid data={levelData}/>
-            
+
             <SokobanStepperControls 
                 currentIndex={solutionIndex}
                 solutionLength={solutionData.length}

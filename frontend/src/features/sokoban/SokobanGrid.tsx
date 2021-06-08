@@ -2,6 +2,7 @@ import React from 'react';
 import { Stage, Layer } from 'react-konva';
 import SokobanSquare, { SquareType, sideLength } from './SokobanSquare';
 import SokobanPiece from './SokobanPiece';
+import { Spinner } from 'react-bootstrap';
 
 interface Props {
     data: SquareType[][]
@@ -10,9 +11,7 @@ interface Props {
 function SokobanGrid({data}: Props) {
     if (data.length === 0) {
         return (
-            <div>
-                <p> Select a level to begin </p>
-            </div>
+            <Spinner animation="border" variant="dark"/>
         )
     }
 

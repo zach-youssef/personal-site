@@ -4,7 +4,7 @@ import { fetchGraphQL } from '../../../FetchHelper';
 import { GetAvailableLevelsQuery } from '../../../graphql/SokobanQuieries';
 
 interface Props {
-    onLevelSelect: (levelId: never) => void
+    onLevelSelect: (levelId: any) => void
 }
 
 function LevelSelector({onLevelSelect}: Props) {
@@ -17,6 +17,7 @@ function LevelSelector({onLevelSelect}: Props) {
             }
             const data = response.data
             setLevelIds(data.levels);
+            onLevelSelect(data.levels[0])
         }).catch(error => {
             console.log(error)
         });
