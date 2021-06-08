@@ -10,6 +10,9 @@ import com.zyoussef.Respositories.SokobanEngine
 import io.ktor.application.*
 import io.ktor.features.*
 import io.ktor.http.*
+import io.ktor.http.content.*
+import io.ktor.routing.*
+import java.io.File
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -24,6 +27,11 @@ fun Application.module(testing: Boolean = false) {
 
         anyHost()
         allowCredentials = true
+    }
+    routing {
+        static("assets"){
+            files("assets")
+        }
     }
     install(GraphQL) {
         playground = true

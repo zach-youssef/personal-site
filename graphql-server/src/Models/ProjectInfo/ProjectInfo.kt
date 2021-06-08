@@ -1,3 +1,3 @@
 package com.zyoussef.Models.ProjectInfo
 
-data class ProjectInfo(val name: String, val id: String, val description: String)
+data class ProjectInfo(val name: String, val id: String, val description: String, val imagePath: String)

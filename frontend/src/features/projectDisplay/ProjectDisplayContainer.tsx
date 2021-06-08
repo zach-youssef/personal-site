@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { ProjectDisplayCard } from './ProjectDisplay';
-import logo192 from '../../logo192.png';
 import { CardGroup } from 'react-bootstrap';
 import { fetchGraphQL } from '../../FetchHelper'
-import ProjectInfo from './ProjectInfo';
 
 function ProjectDisplayContainer(){
     const [projectInfos, setProjectInfos] = useState([]);
@@ -15,7 +13,8 @@ function ProjectDisplayContainer(){
                 projectInfos {
                     name,
                     description,
-                    id
+                    id,
+                    imagePath
                 }
             }
         `, {}).then(response => {
