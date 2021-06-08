@@ -7,8 +7,8 @@ import { fetchGraphQL } from '../FetchHelper';
 
 function Home() {
     const [featuredProject, setFeaturedProject] = useState(null)
-
-    useEffect(() => {
+    
+    function loadFeaturedProject() {
       let isMounted = true;
       fetchGraphQL(`
         query FetchFeaturedProjectsQuery {
@@ -31,7 +31,13 @@ function Home() {
       return() => {
         isMounted = false;
       };
-    }, [fetchGraphQL]);
+    }
+
+    useEffect(loadFeaturedProject, [fetchGraphQL]);
+    
+    if (featuredProject === null || featuredProject === undefined){
+      loadFeaturedProject()
+    }
 
     return (
         <div>

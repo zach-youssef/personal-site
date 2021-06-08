@@ -7,8 +7,8 @@ import ProjectInfo from './ProjectInfo';
 
 function ProjectDisplayContainer(){
     const [projectInfos, setProjectInfos] = useState([]);
-
-    useEffect(() => {
+    
+    function loadProjectInfos() {
         let isMounted = true;
         fetchGraphQL(`
             query FetchProjectsQuery {
@@ -31,7 +31,14 @@ function ProjectDisplayContainer(){
         return () => {
             isMounted = false;
         };
-    }, [fetchGraphQL])
+    }
+
+    useEffect(loadProjectInfos, [fetchGraphQL])
+    
+    if (projectInfos === null || projectInfos === undefined) {
+        loadProjectInfos()
+        return <div/>
+    }
     
     return(
         <CardGroup>
