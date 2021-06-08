@@ -1,0 +1,3 @@
+[submodule "graphql-server/src/SeamCarver/SeamCarving"]
+	path = graphql-server/src/SeamCarver/SeamCarving
+	url = git@github.com:zach-youssef/SeamCarving.git
