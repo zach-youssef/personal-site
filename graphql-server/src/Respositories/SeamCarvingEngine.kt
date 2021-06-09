@@ -16,7 +16,9 @@ class SeamCarvingEngine() : ISeamCarvingRepository {
             val folder = File("assets/seamcarver/input")
             if (!folder.listFiles()?.filter{it.name != ".gitignore"}.isNullOrEmpty()){
                 for (image in folder.listFiles()) {
-                    inputImageDB[sha256(image)] = image.absolutePath
+                    val hash = sha256(image)
+                    inputImageDB[hash] = image.absolutePath
+                    println("Lodaded file ${image.absolutePath} with id $hash")
                 }
             }
         }
@@ -36,7 +38,7 @@ class SeamCarvingEngine() : ISeamCarvingRepository {
             return null;
         }
 
-        val outputPath = "assets/seamCarver/output/$imageId-$targetWidth-$targetHeight.png"
+        val outputPath = "assets/seamcarver/output/$imageId-$targetWidth-$targetHeight.png"
         outputImage.saveImage(outputPath);
         return "http://localhost:8080/$outputPath"
     }
