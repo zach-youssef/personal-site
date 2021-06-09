@@ -4,6 +4,9 @@ import { CardGroup } from 'react-bootstrap';
 import { fetchGraphQL } from '../../FetchHelper'
 
 function ProjectDisplayContainer(){
+    
+    const cardsPerRow = 2;
+
     const [projectInfos, setProjectInfos] = useState([]);
     
     function loadProjectInfos() {
@@ -40,9 +43,20 @@ function ProjectDisplayContainer(){
     }
     
     return(
-        <CardGroup>
-            {projectInfos.map((projectInfo, index) => <ProjectDisplayCard projectInfo={projectInfo} index={0} />)}
-        </CardGroup>
+        <div>
+            {
+                Array.from(Array(Math.ceil(projectInfos.length / cardsPerRow)).keys())
+                    .map(row => (
+                        <CardGroup>
+                            {
+                                projectInfos.slice(row * cardsPerRow, (row * cardsPerRow) + cardsPerRow)
+                                    .map((projectInfo, index) => 
+                                        <ProjectDisplayCard projectInfo={projectInfo} index={index}/>)
+                            }
+                        </CardGroup>
+                    ))
+            }
+        </div>
     )
 }
 
