@@ -8,6 +8,7 @@ import {
 import { SiteText, SiteTextContents } from '../../content/text/SiteText';
 import ProjectDisplayContainer from './ProjectDisplayContainer';
 import SokobanPage from '../sokoban/SokobanPage';
+import SeamCarverPage from '../seamCarver/SeamCarverPage';
 
 function ProjectsPage() {
     let match = useRouteMatch();
@@ -24,9 +25,7 @@ function ProjectsPage() {
                     </div>
                 </Route>
                 <Route path={`${match.path}/seamCarver`}>
-                    <div>
-                        Seam Carver Coming soon!
-                    </div>
+                    <SeamCarverPage />
                 </Route>
                 <Route path={`${match.path}/webglDemo`}>
                     <div>

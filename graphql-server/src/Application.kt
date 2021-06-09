@@ -8,8 +8,14 @@ import io.ktor.application.*
 import io.ktor.features.*
 import io.ktor.http.*
 import io.ktor.http.content.*
+import io.ktor.request.*
+import io.ktor.response.*
 import io.ktor.routing.*
+import io.ktor.utils.io.errors.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
+import javax.imageio.ImageIO
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -19,6 +25,7 @@ fun Application.module(testing: Boolean = false) {
     install(CORS) {
         method(HttpMethod.Options)
         method(HttpMethod.Post)
+        method(HttpMethod.Put)
 
         header("Content-Type");
 
@@ -28,6 +35,20 @@ fun Application.module(testing: Boolean = false) {
     routing {
         static("assets"){
             files("assets")
+        }
+
+        put("/seamCarver/upload") {
+            // TODO move logic to engine and update "db"
+            val multiPartData = call.receiveMultipart()
+            multiPartData.forEachPart { part ->
+                when(part) {
+                    is PartData.FileItem -> {
+                        File("assets/seamcarver/input/upload.png")
+                            .writeBytes(part.streamProvider().readBytes())
+                    }
+                    else -> {}
+                }
+            }
         }
     }
     install(GraphQL) {
