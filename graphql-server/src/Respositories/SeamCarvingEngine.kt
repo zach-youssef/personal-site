@@ -25,6 +25,14 @@ class SeamCarvingEngine() : ISeamCarvingRepository {
     }
 
     override fun carveImage(imageId: String, targetWidth: Int, targetHeight: Int): String? {
+        val outputPath = "assets/seamcarver/output/$imageId-$targetWidth-$targetHeight.png"
+
+        // Check if this computation already exists
+        if (File(outputPath).exists()){
+            return "http://localhost:8080/$outputPath"
+        }
+
+        // Otherwise, load the image and carve it
         val inputImage = loadImageById(imageId);
         var outputImage: WorldImage? = null
 
@@ -38,7 +46,6 @@ class SeamCarvingEngine() : ISeamCarvingRepository {
             return null;
         }
 
-        val outputPath = "assets/seamcarver/output/$imageId-$targetWidth-$targetHeight.png"
         outputImage.saveImage(outputPath);
         return "http://localhost:8080/$outputPath"
     }
