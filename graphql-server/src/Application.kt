@@ -3,10 +3,7 @@ package com.zyoussef
 import com.apurebase.kgraphql.GraphQL
 import com.zyoussef.Models.ProjectInfo.ProjectInfo
 import com.zyoussef.Models.Sokoban.*
-import com.zyoussef.Respositories.IProjectInfoRepository
-import com.zyoussef.Respositories.ISokobanRepository
-import com.zyoussef.Respositories.SimpleProjectInfoRepository
-import com.zyoussef.Respositories.SokobanEngine
+import com.zyoussef.Respositories.*
 import io.ktor.application.*
 import io.ktor.features.*
 import io.ktor.http.*
@@ -108,6 +105,16 @@ fun Application.module(testing: Boolean = false) {
                 description = "Returns the state of the requested level after the specified actions are taken. Will fail if moves are illegal"
                 resolver { levelId: SokobanLevelId, actions: List<SokobanMove> ->
                     sokobanRepository.getLevelAfterActions(levelId, actions)
+                }
+            }
+
+            // SeamCarver
+            val seamCarvingRepository = SeamCarvingEngine()
+
+            mutation("carve") {
+                description = "Takes an image ID and returns the file location of that image, seam carved"
+                resolver { imageId: String, targetWidth: Int, targetHeight: Int ->
+                    seamCarvingRepository.carveImage(imageId, targetWidth, targetHeight)
                 }
             }
         }
