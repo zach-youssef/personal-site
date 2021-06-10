@@ -1,5 +1,5 @@
 import React, { BaseSyntheticEvent, ChangeEvent, FormEvent, useState } from 'react';
-import { Alert, Button, Spinner } from 'react-bootstrap';
+import { Alert, Button, Container, Form, Spinner } from 'react-bootstrap';
 import { SubmitHandler, useForm, ValidateResult } from 'react-hook-form'
 
 type FormValues = {
@@ -43,68 +43,79 @@ function SeamCarverPage() {
     }
     
     return (
-        <div>
-            {errors.file && 
-                <Alert variant = "warning">
-                    {errors.file.message}
-                </Alert>
-            }
-            {errors.width && 
-                <Alert variant = "warning">
-                    {errors.width.message}
-                </Alert>
-            }
-            {errors.height && 
-                <Alert variant = "warning">
-                    {errors.height.message}
-                </Alert>
-            }
-            <form 
+        <Container>
+            <Form 
                 action="http://localhost:8080/seamCarver/upload" 
                 method="post" 
                 encType="multipart/form-data"
                 onSubmit={handleSubmit(onSubmit)}
             >
-                <input 
-                    type="file" 
-                    accept=".png,.jpg"
-                    {...register("file", {
-                        required: {
-                            value: true, 
-                            message: "An image file is required"
+                <Form.Group>
+                    <Form.Label>Image File</Form.Label>
+                    <Form.Control
+                        type="file" 
+                        accept=".png,.jpg"
+                        {...register("file", {
+                            required: {
+                                value: true, 
+                                message: "An image file is required"
+                            }
+                        })}
+                    />
+                    {errors.file && 
+                        <Alert variant = "danger">
+                            {errors.file.message}
+                        </Alert>
+                    }
+                </Form.Group>
+                <Form.Row>
+                    <Form.Group>
+                        <Form.Label>Target Width</Form.Label>
+                        <Form.Control
+                            type="number" 
+                            {...register("width", {
+                                validate: {
+                                    positive: v => parseInt(v) > 0 ? true : "Target width must be positive",
+                                    checkImage: v => withinImageWidth(v),
+                                },
+                                required: {
+                                    value: true, 
+                                    message: "A target width is required"
+                                }
+                            })}
+                        />
+                        {errors.width && 
+                            <Alert variant = "danger">
+                                {errors.width.message}
+                            </Alert>
                         }
-                    })}
-                />
-                <input 
-                    type="number" 
-                    {...register("width", {
-                        validate: {
-                            positive: v => parseInt(v) > 0 ? true : "Target width must be positive",
-                            checkImage: v => withinImageWidth(v),
-                        },
-                        required: {
-                            value: true, 
-                            message: "A target width is required"
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label>Target Height</Form.Label>
+                        <Form.Control
+                            type="number" 
+                            {...register("height", {
+                                validate: {
+                                    positive: v => parseInt(v) > 0 ? true : "Target height must be positive",
+                                    checkImage: v => withinImageHeight(v),
+                                },
+                                required: {
+                                    value: true, 
+                                    message: "A target height is required"
+                                }
+                            })}
+                        />
+                        {errors.height && 
+                            <Alert variant = "danger">
+                                {errors.height.message}
+                            </Alert>
                         }
-                    })}
-                />
-                <input 
-                    type="number" 
-                    {...register("height", {
-                        validate: {
-                            positive: v => parseInt(v) > 0 ? true : "Target height must be positive",
-                            checkImage: v => withinImageHeight(v),
-                        },
-                        required: {
-                            value: true, 
-                            message: "A target height is required"
-                        }
-                    })}
-                />
+                    </Form.Group>
+                </Form.Row>
                 <Button type="submit">Carve</Button>
-            </form>
+            </Form>
             <img src={selectedImage?.src} />
-        </div>
+        </Container>
     );
 }
 
