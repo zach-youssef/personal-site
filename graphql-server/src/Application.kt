@@ -11,11 +11,7 @@ import io.ktor.http.content.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
-import io.ktor.utils.io.errors.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.File
-import javax.imageio.ImageIO
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -37,16 +33,35 @@ fun Application.module(testing: Boolean = false) {
             files("assets")
         }
 
-        put("/seamCarver/upload") {
-            // TODO move logic to engine and update "db"
+        post("/seamCarver/upload") {
+            val seamCarvingRepository = SeamCarvingEngine()
+
             val multiPartData = call.receiveMultipart()
+            var imageFile: File? = null
+            var targetWidth: Int? = null
+            var targetHeight: Int? = null
+            // Parse form data
             multiPartData.forEachPart { part ->
                 when(part) {
+                    is PartData.FormItem -> {
+                        when(part.name) {
+                            "width" -> targetWidth = Integer.parseInt(part.value)
+                            "height" -> targetHeight = Integer.parseInt(part.value)
+                        }
+                    }
                     is PartData.FileItem -> {
-                        File("assets/seamcarver/input/upload.png")
-                            .writeBytes(part.streamProvider().readBytes())
+                        imageFile = File("assets/seamcarver/input/upload.png")
+                        imageFile!!.writeBytes(part.streamProvider().readBytes())
                     }
                     else -> {}
+                }
+            }
+
+            // Carve the image and return the output file
+            if (imageFile != null && targetHeight != null && targetWidth != null) {
+                val carved = seamCarvingRepository.carve(imageFile!!, targetWidth!!, targetHeight!!)
+                if (carved != null) {
+                    call.respondFile(carved)
                 }
             }
         }
@@ -126,16 +141,6 @@ fun Application.module(testing: Boolean = false) {
                 description = "Returns the state of the requested level after the specified actions are taken. Will fail if moves are illegal"
                 resolver { levelId: SokobanLevelId, actions: List<SokobanMove> ->
                     sokobanRepository.getLevelAfterActions(levelId, actions)
-                }
-            }
-
-            // SeamCarver
-            val seamCarvingRepository = SeamCarvingEngine()
-
-            mutation("carve") {
-                description = "Takes an image ID and returns the file location of that image, seam carved"
-                resolver { imageId: String, targetWidth: Int, targetHeight: Int ->
-                    seamCarvingRepository.carveImage(imageId, targetWidth, targetHeight)
                 }
             }
         }

@@ -1,6 +1,8 @@
 package com.zyoussef.Respositories
 
+import java.io.File
+
 interface ISeamCarvingRepository {
     // Returns the url to the carved image
-    fun carveImage(imageId: String, targetWidth: Int, targetHeight: Int): String?
+    fun carve(image: File, targetWidth: Int, targetHeight: Int): File?
 }
