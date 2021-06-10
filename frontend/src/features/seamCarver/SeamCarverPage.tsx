@@ -1,24 +1,12 @@
 import React, { useState } from 'react';
 import { Button, Spinner } from 'react-bootstrap';
-import { useFilePicker } from 'use-file-picker';
 
 function SeamCarverPage() {
-    const [openFileSelector, {filesContent, errors, loading, plainFiles}] = useFilePicker({
-        multiple: false,
-        accept: ['.png'] // TODO extend
-    });
-    const [serverResponse, setResponse] = useState("")
-    
-    if (errors.length > 0) 
-        return <p>ERROR LOL</p>
-    
-    if (loading) {
-        return <Spinner animation="border"/>
-    }
-    
     return (
-        <form action="http://localhost:8080/seamCarver/upload">
-            <input type="file" name="test" />
+        <form action="http://localhost:8080/seamCarver/upload" method="post" encType="multipart/form-data">
+            <input type="file" name="file" />
+            <input type="number" name="width"/>
+            <input type="number" name="height"/>
             <Button type="submit">Upload</Button>
         </form>
     );
