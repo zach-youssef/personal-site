@@ -1,6 +1,6 @@
-import React, { BaseSyntheticEvent, ChangeEvent, FormEvent, useState } from 'react';
-import { Alert, Button, Container, Form, Spinner } from 'react-bootstrap';
-import { SubmitHandler, useForm, ValidateResult } from 'react-hook-form'
+import React, { useState } from 'react';
+import { Alert, Button, Container, Form, Row, Spinner } from 'react-bootstrap';
+import { useForm, ValidateResult } from 'react-hook-form'
 
 type FormValues = {
   file: FileList,
@@ -9,9 +9,12 @@ type FormValues = {
 };
 
 function SeamCarverPage() {
-    const { register, handleSubmit, setError, formState: { errors }, getValues } = useForm();
+    const { register, handleSubmit, formState: { errors }, getValues } = useForm();
 
     const [selectedImage, setSelectedImage] = useState<HTMLImageElement>()
+    const [carvedImage, setCarvedImage] = useState<string>()
+    
+    const [loading, setLoading] = useState<Boolean>(false)
     
     async function onSubmit (data: FormValues)  {
         let imageFile = data.file[0]
@@ -22,6 +25,9 @@ function SeamCarverPage() {
         
         let width = parseInt(data.width)
         let height = parseInt(data.height)
+        
+        setLoading(true)
+        // TODO stuff
     }
     
     async function withinImageWidth(width: string): Promise<ValidateResult> {
@@ -114,7 +120,14 @@ function SeamCarverPage() {
                 </Form.Row>
                 <Button type="submit">Carve</Button>
             </Form>
-            <img src={selectedImage?.src} />
+            <Row>
+                {selectedImage &&
+                    <img src={selectedImage?.src} />
+                }
+                {loading &&
+                    <Spinner animation="border"/>
+                }
+            </Row>
         </Container>
     );
 }
