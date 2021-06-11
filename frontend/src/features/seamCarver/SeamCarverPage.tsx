@@ -14,13 +14,14 @@ function SeamCarverPage() {
     const [selectedImage, setSelectedImage] = useState<HTMLImageElement>()
     const [carvedImage, setCarvedImage] = useState<string>()
     
-    const [loading, setLoading] = useState<Boolean>(false)
+    const [loading, setLoading] = useState<boolean>(false)
     
     async function onSubmit (data: FormValues)  {
         let imageFile = data.file[0]
         let image = await loadImagePromise(imageFile)
         
         setSelectedImage(image)
+        setCarvedImage(undefined)
         setLoading(true)
         
         let form = new FormData();
@@ -71,6 +72,7 @@ function SeamCarverPage() {
                     <Form.Control
                         type="file" 
                         accept=".png,.jpg"
+                        disabled={loading}
                         {...register("file", {
                             required: {
                                 value: true, 
@@ -89,6 +91,7 @@ function SeamCarverPage() {
                         <Form.Label>Target Width</Form.Label>
                         <Form.Control
                             type="number" 
+                            disabled={loading}
                             {...register("width", {
                                 validate: {
                                     positive: v => parseInt(v) > 0 ? true : "Target width must be positive",
@@ -110,6 +113,7 @@ function SeamCarverPage() {
                         <Form.Label>Target Height</Form.Label>
                         <Form.Control
                             type="number" 
+                            disabled={loading}
                             {...register("height", {
                                 validate: {
                                     positive: v => parseInt(v) > 0 ? true : "Target height must be positive",
@@ -135,7 +139,10 @@ function SeamCarverPage() {
                     <img src={selectedImage?.src} />
                 }
                 {loading &&
-                    <Spinner animation="border"/>
+                    <Row>
+                        <Spinner animation="border"/>
+                        <p>Carving image (this might take a while)</p>
+                    </Row>
                 }
                 {carvedImage &&
                     <img src={carvedImage} />}
