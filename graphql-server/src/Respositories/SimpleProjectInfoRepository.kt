@@ -27,7 +27,7 @@ class SimpleProjectInfoRepository : IProjectInfoRepository {
             "Web GL Demo",
             "webglDemo",
             "A demonstration of webgl shaders and lighting",
-            ""
+            "$cdnUrl/webGlDemoThumbnail.png"
         )
     )
 
