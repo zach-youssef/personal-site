@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Button, Container, Form, Row, Spinner } from 'react-bootstrap';
+import { Alert, Button, Col, Container, Form, Row, Spinner } from 'react-bootstrap';
 import { useForm, ValidateResult } from 'react-hook-form'
 
 type FormValues = {
@@ -135,17 +135,21 @@ function SeamCarverPage() {
                 <Button type="submit">Carve</Button>
             </Form>
             <Row>
-                {selectedImage &&
-                    <img src={selectedImage?.src} />
-                }
-                {loading &&
-                    <Row>
-                        <Spinner animation="border"/>
-                        <p>Carving image (this might take a while)</p>
-                    </Row>
-                }
-                {carvedImage &&
-                    <img src={carvedImage} />}
+                <Col>
+                    {selectedImage &&
+                        <img src={selectedImage?.src} />
+                    }
+                </Col>
+                <Col>
+                    {loading &&
+                        <Row>
+                            <Spinner animation="border"/>
+                            <p>Carving image (this might take a while)</p>
+                        </Row>
+                    }
+                    {carvedImage &&
+                        <img src={carvedImage} />}
+                </Col>
             </Row>
         </Container>
     );
