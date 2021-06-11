@@ -1,3 +1,6 @@
 [submodule "graphql-server/src/java/SeamCarving"]
 	path = graphql-server/src/java/SeamCarving
 	url = git@github.com:zach-youssef/SeamCarving.git
+[submodule "frontend/src/features/webgl/lib"]
+	path = frontend/src/features/webgl/lib
+	url = git@github.com:zach-youssef/webgl-hogwarts.git
