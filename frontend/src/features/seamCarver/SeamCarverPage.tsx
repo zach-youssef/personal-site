@@ -19,15 +19,25 @@ function SeamCarverPage() {
     async function onSubmit (data: FormValues)  {
         let imageFile = data.file[0]
         let image = await loadImagePromise(imageFile)
-        let imageContents = await loadFileContentsPromise(imageFile)
         
         setSelectedImage(image)
-        
-        let width = parseInt(data.width)
-        let height = parseInt(data.height)
-        
         setLoading(true)
-        // TODO stuff
+        
+        let form = new FormData();
+
+        form.append('width', data.width)
+        form.append('height', data.height)
+        form.append('file', imageFile)
+        
+        await fetch("http://localhost:8080/seamCarver/upload", {
+            method: 'POST',
+            body: form
+        })
+        .then(response => response.blob())
+        .then(blob => {
+            setCarvedImage(URL.createObjectURL(blob));
+            setLoading(false);
+        });
     }
     
     async function withinImageWidth(width: string): Promise<ValidateResult> {
@@ -127,6 +137,8 @@ function SeamCarverPage() {
                 {loading &&
                     <Spinner animation="border"/>
                 }
+                {carvedImage &&
+                    <img src={carvedImage} />}
             </Row>
         </Container>
     );
@@ -139,20 +151,6 @@ function loadImagePromise(file: File) {
             resolve(img)
         }
         img.src = URL.createObjectURL(file)
-    })
-}
-
-function loadFileContentsPromise(file: File) {
-    return new Promise<ArrayBuffer | string | null>(resolve => {
-        let reader = new FileReader()
-        reader.readAsText(file)
-        reader.onload = (evt) => {
-            if (evt !== null && evt.target !== null) {
-                resolve(evt!.target!.result)
-            } else {
-                resolve(null)
-            }
-        }
     })
 }
 
