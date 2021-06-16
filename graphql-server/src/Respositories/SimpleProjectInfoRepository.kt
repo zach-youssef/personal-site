@@ -21,7 +21,7 @@ class SimpleProjectInfoRepository : IProjectInfoRepository {
             "Raytracer",
             "raytracer",
             "A simple raytracing algorithm",
-            ""
+            "$cdnUrl/raytrace.png"
         ),
         "webglDemo" to ProjectInfo(
             "Web GL Demo",

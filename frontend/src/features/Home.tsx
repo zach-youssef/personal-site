@@ -14,7 +14,8 @@ function Home() {
           projectInfos(featured: true) {
             name,
             description,
-            id
+            id,
+            imagePath
           }
         }
       `, {}).then(response => {
