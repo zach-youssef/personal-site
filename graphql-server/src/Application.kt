@@ -143,6 +143,15 @@ fun Application.module(testing: Boolean = false) {
                     sokobanRepository.getLevelAfterActions(levelId, actions)
                 }
             }
+
+            query("raytracerImages") {
+                description = "Returns a list of images output from my raytracer"
+                resolver { ->
+                    File("assets/raytracer").list().map {
+                        "http://localhost:8080/assets/raytracer/$it"
+                    }
+                }
+            }
         }
     }
 }

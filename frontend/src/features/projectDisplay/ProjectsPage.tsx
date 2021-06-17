@@ -10,6 +10,7 @@ import ProjectDisplayContainer from './ProjectDisplayContainer';
 import SokobanPage from '../sokoban/SokobanPage';
 import SeamCarverPage from '../seamCarver/SeamCarverPage';
 import WebGLDemoPage from '../webgl/WebGLDemoPage';
+import RaytracerPage from '../raytracer/RaytracerPage';
 
 function ProjectsPage() {
     let match = useRouteMatch();
@@ -21,9 +22,7 @@ function ProjectsPage() {
                     <SokobanPage />
                 </Route>
                 <Route path={`${match.path}/raytracer`}>
-                    <div>
-                        Raytracer Coming soon!
-                    </div>
+                    <RaytracerPage />
                 </Route>
                 <Route path={`${match.path}/seamCarver`}>
                     <SeamCarverPage />
