@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Carousel } from 'react-bootstrap';
 import { fetchGraphQL } from '../../FetchHelper';
 
 function RaytracerPage () {
@@ -19,7 +20,18 @@ function RaytracerPage () {
                 At the end of my graduate graphics course, we implemented a Raytracer in typescript that was capable of shadows, reflections, and transparency with refraction.
                 The final product, being browser based, is quite slow. This page will display some sample renders until I finally get around to implementing a CUDA implementation.
             </p>
-            {images && images.map(src => <img src={src}/> )}
+            <Carousel fade>
+                {images && 
+                    images.map(src => (
+                        <Carousel.Item>
+                            <img 
+                                src={src}
+                                className="d-block w-100"
+                            />
+                        </Carousel.Item>
+                    ))
+                }
+            </Carousel>
         </div>
     );
 }
