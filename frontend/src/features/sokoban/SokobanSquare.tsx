@@ -1,5 +1,5 @@
 import React from 'react';
-import { Rect, Circle, Layer } from 'react-konva'
+import { Rect } from 'react-konva'
 
 export enum SquareType {
     WALL,

@@ -35,7 +35,7 @@ function ProjectDisplayContainer(){
         };
     }
 
-    useEffect(loadProjectInfos, [fetchGraphQL])
+    useEffect(loadProjectInfos, [])
     
     if (projectInfos === null || projectInfos === undefined) {
         loadProjectInfos()

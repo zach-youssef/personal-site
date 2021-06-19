@@ -33,7 +33,7 @@ function Home() {
       };
     }
 
-    useEffect(loadFeaturedProject, [fetchGraphQL]);
+    useEffect(loadFeaturedProject, []);
     
     if (featuredProject === null || featuredProject === undefined){
       loadFeaturedProject()

@@ -27,6 +27,7 @@ function RaytracerPage () {
                             <img 
                                 src={src}
                                 className="d-block w-100"
+                                alt="Demo"
                             />
                         </Carousel.Item>
                     ))

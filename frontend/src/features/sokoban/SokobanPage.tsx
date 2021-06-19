@@ -4,7 +4,7 @@ import { fetchGraphQL } from '../../FetchHelper';
 import SokobanGrid from './SokobanGrid';
 import { SquareType } from './SokobanSquare';
 import SokobanStepperControls from './SokobanStepperControls';
-import { GetStateAfterActionsQuery, GetLevelAndSolutionQuery, GetAvailableLevelsQuery } from '././../../graphql/SokobanQuieries'
+import { GetStateAfterActionsQuery, GetLevelAndSolutionQuery } from '././../../graphql/SokobanQuieries'
 import LevelSelector from './dropdowns/LevelSelector';
 import AgentSelector from './dropdowns/AgentSelect';
 

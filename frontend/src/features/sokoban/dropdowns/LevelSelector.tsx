@@ -25,7 +25,7 @@ function LevelSelector({onLevelSelect}: Props) {
         return () => { 
             isMounted = false ;
         };
-    }, [fetchGraphQL])
+    }, [onLevelSelect])
     
     
     return(

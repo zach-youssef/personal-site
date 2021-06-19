@@ -137,7 +137,7 @@ function SeamCarverPage() {
             <Row>
                 <Col>
                     {selectedImage &&
-                        <img src={selectedImage?.src} />
+                        <img src={selectedImage?.src} alt="Input file"/>
                     }
                 </Col>
                 <Col>
@@ -148,7 +148,7 @@ function SeamCarverPage() {
                         </Row>
                     }
                     {carvedImage &&
-                        <img src={carvedImage} />}
+                        <img src={carvedImage} alt="Seam Carving Result"/>}
                 </Col>
             </Row>
         </Container>
