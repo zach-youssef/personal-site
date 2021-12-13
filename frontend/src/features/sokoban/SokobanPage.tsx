@@ -83,8 +83,10 @@ function Sokoban() {
 
                 <LevelSelector 
                   onLevelSelect={id => {
-                    setLevelId(id);
-                    loadLevel(id)
+                      if (id !== levelId) {
+                        setLevelId(id);
+                        loadLevel(id)
+                      }
                   }}
                 />
 

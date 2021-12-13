@@ -12,7 +12,7 @@ function LevelSelector({onLevelSelect}: Props) {
     useEffect(() => {
         let isMounted = true;
         fetchGraphQL(GetAvailableLevelsQuery, {}).then(response => {
-            if (!isMounted) {
+            if (!isMounted || levelIds.length !== 0) {
                 return;
             }
             const data = response.data
