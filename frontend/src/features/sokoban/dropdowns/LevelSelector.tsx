@@ -25,7 +25,8 @@ function LevelSelector({onLevelSelect}: Props) {
         return () => { 
             isMounted = false ;
         };
-    }, [onLevelSelect])
+        // eslint-disable-next-line
+    }, [])
     
     
     return(

@@ -4,15 +4,16 @@ import { ButtonGroup, Button } from 'react-bootstrap';
 interface Props {
     currentIndex: number
     solutionLength: number
+    disableNext: boolean
     onNext: () => void
     onUndo: () => void
 }
 
-function SokobanStepperControls({currentIndex, solutionLength, onNext, onUndo}: Props) {
+function SokobanStepperControls({currentIndex, solutionLength, disableNext, onNext, onUndo}: Props) {
     return (
         <ButtonGroup>
             <Button 
-                disabled={currentIndex >= solutionLength}
+                disabled={disableNext || currentIndex >= solutionLength}
                 onClick={onNext}
             > 
                 Next Move 
