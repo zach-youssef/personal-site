@@ -2,7 +2,7 @@ export async function fetchGraphQL(text: string, variables: object){
     console.log(text);
     console.log(variables);
     
-    const response = await fetch('http://localhost:8080/graphql', {
+    const response = await fetch('http://zyoussef.com:8080/graphql', {
         method: 'POST',
         headers: {
             'Content-Type' : 'application/json',
