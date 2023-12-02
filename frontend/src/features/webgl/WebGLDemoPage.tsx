@@ -4,7 +4,7 @@ function WebGLDemoPage() {
 	return (
 		<iframe 
 			title="WebGL Demo"
-			src="http://localhost:3030/Scenegraphs.html" 
+			src="http://zyoussef.com/Scenegraphs.html" 
 			width="800" 
 			height="800"
 		/>

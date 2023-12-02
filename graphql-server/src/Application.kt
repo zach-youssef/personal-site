@@ -29,8 +29,43 @@ fun Application.module(testing: Boolean = false) {
         allowCredentials = true
     }
     routing {
-        static("assets"){
-            files("assets")
+    	static {
+            // CDN Assets
+            static("assets"){
+                files("assets")
+            }
+
+            // Main frontend static
+            static("static") {
+                files("build/static")
+            }
+
+            // WebGL Demo resources
+            static("out") {
+                files("hogwarts/out")
+            }
+            static("json") {
+                files("hogwarts/json")
+            }
+            static("models") {
+                files("hogwarts/models")
+            }
+            static("textures") {
+                files("hogwarts/textures")
+            }
+
+            // Frontend top-level files
+            file("asset-manifest.json", "build/asset-manifest.json")
+            file("favicon.ico", "build/favicon.ico")
+            file("logo192.png", "build/logo192.png")
+            file("logo512.png", "build/logo512.png")
+            file("manifest.json", "build/manifest.json")
+            file("robots.txt", "build/robots.txt")
+
+            // WebGL Demo entrypoint
+            file("Scenegraphs.html", "hogwarts/Scenegraphs.html")
+
+            file("{...}", "build/index.html")
         }
 
         post("/seamCarver/upload") {
@@ -148,7 +183,7 @@ fun Application.module(testing: Boolean = false) {
                 description = "Returns a list of images output from my raytracer"
                 resolver { ->
                     File("assets/raytracer").list().map {
-                        "http://localhost:8080/assets/raytracer/$it"
+                        "http://zyoussef.com/assets/raytracer/$it"
                     }
                 }
             }

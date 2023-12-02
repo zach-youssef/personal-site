@@ -30,7 +30,7 @@ function SeamCarverPage() {
         form.append('height', data.height)
         form.append('file', imageFile)
         
-        await fetch("http://zyoussef.com:8080/seamCarver/upload", {
+        await fetch("http://zyoussef.com/seamCarver/upload", {
             method: 'POST',
             body: form
         })
@@ -62,7 +62,7 @@ function SeamCarverPage() {
     return (
         <Container>
             <Form 
-                action="http://zyoussef.com:8080/seamCarver/upload" 
+                action="http://zyoussef.com/seamCarver/upload" 
                 method="post" 
                 encType="multipart/form-data"
                 onSubmit={handleSubmit(onSubmit)}

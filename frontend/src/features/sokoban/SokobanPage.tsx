@@ -111,6 +111,7 @@ function Sokoban() {
         fetchGraphQL(GetLevelAndSolutionQuery, {
             "level": levelId
         }).then(response => {
+            console.log(response);
             const sokobanLevel: SokobanLevel = response.data.sokobanLevel;
             setLevelData(sokobanLevel.level.map(row => row.row.map(square => forceMapSquare(square))));
             

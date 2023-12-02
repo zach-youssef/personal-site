@@ -3,7 +3,7 @@ package com.zyoussef.Respositories
 import com.zyoussef.Models.ProjectInfo.ProjectInfo
 
 class SimpleProjectInfoRepository : IProjectInfoRepository {
-    val cdnUrl = "http://localhost:8080/assets/projectThumbnail"
+    val cdnUrl = "http://zyoussef.com/assets/projectThumbnail"
     val projectInfos: Map<String, ProjectInfo> = mapOf(
         "sokoban" to ProjectInfo(
             "Sokoban AI",
