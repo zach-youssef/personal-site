@@ -1,10 +1,11 @@
 import React from 'react'
+import ServerDomain from './../../ServerDomain';
 
 function WebGLDemoPage() {
 	return (
 		<iframe 
 			title="WebGL Demo"
-			src="http://zyoussef.com/Scenegraphs.html" 
+			src={`http://${ServerDomain}/Scenegraphs.html`}
 			width="800" 
 			height="800"
 		/>
