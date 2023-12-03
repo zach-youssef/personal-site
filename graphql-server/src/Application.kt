@@ -94,9 +94,15 @@ fun Application.module(testing: Boolean = false) {
 
             // Carve the image and return the output file
             if (imageFile != null && targetHeight != null && targetWidth != null) {
-                val carved = seamCarvingRepository.carve(imageFile!!, targetWidth!!, targetHeight!!)
-                if (carved != null) {
-                    call.respondFile(carved)
+                try {
+                    val carved = seamCarvingRepository.carve(imageFile!!, targetWidth!!, targetHeight!!)
+                    if (carved != null) {
+                        call.respondFile(carved)
+                    } else {
+                        call.respondText("Unknown error ocurred", status = HttpStatusCode(500, "Internal server error"))
+                    }
+                } catch (e: OutOfMemoryError) {
+                    call.respondText("Ran out of memory, try a smaller image", status = HttpStatusCode(413, "Input image too large"))
                 }
             }
         }
