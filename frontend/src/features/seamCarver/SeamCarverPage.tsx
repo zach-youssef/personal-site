@@ -16,6 +16,7 @@ function SeamCarverPage() {
     const [carvedImage, setCarvedImage] = useState<string>()
     
     const [loading, setLoading] = useState<boolean>(false)
+    const [serverError, setServerError] = useState<string>()
     
     async function onSubmit (data: FormValues)  {
         let imageFile = data.file[0]
@@ -31,15 +32,25 @@ function SeamCarverPage() {
         form.append('height', data.height)
         form.append('file', imageFile)
         
-        await fetch(`http://${ServerDomain}/seamCarver/upload`, {
+        let response = await fetch(`http://${ServerDomain}/seamCarver/upload`, {
             method: 'POST',
             body: form
-        })
-        .then(response => response.blob())
-        .then(blob => {
-            setCarvedImage(URL.createObjectURL(blob));
-            setLoading(false);
         });
+
+        if (response.ok) {
+            await response.blob()
+                .then(blob => {
+                    setCarvedImage(URL.createObjectURL(blob));
+                    setServerError('');
+                });
+        } else {
+            await response.text()
+                .then(text => {
+                    setCarvedImage('');
+                    setServerError(text);
+                });
+        }
+        setLoading(false);
     }
     
     async function withinImageWidth(width: string): Promise<ValidateResult> {
@@ -150,6 +161,11 @@ function SeamCarverPage() {
                     }
                     {carvedImage &&
                         <img src={carvedImage} alt="Seam Carving Result"/>}
+                    {serverError &&
+                        <Alert variant = "danger">
+                            {serverError}
+                        </Alert>
+                    }
                 </Col>
             </Row>
         </Container>
