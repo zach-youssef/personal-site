@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import ServerDomain from './../../ServerDomain';
-import { Alert, Button, Col, Container, Form, Row, Spinner } from 'react-bootstrap';
+import { Alert, Button, Col, Container, Form, Image as Img, Row,Spinner } from 'react-bootstrap';
 import { useForm, ValidateResult } from 'react-hook-form'
 
 type FormValues = {
@@ -149,7 +149,7 @@ function SeamCarverPage() {
             <Row>
                 <Col>
                     {selectedImage &&
-                        <img src={selectedImage?.src} alt="Input file"/>
+                        <Img src={selectedImage?.src} alt="Input file" fluid/>
                     }
                 </Col>
                 <Col>
@@ -160,7 +160,7 @@ function SeamCarverPage() {
                         </Row>
                     }
                     {carvedImage &&
-                        <img src={carvedImage} alt="Seam Carving Result"/>}
+                        <Img src={carvedImage} alt="Seam Carving Result" fluid/>}
                     {serverError &&
                         <Alert variant = "danger">
                             {serverError}
