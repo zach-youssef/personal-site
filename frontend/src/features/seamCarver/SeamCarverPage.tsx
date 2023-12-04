@@ -3,6 +3,8 @@ import ServerDomain from './../../ServerDomain';
 import { Alert, Button, Col, Container, Form, Image as Img, Row,Spinner } from 'react-bootstrap';
 import { useForm, ValidateResult } from 'react-hook-form'
 
+const MAX_IMAGE_PIXELS = 96048;
+
 type FormValues = {
   file: FileList,
   height: string,
@@ -70,6 +72,17 @@ function SeamCarverPage() {
         }
         return 'Image is not selected - unable to validate target height'
     }
+
+    async function withinMaxSize(): Promise<ValidateResult> {
+        let imageFile = getValues("file")[0];
+
+        if (imageFile) {
+            let image = await loadImagePromise(imageFile);
+            return image.height * image.width <= MAX_IMAGE_PIXELS ? true : 'Image is too large for current memory limitations. Please try another.'
+        }
+
+        return true;
+    }
     
     return (
         <Container>
@@ -86,6 +99,9 @@ function SeamCarverPage() {
                         accept=".png,.jpg"
                         disabled={loading}
                         {...register("file", {
+                            validate: {
+                                checkImageSize: _ => withinMaxSize(),
+                            },
                             required: {
                                 value: true, 
                                 message: "An image file is required"
