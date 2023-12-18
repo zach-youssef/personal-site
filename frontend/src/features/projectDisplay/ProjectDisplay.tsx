@@ -29,7 +29,7 @@ export function ProjectDisplayFeatured({projectInfo, index}: Props) {
 
     let imageCol = (
         <Col>
-            <Image src={imagePath} alt={name}/>
+            <Card.Img src={imagePath} alt={name}/>
         </Col>
     )
     
