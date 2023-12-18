@@ -14,12 +14,11 @@ export enum SquareType {
 interface Props {
     type: SquareType,
     row: number,
-    col: number
+    col: number,
+    sideLength? : number,
 }
 
-export const sideLength = 60
-
-function SokobanSquare({type, row, col}: Props) {
+function SokobanSquare({type, row, col, sideLength = 60}: Props) {
     return (
         <Rect
             x={col * sideLength}

@@ -1,14 +1,15 @@
 import React from 'react';
 import { Rect, Circle } from 'react-konva'
-import { SquareType, sideLength } from './SokobanSquare';
+import { SquareType } from './SokobanSquare';
 
 interface Props {
     type: SquareType
     row: number,
-    col: number
+    col: number,
+    sideLength: number
 }
 
-function SokobanPiece({type, row, col}: Props) {
+function SokobanPiece({type, row, col, sideLength}: Props) {
     if (type === SquareType.BOX || type === SquareType.FILLED_SPOT) {
         const squareBuffer = sideLength / 10
         return (

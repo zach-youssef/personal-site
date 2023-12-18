@@ -1,6 +1,6 @@
-import React from 'react';
+import React, {useLayoutEffect, useState} from 'react';
 import { Stage, Layer } from 'react-konva';
-import SokobanSquare, { SquareType, sideLength } from './SokobanSquare';
+import SokobanSquare, { SquareType } from './SokobanSquare';
 import SokobanPiece from './SokobanPiece';
 import { Spinner } from 'react-bootstrap';
 
@@ -9,11 +9,22 @@ interface Props {
 }
 
 function SokobanGrid({data}: Props) {
+    const [screenSize, setScreenSize] = useState(1024);
+    const updateScreenSize = () => setScreenSize(window.innerWidth);
+    useLayoutEffect(() => {
+        updateScreenSize();
+        window.addEventListener('resize', updateScreenSize);
+        return () => window.removeEventListener('resize', updateScreenSize);
+    }, []);
+
     if (data.length === 0) {
         return (
             <Spinner animation="border" variant="dark"/>
         )
     }
+
+    let shrinkThreshold = 512;
+    let sideLength = screenSize > shrinkThreshold ? 60 : 40;
 
     return (
         <Stage 
@@ -25,7 +36,7 @@ function SokobanGrid({data}: Props) {
                 {data.flatMap((rowData, rowIndex) => 
                     rowData.map((squareType, colIndex) => 
                         (
-                            <SokobanSquare type={squareType} row={rowIndex} col={colIndex}/>
+                            <SokobanSquare type={squareType} row={rowIndex} col={colIndex} sideLength={sideLength}/>
                         )
                     )
                 )}
@@ -33,7 +44,7 @@ function SokobanGrid({data}: Props) {
                 {data.flatMap((rowData, rowIndex) => 
                     rowData.map((squareType, colIndex) => 
                         (
-                            <SokobanPiece type={squareType} row={rowIndex} col={colIndex}/>
+                            <SokobanPiece type={squareType} row={rowIndex} col={colIndex} sideLength={sideLength}/>
                         )
                     )
                 )}
