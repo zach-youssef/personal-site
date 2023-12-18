@@ -6,10 +6,9 @@ import { store } from './app/store';
 import { Provider } from 'react-redux';
 import * as serviceWorker from './serviceWorker';
 
-import 'bootstrap/dist/css/bootstrap.min.css';
-
 ReactDOM.render(
   <React.StrictMode>
+    <link rel="stylesheet" href="https://bootswatch.com/5/pulse/bootstrap.min.css"/>
     <Provider store={store}>
       <App />
     </Provider>

@@ -93,21 +93,26 @@ function SeamCarverPage() {
                 onSubmit={handleSubmit(onSubmit)}
             >
                 <Form.Group>
-                    <Form.Label>Image File</Form.Label>
-                    <Form.Control
-                        type="file" 
-                        accept=".png,.jpg"
-                        disabled={loading}
-                        {...register("file", {
-                            validate: {
-                                checkImageSize: _ => withinMaxSize(),
-                            },
-                            required: {
-                                value: true, 
-                                message: "An image file is required"
-                            }
-                        })}
-                    />
+                    <Form.Row>
+                        <Form.Label htmlFor="formFile">Image File</Form.Label>
+                    </Form.Row>
+                    <Form.Row>
+                        <Form.Control
+                            type="file" 
+                            id = "formFile"
+                            accept=".png,.jpg"
+                            disabled={loading}
+                            {...register("file", {
+                                validate: {
+                                    checkImageSize: _ => withinMaxSize(),
+                                },
+                                required: {
+                                    value: true, 
+                                    message: "An image file is required"
+                                }
+                            })}
+                        />
+                    </Form.Row>
                     {errors.file && 
                         <Alert variant = "danger">
                             {errors.file.message}

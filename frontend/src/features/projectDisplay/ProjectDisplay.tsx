@@ -10,10 +10,16 @@ export function ProjectDisplayCard({projectInfo, index}: Props) {
 
     return (
         <Card>
-            <Card.Img variant="top" src={imagePath}/>
-            <Card.Title>{name}</Card.Title>
-            <Card.Text>{description}</Card.Text>
-            <Card.Link href={`${url}/${id}`}>View</Card.Link>
+            <Card.Header>
+                <Card.Title>{name}</Card.Title>
+            </Card.Header>
+            <Card.Body>
+                <Card.Img variant="top" src={imagePath}/>
+            </Card.Body>
+            <Card.Body>
+                <Card.Text>{description}</Card.Text>
+                <Card.Link href={`${url}/${id}`}>View</Card.Link>
+            </Card.Body>
         </Card>
     );
 }
@@ -38,10 +44,12 @@ export function ProjectDisplayFeatured({projectInfo, index}: Props) {
             <Card.Header>
                 Featured: {name}
             </Card.Header>
-            <Row>
-                {descCol}
-                {imageCol}
-            </Row>
+            <Card.Body>
+                <Row>
+                    {descCol}
+                    {imageCol}
+                </Row>
+            </Card.Body>
         </Card>
     );
 }
