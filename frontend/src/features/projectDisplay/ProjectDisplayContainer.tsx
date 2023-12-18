@@ -1,14 +1,32 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useLayoutEffect } from 'react'
 import { ProjectDisplayCard } from './ProjectDisplay';
 import { CardGroup } from 'react-bootstrap';
 import { fetchGraphQL } from '../../FetchHelper'
 
 function ProjectDisplayContainer(){
-    
-    const cardsPerRow = 2;
-
     const [projectInfos, setProjectInfos] = useState([]);
+
+    const [screenSize, setScreenSize] = useState(1024);
+    const updateScreenSize = () => setScreenSize(window.innerWidth);
+    useLayoutEffect(() => {
+        updateScreenSize();
+        window.addEventListener('resize', updateScreenSize);
+        return () => window.removeEventListener('resize', updateScreenSize);
+    }, []);
+
+    const mediumThreshold = 1100;
+    const smallThreshold = 512;
     
+    const largeCardsPerRow = 4;
+    const mediumCardsPerRow = 2;
+    const smallCardPerRow = 1;
+
+    let cardsPerRow = screenSize > mediumThreshold
+        ? largeCardsPerRow 
+        : screenSize > smallThreshold 
+            ? mediumCardsPerRow 
+            : smallCardPerRow;
+
     function loadProjectInfos() {
         let isMounted = true;
         fetchGraphQL(`
