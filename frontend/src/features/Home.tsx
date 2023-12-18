@@ -43,8 +43,10 @@ function Home() {
         <div>
           <Row>
             <Jumbotron>
-              <h1>{SiteTextContents[SiteText.AboutMeHeader]}</h1>
-              <p> {SiteTextContents[SiteText.AboutDesc]} </p>
+              <h2>{SiteTextContents[SiteText.AboutMeHeader]}</h2>
+              {SiteTextContents[SiteText.AboutDesc].split("\n").map(line => 
+                <p>{line}</p>
+              )}
             </Jumbotron>
           </Row>
           {

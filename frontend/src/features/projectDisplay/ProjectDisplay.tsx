@@ -1,6 +1,6 @@
 import React from 'react';
 import ProjectInfo from './ProjectInfo';
-import { Card, Col, Row } from 'react-bootstrap';
+import { Card, Col, Row, Image } from 'react-bootstrap';
 import { useRouteMatch } from 'react-router-dom';
 
 export function ProjectDisplayCard({projectInfo, index}: Props) {
@@ -23,13 +23,13 @@ export function ProjectDisplayFeatured({projectInfo, index}: Props) {
 
     let imageCol = (
         <Col>
-            <img src={imagePath} alt={name}/>
+            <Image src={imagePath} alt={name}/>
         </Col>
     )
     
     let descCol = (
         <Col>
-            <p>{description}</p>
+            <Card.Text>{description}</Card.Text>
         </Col>
     )
 
