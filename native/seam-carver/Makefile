@@ -9,7 +9,7 @@ $(OUT)/%.o: $(SRC)/%.c $(INCLUDE)/*.h
 	mkdir -p $(OUT)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-_OBJ = main.o test.o 
+_OBJ = main.o stb_impl.o 
 OBJ = $(patsubst %,$(OUT)/%,$(_OBJ))
 
 seam-carver: $(OBJ)
@@ -17,6 +17,6 @@ seam-carver: $(OBJ)
 
 .PHONY: clean build
 clean:
-	rm -f $(ODIR)/*.o seam-carver
+	rm -f $(OUT)/*.o seam-carver
 
 build: seam-carver
