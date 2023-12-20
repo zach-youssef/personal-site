@@ -1,13 +1,25 @@
-import React from 'react'
+import React, {useLayoutEffect, useState} from 'react'
 import ServerDomain from './../../ServerDomain';
 
 function WebGLDemoPage() {
+    const [screenWidth, setScreenWidth] = useState(1024);
+	const [screenHeight, setScreenHeight] = useState(1024);
+	const updateScreenSize = () => {
+		setScreenWidth(window.innerWidth);
+		setScreenHeight(window.innerHeight);
+	};
+    useLayoutEffect(() => {
+        updateScreenSize();
+        window.addEventListener('resize', updateScreenSize);
+        return () => window.removeEventListener('resize', updateScreenSize);
+    }, []);
+
 	return (
 		<iframe 
 			title="WebGL Demo"
 			src={`http://${ServerDomain}/Scenegraphs.html`}
-			width="800" 
-			height="800"
+			width={screenWidth}
+			height={screenHeight}
 		/>
 	);
 }
