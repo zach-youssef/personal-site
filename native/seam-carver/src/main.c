@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stb_image.h>
+#include <graph_pixel.h>
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
