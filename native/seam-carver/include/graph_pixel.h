@@ -17,7 +17,7 @@ struct graph_pixel;
 typedef struct graph_pixel_pixel {
     struct graph_pixel** neighbors;
     unsigned char color;
-    graph_seam_node* seam;
+    graph_seam_node seam;
 
     unsigned int row;
     unsigned int col;
@@ -43,7 +43,7 @@ double graph_pixel_energy(graph_pixel* self); // abstract
 
 double graph_pixel_seam_weight(graph_pixel* self); // abstract
 
-graph_seam_node* graph_pixel_get_seam(graph_pixel* self); // abstract
+graph_seam_node graph_pixel_get_seam(graph_pixel* self); // abstract
 
 void graph_pixel_shift_in(graph_pixel* self, graph_pixel** new_neighbors, graph_direction direction);
 

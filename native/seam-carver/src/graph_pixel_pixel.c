@@ -17,9 +17,10 @@ double graph_pixel_pixel_seam_weight(graph_pixel_pixel* self) {
     return 0;
 }
 
-graph_seam_node* graph_pixel_pixel_get_seam(graph_pixel_pixel* self) {
+graph_seam_node graph_pixel_pixel_get_seam(graph_pixel_pixel* self) {
     // TODO
-    return NULL;
+    graph_seam_node node = {};
+    return node;
 }
 
 graph_pixel* graph_pixel_pixel_farthest(graph_pixel_pixel* self, graph_direction direction) {
