@@ -6,8 +6,6 @@
 #include <graph_seam.h>
 
 typedef struct graph_image {
-    graph_pixel* origin;
-
     int width, height;
 
     int verticalSeamsRemoved, horizontalSeamsRemoved;
