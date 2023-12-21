@@ -16,7 +16,7 @@ struct graph_pixel;
 
 typedef struct graph_pixel_pixel {
     struct graph_pixel** neighbors;
-    unsigned short color;
+    unsigned char color;
     graph_seam_node* seam;
 
     unsigned int row;

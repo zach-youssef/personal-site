@@ -9,7 +9,7 @@ $(OUT)/%.o: $(SRC)/%.c $(INCLUDE)/*.h
 	mkdir -p $(OUT)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-_OBJ = main.o stb_impl.o graph_pixel.o graph_pixel_pixel.o graph_pixel_no_pixel.o
+_OBJ = main.o stb_impl.o graph_pixel.o graph_pixel_pixel.o graph_pixel_no_pixel.o graph_image.o
 OBJ = $(patsubst %,$(OUT)/%,$(_OBJ))
 
 seam-carver: $(OBJ)
