@@ -5,6 +5,8 @@ SRC=src
 CC=gcc
 CFLAGS=-I$(INCLUDE)
 
+TEST_IMAGE=test-image.png
+
 $(OUT)/%.o: $(SRC)/%.c $(INCLUDE)/*.h
 	mkdir -p $(OUT)
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -16,9 +18,12 @@ OBJ = $(patsubst %,$(OUT)/%,$(_OBJ))
 seam-carver: $(OBJ)
 	$(CC) -o $@ $^
 
-.PHONY: clean build
+.PHONY: clean build mem-test
 
 clean:
 	rm -f $(OUT)/*.o seam-carver
 
 build: seam-carver
+
+mem-test: seam-carver $(TEST_IMAGE)
+	valgrind ./$^
