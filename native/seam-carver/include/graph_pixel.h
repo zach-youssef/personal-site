@@ -29,10 +29,10 @@ typedef struct graph_pixel_no_pixel {
     struct graph_pixel** origin;
 } graph_pixel_no_pixel;
 
-union graph_pixel_subclass {
+typedef union graph_pixel_subclass {
     graph_pixel_pixel pixel;
     graph_pixel_no_pixel no_pixel;
-};
+} graph_pixel_subclass;
 
 typedef struct graph_pixel {
     enum graph_pixel_type type;
