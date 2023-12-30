@@ -11,6 +11,8 @@ typedef struct graph_image {
     int verticalSeamsRemoved, horizontalSeamsRemoved;
 
     graph_pixel** graph;
+
+    graph_pixel* origin;
 } graph_image;
 
 graph_image graph_image_from_image(stbi_uc* image_buffer, int width, int height);

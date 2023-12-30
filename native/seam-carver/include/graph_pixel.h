@@ -25,6 +25,8 @@ typedef struct graph_pixel_pixel {
 
 typedef struct graph_pixel_no_pixel {
     struct graph_pixel** neighbors;
+    bool is_origin;
+    struct graph_pixel** origin;
 } graph_pixel_no_pixel;
 
 union graph_pixel_subclass {
