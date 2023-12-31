@@ -129,5 +129,29 @@ void link_graph(graph_image* image) {
         }
     }
 
-    // TODO link no-pixels
+    // Link no-pixels to edges
+    for(int row = 0; row < (image->height + 2); ++row) {
+        const int row_width = (row == 0 || row == image->height - 1) ? 2 : image->width + 2;
+        for (int col = 0; col < row_width; ++col) {
+            graph_pixel* edge_no_pixel = &image->nopixels[row][col];
+            if (row == 0 && col != 0 && col < row_width - 1) {
+                graph_pixel_add_neighbor(edge_no_pixel, &image->graph[0][col - 1], DOWN);
+            } else if (row == 0 && col == 0) {
+                graph_pixel_add_neighbor(edge_no_pixel, &image->graph[0][0], DOWN_RIGHT);
+                no_pixel_set_as_origin(edge_no_pixel);
+            } else if (row == 0 && col == row_width - 1) {
+                graph_pixel_add_neighbor(edge_no_pixel, &image->graph[0][image->width - 1], DOWN_LEFT);
+            } else if (row > image->height && col != 0 && col < row_width - 1) {
+                graph_pixel_add_neighbor(edge_no_pixel, &image->graph[image->height - 1][col - 1], UP);
+            } else if (row > image->height && col == 0) {
+                graph_pixel_add_neighbor(edge_no_pixel, &image->graph[image->height - 1][0], TOP_RIGHT);
+            } else if (row > image->height && col == row_width - 1) {
+                graph_pixel_add_neighbor(edge_no_pixel, &image->graph[image->height - 1][image->width - 1], TOP_LEFT);
+            } else if (col == 0) {
+                graph_pixel_add_neighbor(edge_no_pixel, &image->graph[row - 1][0], RIGHT);
+            } else {
+                graph_pixel_add_neighbor(edge_no_pixel, &image->graph[row - 1][image->width - 1], LEFT);
+            }
+        }
+    }
 }
