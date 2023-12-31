@@ -30,12 +30,12 @@ int main(int argc, char* argv[]) {
     stbi_image_free(image);
 
     // Resize graph image
-    // TODO these functions should remove if they actually removed a seam
+    int out_width = width, out_height = height;
     for (int h_count = 0; h_count < (height - target_height); ++h_count) {
-        graph_image_remove_vertical_seam(&graph);
+        out_height -= graph_image_remove_horizontal_seam(&graph);
     }
     for (int v_count = 0; v_count < (width - target_width); ++v_count) {
-        graph_image_remove_horizontal_seam(&graph);
+        out_width -= graph_image_remove_vertical_seam(&graph);
     }
 
     // Produce output image

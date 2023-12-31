@@ -18,9 +18,9 @@ typedef struct graph_image {
 
 graph_image graph_image_from_image(stbi_uc* image_buffer, int width, int height);
 
-void graph_image_remove_vertical_seam(graph_image* self);
+int graph_image_remove_vertical_seam(graph_image* self);
 
-void graph_image_remove_horizontal_seam(graph_image* self);
+int graph_image_remove_horizontal_seam(graph_image* self);
 
 stbi_uc* graph_image_to_image_buffer(graph_image* self);
 
