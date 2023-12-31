@@ -7,44 +7,14 @@ typedef enum {
   DOWN_RIGHT,   DOWN,   DOWN_LEFT
 } graph_direction;
 
-inline graph_direction graph_direction_opposite(graph_direction direction) {
-    switch(direction) {
-        case TOP_LEFT: return DOWN_RIGHT;
-        case DOWN_RIGHT: return TOP_LEFT;
+graph_direction graph_direction_opposite(graph_direction direction);
 
-        case UP: return DOWN;
-        case DOWN: return UP;
+void graph_direction_top(graph_direction* top_directions);
 
-        case TOP_RIGHT: return DOWN_LEFT;
-        case DOWN_LEFT: return TOP_RIGHT;
+void graph_direction_down(graph_direction* down_directions);
 
-        case RIGHT: return LEFT;
-        case LEFT: return RIGHT;
-    }
-}
+void graph_direction_right(graph_direction* right_directions);
 
-inline void graph_direction_top(graph_direction* top_directions){
-    top_directions[0] = TOP_LEFT;
-    top_directions[1] = UP;
-    top_directions[2] = TOP_RIGHT;
-}
-
-inline void graph_direction_down(graph_direction* down_directions){
-    down_directions[0] = DOWN_LEFT;
-    down_directions[1] = DOWN;
-    down_directions[2] = DOWN_RIGHT;
-}
-
-inline void graph_direction_right(graph_direction* right_directions){
-    right_directions[0] = TOP_RIGHT;
-    right_directions[1] = RIGHT;
-    right_directions[2] = DOWN_RIGHT;
-}
-
-inline void graph_direction_left(graph_direction* left_directions){
-    left_directions[0] = TOP_LEFT;
-    left_directions[1] = LEFT;
-    left_directions[2] = DOWN_LEFT;
-}
+void graph_direction_left(graph_direction* left_directions);
 
 #endif // graph_direction_h

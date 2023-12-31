@@ -3,6 +3,16 @@
 #include <graph_pixel.h>
 #include <graph_pixel_pixel.h>
 #include <graph_pixel_no_pixel.h>
+#include <graph_direction.h>
+
+graph_pixel** get_neighbors(graph_pixel* self);
+
+graph_pixel** get_neighbors(graph_pixel* self) {
+    switch(self->type) {
+        case Pixel: return self->pixel.pixel.neighbors;
+        case NoPixel: return self->pixel.no_pixel.neighbors;
+    }
+}
 
 double graph_pixel_brightness(graph_pixel* self){
     switch(self->type) {
@@ -37,11 +47,12 @@ void graph_pixel_shift_in(graph_pixel* self, graph_pixel** new_neighbors, graph_
 }
 
 void graph_pixel_set_neighbor(graph_pixel* self, graph_direction direction, graph_pixel* pixel) {
-    // TODO
+    get_neighbors(self)[direction] = pixel;
 }
 
 void graph_pixel_add_neighbor(graph_pixel* self, graph_pixel* other, graph_direction direction) {
-    // TODO
+    get_neighbors(self)[direction] = other;
+    graph_pixel_set_neighbor(other, graph_direction_opposite(direction), self);
 }
 
 graph_pixel* graph_pixel_farthest(graph_pixel* self, graph_direction direction) {

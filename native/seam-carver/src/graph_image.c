@@ -1,4 +1,5 @@
 #include <graph_image.h>
+#include <graph_pixel_no_pixel.h>
 
 graph_pixel** graph_from_file(stbi_uc* image_buffer, int width, int height);
 graph_pixel** allocate_no_pixels(graph_pixel** origin, int width, int height);
