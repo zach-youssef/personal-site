@@ -30,6 +30,7 @@ int main(int argc, char* argv[]) {
     stbi_image_free(image);
 
     // Resize graph image
+    // TODO these functions should remove if they actually removed a seam
     for (int h_count = 0; h_count < (height - target_height); ++h_count) {
         graph_image_remove_vertical_seam(&graph);
     }
@@ -38,6 +39,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Produce output image
+    // TODO the buffer should be allocated in this func then passed as an argument
     stbi_uc* output = graph_image_to_image_buffer(&graph);
 
     // Free the pixel graph
@@ -45,6 +47,8 @@ int main(int argc, char* argv[]) {
 
     // Write the output image
     int result = stbi_write_png(outfilename, target_width, target_height, STBI_rgb, output, sizeof(stbi_uc) * target_width);
+
+    // TODO free the buffer we create in the previous todo
 
     return 0;
 }
