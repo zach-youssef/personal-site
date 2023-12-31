@@ -39,8 +39,8 @@ int main(int argc, char* argv[]) {
     }
 
     // Produce output image
-    // TODO the buffer should be allocated in this func then passed as an argument
-    stbi_uc* output = graph_image_to_image_buffer(&graph);
+    stbi_uc* output = (stbi_uc*) malloc(STBI_rgb * sizeof(stbi_uc) * out_width * out_height);
+    graph_image_write_to_image_buffer(&graph, output);
 
     // Free the pixel graph
     graph_image_free(&graph);
@@ -48,7 +48,8 @@ int main(int argc, char* argv[]) {
     // Write the output image
     int result = stbi_write_png(outfilename, target_width, target_height, STBI_rgb, output, sizeof(stbi_uc) * target_width);
 
-    // TODO free the buffer we create in the previous todo
+    // Free the output buffer
+    free(output);
 
     return 0;
 }

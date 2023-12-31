@@ -27,9 +27,8 @@ int graph_image_remove_horizontal_seam(graph_image* self) {
     return 0;
 }
 
-stbi_uc* graph_image_to_image_buffer(graph_image* self) {
+void graph_image_write_to_image_buffer(graph_image* self, stbi_uc* image_buffer) {
     // TODO
-    return NULL;
 }
 
 void graph_image_free(graph_image* graph_image) {
