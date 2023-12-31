@@ -55,6 +55,7 @@ graph_pixel** graph_from_file(stbi_uc* image_buffer, int width, int height) {
             // TODO initialize pixels
         }
     }
+    return graph;
 }
 
 graph_pixel** allocate_no_pixels(graph_pixel** origin, int width, int height) {
@@ -79,6 +80,7 @@ graph_pixel** allocate_no_pixels(graph_pixel** origin, int width, int height) {
             }
         }
     }
+    return nopixels;
 }
 
 graph_pixel** allocate_neighbor_array() {
