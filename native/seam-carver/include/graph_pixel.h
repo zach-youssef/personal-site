@@ -2,6 +2,7 @@
 #define graph_pixel_h
 
 #include <stdbool.h>
+#include <stb_image.h>
 
 #include <graph_direction.h>
 #include <graph_seam.h>
@@ -16,7 +17,7 @@ struct graph_pixel;
 
 typedef struct graph_pixel_pixel {
     struct graph_pixel** neighbors;
-    unsigned char color;
+    stbi_uc* rgb;
     graph_seam_node seam;
 
     unsigned int row;

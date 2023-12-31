@@ -6,6 +6,7 @@ graph_pixel** allocate_no_pixels(graph_pixel** origin, int width, int height);
 graph_pixel** allocate_neighbor_array();
 
 graph_image graph_image_from_image(stbi_uc* image_buffer, int width, int height) {
+    GRAPH_SEAM_EMPTY_SINGLETON = graph_seam_empty();
     graph_image image = {
         width, height, 
         0, 0, 
@@ -33,6 +34,9 @@ void graph_image_write_to_image_buffer(graph_image* self, stbi_uc* image_buffer)
 
 void graph_image_free(graph_image* graph_image) {
     for (int row = 0; row < graph_image->height; ++row) {
+        for (int col = 0; col < graph_image->width; ++col) {
+            free(graph_image->graph[row][col].pixel.pixel.neighbors);
+        }
         free(graph_image->graph[row]);
     }
     free(graph_image->graph);
@@ -52,7 +56,19 @@ graph_pixel** graph_from_file(stbi_uc* image_buffer, int width, int height) {
     for (int row = 0; row < height; ++row) {
         graph[row] = (graph_pixel*) malloc(width * sizeof(graph_pixel));
         for (int col = 0; col < width; ++ col) {
-            // TODO initialize pixels
+            stbi_uc* rgb = &image_buffer[(row * width + col) * STBI_rgb];
+            graph_pixel_pixel pixel = {
+                allocate_neighbor_array(),
+                rgb,
+                GRAPH_SEAM_EMPTY_SINGLETON,
+                row, col
+            };
+            graph_pixel_subclass subclass;
+            subclass.pixel = pixel;
+            graph_pixel pixel_pixel = {Pixel, subclass};
+
+            graph[row][col] = pixel_pixel;
+            graph[row][col].pixel.pixel.seam = graph_seam_for_pixel(&graph[row][col].pixel.pixel);
         }
     }
     return graph;

@@ -26,8 +26,6 @@ int main(int argc, char* argv[]) {
     // Create graph representation
     graph_image graph = graph_image_from_image(image, width, height);
 
-    // Free original image
-    stbi_image_free(image);
 
     // Resize graph image
     int out_width = width, out_height = height;
@@ -44,6 +42,9 @@ int main(int argc, char* argv[]) {
 
     // Free the pixel graph
     graph_image_free(&graph);
+
+    // Free original image
+    stbi_image_free(image);
 
     // Write the output image
     int result = stbi_write_png(outfilename, target_width, target_height, STBI_rgb, output, sizeof(stbi_uc) * target_width);
