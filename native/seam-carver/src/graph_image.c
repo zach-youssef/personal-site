@@ -5,6 +5,8 @@ graph_pixel** allocate_no_pixels(graph_pixel** origin, int width, int height);
 
 graph_pixel** allocate_neighbor_array();
 
+void link_graph(graph_image* image);
+
 graph_image graph_image_from_image(stbi_uc* image_buffer, int width, int height) {
     GRAPH_SEAM_EMPTY_SINGLETON = graph_seam_empty();
     graph_image image = {
@@ -14,6 +16,8 @@ graph_image graph_image_from_image(stbi_uc* image_buffer, int width, int height)
     };
 
     image.nopixels = allocate_no_pixels(&(image.origin), width, height);
+
+    link_graph(&image);
 
     return image;
 }
@@ -102,4 +106,28 @@ graph_pixel** allocate_no_pixels(graph_pixel** origin, int width, int height) {
 graph_pixel** allocate_neighbor_array() {
     graph_pixel** neighbors = (graph_pixel**) malloc(8 * sizeof(graph_pixel*));
     return neighbors;
+}
+
+void link_graph(graph_image* image) {
+    // Link pixels together
+    for (int row = 0; row < image->height; ++row) {
+        for (int col = 0; col < image->width; ++col) {
+            graph_pixel* pixel = &(image->graph[row][col]);
+
+            if (row > 0 && col > 0) {
+                graph_pixel_add_neighbor(pixel, &(image->graph[row - 1][col - 1]), TOP_LEFT);
+            }
+            if (row > 0) {
+                graph_pixel_add_neighbor(pixel, &(image->graph[row - 1][col]), UP);
+            }
+            if (col > 0) {
+                graph_pixel_add_neighbor(pixel, &(image->graph[row][col - 1]), LEFT);
+            }
+            if (row > 0 && col < image->width - 1) {
+                graph_pixel_add_neighbor(pixel, &(image->graph[row - 1][col + 1]), TOP_RIGHT);
+            }
+        }
+    }
+
+    // TODO link no-pixels
 }
