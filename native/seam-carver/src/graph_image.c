@@ -1,24 +1,30 @@
 #include <graph_image.h>
 #include <graph_pixel_no_pixel.h>
 
+#include <string.h>
+#include <stdio.h>
+
 graph_pixel** graph_from_file(stbi_uc* image_buffer, int width, int height);
 graph_pixel** allocate_no_pixels(graph_pixel** origin, int width, int height);
 
 graph_pixel** allocate_neighbor_array();
 
+stbi_uc* buffer_lookup(stbi_uc* image_buffer, int width, int row, int col);
+
 void link_graph(graph_image* image);
 
-graph_image graph_image_from_image(stbi_uc* image_buffer, int width, int height) {
+graph_image* graph_image_from_image(stbi_uc* image_buffer, int width, int height) {
     GRAPH_SEAM_EMPTY_SINGLETON = graph_seam_empty();
-    graph_image image = {
-        width, height, 
-        0, 0, 
-        graph_from_file(image_buffer, width, height), 
-    };
 
-    image.nopixels = allocate_no_pixels(&(image.origin), width, height);
+    graph_image* image = (graph_image*) malloc(sizeof(graph_image));
 
-    link_graph(&image);
+    image->width = width;
+    image->height = height;
+    image->horizontalSeamsRemoved = image->verticalSeamsRemoved = 0;
+    image->graph = graph_from_file(image_buffer, width, height);
+    image->nopixels = allocate_no_pixels(&(image->origin), width, height);
+
+    link_graph(image);
 
     return image;
 }
@@ -34,7 +40,26 @@ int graph_image_remove_horizontal_seam(graph_image* self) {
 }
 
 void graph_image_write_to_image_buffer(graph_image* self, stbi_uc* image_buffer) {
-    // TODO
+    int pixels_written = 0;
+    // Traverse graph and copy color data to buffer
+    // TODO create some type of iterator wrapper to reuse this loop structure
+    graph_pixel_no_pixel* top_left_no_pixel = &self->origin->pixel.no_pixel;
+    graph_pixel* row_start = top_left_no_pixel->neighbors[DOWN_RIGHT];
+    while (row_start->type == Pixel) {
+        graph_pixel* current = row_start;
+        while (current->type == Pixel) {
+            graph_pixel_pixel* pixel = &current->pixel.pixel;
+            // TODO - make sure we have the correct current width once we start removing seams
+            stbi_uc* dst_start = buffer_lookup(image_buffer, self->width, pixel->row, pixel->col);
+            memcpy(dst_start, pixel->rgb, STBI_rgb);
+            current = pixel->neighbors[RIGHT];
+
+            ++pixels_written;
+        }
+        row_start = row_start->pixel.pixel.neighbors[DOWN];
+    }
+
+    printf("DEBUG: Wrote %d pixels.\n", pixels_written);
 }
 
 void graph_image_free(graph_image* graph_image) {
@@ -54,6 +79,8 @@ void graph_image_free(graph_image* graph_image) {
         free(graph_image->nopixels[row]);
     }
     free(graph_image->nopixels);
+
+    free(graph_image);
 }
 
 graph_pixel** graph_from_file(stbi_uc* image_buffer, int width, int height) {
@@ -61,18 +88,17 @@ graph_pixel** graph_from_file(stbi_uc* image_buffer, int width, int height) {
     for (int row = 0; row < height; ++row) {
         graph[row] = (graph_pixel*) malloc(width * sizeof(graph_pixel));
         for (int col = 0; col < width; ++ col) {
-            stbi_uc* rgb = &image_buffer[(row * width + col) * STBI_rgb];
+            stbi_uc* rgb = buffer_lookup(image_buffer, width, row, col);
             graph_pixel_pixel pixel = {
                 allocate_neighbor_array(),
                 rgb,
                 GRAPH_SEAM_EMPTY_SINGLETON,
                 row, col
             };
-            graph_pixel_subclass subclass;
-            subclass.pixel = pixel;
-            graph_pixel pixel_pixel = {Pixel, subclass};
 
-            graph[row][col] = pixel_pixel;
+            graph[row][col].type = Pixel;
+            graph[row][col].pixel.pixel = pixel;
+
             graph[row][col].pixel.pixel.seam = graph_seam_for_pixel(&graph[row][col].pixel.pixel);
         }
     }
@@ -155,4 +181,8 @@ void link_graph(graph_image* image) {
             }
         }
     }
+}
+
+stbi_uc* buffer_lookup(stbi_uc* image_buffer, int width, int row, int col) {
+    return image_buffer + (STBI_rgb * row * width) + (STBI_rgb * col);
 }

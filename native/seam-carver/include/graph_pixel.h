@@ -20,8 +20,8 @@ typedef struct graph_pixel_pixel {
     stbi_uc* rgb;
     graph_seam_node seam;
 
-    unsigned int row;
-    unsigned int col;
+    int row;
+    int col;
 } graph_pixel_pixel;
 
 typedef struct graph_pixel_no_pixel {

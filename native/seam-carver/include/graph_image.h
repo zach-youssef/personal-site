@@ -16,7 +16,7 @@ typedef struct graph_image {
     graph_pixel* origin;
 } graph_image;
 
-graph_image graph_image_from_image(stbi_uc* image_buffer, int width, int height);
+graph_image* graph_image_from_image(stbi_uc* image_buffer, int width, int height);
 
 int graph_image_remove_vertical_seam(graph_image* self);
 
