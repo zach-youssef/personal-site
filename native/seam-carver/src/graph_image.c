@@ -37,8 +37,6 @@ graph_image* graph_image_from_image(stbi_uc* image_buffer, int width, int height
 int graph_image_remove_vertical_seam(graph_image* self) {
     graph_seam_node* seam = next_vertical_seam(self);
 
-    graph_seam_remove_vertical(seam);
-
     int seams_removed = graph_seam_remove_vertical(seam);
 
     self->out_width -= seams_removed;
