@@ -35,7 +35,7 @@ double graph_pixel_seam_weight(graph_pixel* self) {
     }
 }
 
-graph_seam_node graph_pixel_get_seam(graph_pixel* self) {
+graph_seam_node* graph_pixel_get_seam(graph_pixel* self) {
     switch(self->type) {
         case Pixel: return graph_pixel_pixel_get_seam(&(self->pixel.pixel));
         case NoPixel: return graph_pixel_no_pixel_get_seam(&(self->pixel.no_pixel));

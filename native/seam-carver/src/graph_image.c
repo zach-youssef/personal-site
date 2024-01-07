@@ -114,7 +114,7 @@ void graph_image_free(graph_image* graph_image) {
     free(graph_image->graph);
 
     for (int row = 0; row < (graph_image->height + 2); ++row) {
-        const int row_width = (row == 0 || row == graph_image->height - 1) ? 2 : graph_image->width + 2;
+        const int row_width = (row == 0 || row == graph_image->height + 1) ? graph_image->width + 2 : 2;
         for (int col = 0; col < row_width; ++col) {
             free(graph_image->nopixels[row][col].pixel.no_pixel.neighbors);
         }
@@ -150,7 +150,7 @@ graph_pixel** graph_from_file(stbi_uc* image_buffer, int width, int height) {
 graph_pixel** allocate_no_pixels(graph_pixel** origin, int width, int height) {
     graph_pixel** nopixels = (graph_pixel**) malloc((height + 2) * sizeof(graph_pixel*));
     for(int row = 0; row < (height + 2); ++row) {
-        const int row_width = (row == 0 || row == height - 1) ? 2 : width + 2;
+        const int row_width = (row == 0 || row == height + 1) ? width + 2 : 2;
         nopixels[row] = (graph_pixel*) malloc (row_width * sizeof(graph_pixel));
         for (int col = 0; col < row_width; ++col) {
             const bool is_origin = row == 0 && col == 0;
@@ -199,28 +199,43 @@ void link_graph(graph_image* image) {
     }
 
     // Link no-pixels to edges
-    for(int row = 0; row < (image->height + 2); ++row) {
-        const int row_width = (row == 0 || row == image->height - 1) ? 2 : image->width + 2;
-        for (int col = 0; col < row_width; ++col) {
-            graph_pixel* edge_no_pixel = &image->nopixels[row][col];
-            if (row == 0 && col != 0 && col < row_width - 1) {
-                graph_pixel_add_neighbor(edge_no_pixel, &image->graph[0][col - 1], DOWN);
-            } else if (row == 0 && col == 0) {
-                graph_pixel_add_neighbor(edge_no_pixel, &image->graph[0][0], DOWN_RIGHT);
-                no_pixel_set_as_origin(edge_no_pixel);
-            } else if (row == 0 && col == row_width - 1) {
-                graph_pixel_add_neighbor(edge_no_pixel, &image->graph[0][image->width - 1], DOWN_LEFT);
-            } else if (row > image->height && col != 0 && col < row_width - 1) {
-                graph_pixel_add_neighbor(edge_no_pixel, &image->graph[image->height - 1][col - 1], UP);
-            } else if (row > image->height && col == 0) {
-                graph_pixel_add_neighbor(edge_no_pixel, &image->graph[image->height - 1][0], TOP_RIGHT);
-            } else if (row > image->height && col == row_width - 1) {
-                graph_pixel_add_neighbor(edge_no_pixel, &image->graph[image->height - 1][image->width - 1], TOP_LEFT);
-            } else if (col == 0) {
-                graph_pixel_add_neighbor(edge_no_pixel, &image->graph[row - 1][0], RIGHT);
-            } else {
-                graph_pixel_add_neighbor(edge_no_pixel, &image->graph[row - 1][image->width - 1], LEFT);
-            }
+    graph_direction dirs[3];
+    // - Set origin
+    no_pixel_set_as_origin(&image->nopixels[0][0]);
+    // - Link top row
+    printf("DEBUG: Link top nopixels\n");
+    graph_direction_top(dirs);
+    for(int col = 0; col < image->width; ++col) {
+        for (int i = 0; i < 3; ++i) {
+            graph_pixel_add_neighbor(&image->graph[0][col], &image->nopixels[0][col + i], dirs[i]);
+        }
+    }
+    // - Link bottom row
+    printf("DEBUG: Link bottom nopixels\n");
+    graph_direction_down(dirs);
+    int b_row = image->height - 1;
+    for(int col = 0; col < image->width; ++col) {
+        for (int i = 0; i < 3; ++i) {
+            graph_pixel_add_neighbor(&image->graph[b_row][col], &image->nopixels[image->height + 1][col + i],  dirs[i]);
+        }
+    }
+    // - Link left col
+    printf("DEBUG: Link left nopixels\n");
+    graph_direction_left(dirs);
+    for(int row = 0; row < image->height; ++row) {
+        for (int i =0; i < 3; ++i) {
+            graph_pixel_add_neighbor(&image->graph[row][0], &image->nopixels[row + i][0], dirs[i]);
+        }
+    }
+    // - Link right col
+    printf("DEBUG: Link right nopixels\n");
+    graph_direction_right(dirs);
+    int r_col = image->width - 1;
+    for(int row = 0; row < image->height; ++row) {
+        for (int i = 0; i < 3; ++i) {
+            int np_row = row + i;
+            int np_col = (np_row == 0 && np_row == image->height + 1) ? r_col + 2 : 1;
+            graph_pixel_add_neighbor(&image->graph[row][r_col], &image->nopixels[np_row][np_col], dirs[i]);
         }
     }
 }

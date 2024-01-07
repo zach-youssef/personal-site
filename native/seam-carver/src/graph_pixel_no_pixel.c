@@ -3,24 +3,19 @@
 #include <graph_pixel_no_pixel.h>
 
 double graph_pixel_no_pixel_brightness(graph_pixel_no_pixel* self) {
-    // TODO
     return 0;
 }
 
 double graph_pixel_no_pixel_energy(graph_pixel_no_pixel* self) {
-    // TODO
     return 0;
 }
 
 double graph_pixel_no_pixel_seam_weight(graph_pixel_no_pixel* self) {
-    // TODO
     return 0;
 }
 
-graph_seam_node graph_pixel_no_pixel_get_seam(graph_pixel_no_pixel* self){
-    // TODO
-    graph_seam_node node = {};
-    return node;
+graph_seam_node* graph_pixel_no_pixel_get_seam(graph_pixel_no_pixel* self){
+    return &GRAPH_SEAM_EMPTY_SINGLETON;
 } 
 
 graph_pixel_pixel* graph_pixel_no_pixel_farthest(graph_pixel_no_pixel* self, graph_direction direction){

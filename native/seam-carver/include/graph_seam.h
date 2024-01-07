@@ -37,4 +37,6 @@ int graph_seam_remove_vertical(graph_seam_node* seam);
 
 graph_seam_node* graph_seam_best(graph_seam_node* seam1, graph_seam_node* seam2);
 
+double graph_seam_get_weight(graph_seam_node* seam);
+
 #endif // graph_seam_h

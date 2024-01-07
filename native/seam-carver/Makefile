@@ -16,7 +16,7 @@ _OBJ = $(subst .c,.o,$(_SOURCE))
 OBJ = $(patsubst %,$(OUT)/%,$(_OBJ))
 
 seam-carver: $(OBJ)
-	$(CC) -o $@ $^
+	$(CC) -o $@ $^ -lm
 
 .PHONY: clean build mem-test
 

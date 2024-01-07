@@ -43,3 +43,10 @@ graph_seam_node* graph_seam_best_dd(graph_seam_node_node* node, graph_seam_node*
         case graph_seam_node_type_node: return node->total_weight < other->node.node.total_weight ? node_parent : other;
     }
 }
+
+double graph_seam_get_weight(graph_seam_node* seam) {
+    switch (seam->type) {
+        case graph_seam_node_type_node: return seam->node.node.total_weight;
+        case graph_seam_node_type_no_node: return 0;
+    }
+}
