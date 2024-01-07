@@ -82,24 +82,33 @@ graph_seam_node* next_vertical_seam(graph_image* self) {
 
 void graph_image_write_to_image_buffer(graph_image* self, stbi_uc* image_buffer) {
     int pixels_written = 0;
+    int rows_written = 0;
+    int cols_written = 0;
+    printf("DEBUG: Writing image to buffer (%d x %d)\n", self->out_width, self->out_height);
     // Traverse graph and copy color data to buffer
     // TODO create some type of iterator wrapper to reuse this loop structure
     graph_pixel_no_pixel* top_left_no_pixel = &self->origin->pixel.no_pixel;
     graph_pixel* row_start = top_left_no_pixel->neighbors[DOWN_RIGHT];
     while (row_start->type == Pixel) {
         graph_pixel* current = row_start;
+        int cols_written_temp = 0;
         while (current->type == Pixel) {
             graph_pixel_pixel* pixel = &current->pixel.pixel;
             stbi_uc* dst_start = buffer_lookup(image_buffer, self->out_width, pixel->row, pixel->col);
+            //printf("DEBUG_V: Copying (%d,%d)\n", pixel->row, pixel->col);
             memcpy(dst_start, pixel->rgb, STBI_rgb);
             current = pixel->neighbors[RIGHT];
 
             ++pixels_written;
+            ++cols_written_temp;
         }
         row_start = row_start->pixel.pixel.neighbors[DOWN];
+        ++rows_written;
+        cols_written = cols_written > cols_written_temp ? cols_written : cols_written_temp;
+        cols_written_temp = 0;
     }
 
-    printf("DEBUG: Wrote %d pixels.\n", pixels_written);
+    printf("DEBUG: Wrote %d pixels (%d x %d)\n", pixels_written, cols_written, rows_written);
 }
 
 void graph_image_free(graph_image* graph_image) {
@@ -201,7 +210,6 @@ void link_graph(graph_image* image) {
     // - Set origin
     no_pixel_set_as_origin(&image->nopixels[0][0]);
     // - Link top row
-    printf("DEBUG: Link top nopixels\n");
     graph_direction_top(dirs);
     for(int col = 0; col < image->width; ++col) {
         for (int i = 0; i < 3; ++i) {
@@ -209,7 +217,6 @@ void link_graph(graph_image* image) {
         }
     }
     // - Link bottom row
-    printf("DEBUG: Link bottom nopixels\n");
     graph_direction_down(dirs);
     int b_row = image->height - 1;
     for(int col = 0; col < image->width; ++col) {
@@ -218,7 +225,6 @@ void link_graph(graph_image* image) {
         }
     }
     // - Link left col
-    printf("DEBUG: Link left nopixels\n");
     graph_direction_left(dirs);
     for(int row = 0; row < image->height; ++row) {
         for (int i =0; i < 3; ++i) {
@@ -226,7 +232,6 @@ void link_graph(graph_image* image) {
         }
     }
     // - Link right col
-    printf("DEBUG: Link right nopixels\n");
     graph_direction_right(dirs);
     int r_col = image->width - 1;
     for(int row = 0; row < image->height; ++row) {

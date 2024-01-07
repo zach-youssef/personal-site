@@ -98,6 +98,9 @@ void update_seam(graph_pixel_pixel* self, graph_direction* update_dirs) {
 }
 
 int graph_pixel_pixel_remove(graph_pixel_pixel* self, graph_direction shift_dir) {
-    // TODO
-    return 0;
+    graph_pixel_add_neighbor(self->neighbors[graph_direction_opposite(shift_dir)], self->neighbors[shift_dir], shift_dir);
+
+    graph_pixel_shift_in(self->neighbors[graph_direction_opposite(shift_dir)], self->neighbors, shift_dir);
+
+    return 1;
 }

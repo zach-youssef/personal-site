@@ -25,7 +25,7 @@ int graph_seam_remove_vertical(graph_seam_node* seam) {
     graph_seam_node_node* node = &seam->node.node;
 
     return graph_pixel_pixel_remove(node->pixel, LEFT) 
-    * graph_seam_remove_vertical(node->came_from);
+           * graph_seam_remove_vertical(node->came_from);
 }
 
 graph_seam_node* graph_seam_best_dd(graph_seam_node_node* node, graph_seam_node* node_parent, graph_seam_node* other);

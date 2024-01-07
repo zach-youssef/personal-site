@@ -43,6 +43,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Produce output image
+    printf("DEBUG: Output resolution is %dx%d\n", out_width, out_height);
     stbi_uc* output = (stbi_uc*) malloc(STBI_rgb * sizeof(stbi_uc) * out_width * out_height);
     graph_image_write_to_image_buffer(graph, output);
 

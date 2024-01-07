@@ -42,8 +42,34 @@ graph_seam_node* graph_pixel_get_seam(graph_pixel* self) {
     }
 }
 
-void graph_pixel_shift_in(graph_pixel* self, graph_pixel** new_neighbors, graph_direction direction) {
-    // TODO
+void graph_pixel_shift_in(graph_pixel* self, graph_pixel** neighbors, graph_direction direction) {
+    graph_pixel* neighbors0[8];
+    graph_pixel* neighbors1[8];
+
+    for (int dir = 0; dir < 8; ++dir) {
+        neighbors1[dir] = neighbors[dir];
+    }
+
+    graph_pixel* current = self;
+    while (current) {
+        if (current->type == Pixel) {
+            graph_pixel_pixel* pixel = &current->pixel.pixel;
+            graph_direction_shift_indices(direction, &pixel->row, &pixel->col);
+        } 
+
+        for (int dir = 0; dir < 8; ++dir) {
+            neighbors0[dir] = get_neighbors(current)[dir];
+
+            if(!((dir == direction) || (dir == graph_direction_opposite(direction)))) {
+                graph_pixel_add_neighbor(current, neighbors1[dir], dir);
+            }
+        }
+
+        current = get_neighbors(current)[graph_direction_opposite(direction)];
+        for (int dir = 0; dir < 8; ++dir) {
+            neighbors1[dir] = neighbors0[dir];
+        }
+    }
 }
 
 void graph_pixel_set_neighbor(graph_pixel* self, graph_direction direction, graph_pixel* pixel) {
