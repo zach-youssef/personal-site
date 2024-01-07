@@ -14,6 +14,8 @@ typedef struct graph_image {
     graph_pixel** nopixels;
 
     graph_pixel* origin;
+
+    int out_width, out_height;
 } graph_image;
 
 graph_image* graph_image_from_image(stbi_uc* image_buffer, int width, int height);

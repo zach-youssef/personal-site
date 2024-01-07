@@ -23,14 +23,12 @@ graph_seam_node graph_pixel_no_pixel_get_seam(graph_pixel_no_pixel* self){
     return node;
 } 
 
-graph_pixel* graph_pixel_no_pixel_farthest(graph_pixel_no_pixel* self, graph_direction direction){
-    // TODO
-    return NULL;
+graph_pixel_pixel* graph_pixel_no_pixel_farthest(graph_pixel_no_pixel* self, graph_direction direction){
+    return graph_pixel_farthest_with_last(self->neighbors[direction], direction, NULL);
 } 
 
-graph_pixel* graph_pixel_no_pixel_farthest_with_last(graph_pixel_no_pixel* self, graph_direction direction, graph_pixel* last){
-    // TODO
-    return NULL;
+graph_pixel_pixel* graph_pixel_no_pixel_farthest_with_last(graph_pixel_no_pixel* self, graph_direction direction, graph_pixel_pixel* last){
+    return last;
 } 
 
 void graph_pixel_no_pixel_add_if_pixel(graph_pixel_no_pixel* self, graph_pixel_list* pixel_list){

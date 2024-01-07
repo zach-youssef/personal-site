@@ -33,4 +33,8 @@ graph_seam_node GRAPH_SEAM_EMPTY_SINGLETON;
 graph_seam_node graph_seam_empty();
 graph_seam_node graph_seam_for_pixel(struct graph_pixel_pixel* pixel);
 
+int graph_seam_remove_vertical(graph_seam_node* seam);
+
+graph_seam_node* graph_seam_best(graph_seam_node* seam1, graph_seam_node* seam2);
+
 #endif // graph_seam_h

@@ -54,9 +54,9 @@ void graph_pixel_set_neighbor(graph_pixel* self, graph_direction direction, grap
 
 void graph_pixel_add_neighbor(graph_pixel* self, graph_pixel* other, graph_direction direction);
 
-graph_pixel* graph_pixel_farthest(graph_pixel* self, graph_direction direction); // abstract
+graph_pixel_pixel* graph_pixel_farthest(graph_pixel* self, graph_direction direction); // abstract
 
-graph_pixel* graph_pixel_farthest_with_last(graph_pixel* self, graph_direction direction, graph_pixel* last); // abstract
+graph_pixel_pixel* graph_pixel_farthest_with_last(graph_pixel* self, graph_direction direction, graph_pixel_pixel* last); // abstract
 
 void graph_pixel_add_if_pixel(graph_pixel* self, graph_pixel_list* pixel_list); // abstract
 

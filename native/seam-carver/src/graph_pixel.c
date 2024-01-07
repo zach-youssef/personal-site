@@ -55,14 +55,14 @@ void graph_pixel_add_neighbor(graph_pixel* self, graph_pixel* other, graph_direc
     graph_pixel_set_neighbor(other, graph_direction_opposite(direction), self);
 }
 
-graph_pixel* graph_pixel_farthest(graph_pixel* self, graph_direction direction) {
+graph_pixel_pixel* graph_pixel_farthest(graph_pixel* self, graph_direction direction) {
     switch(self->type) {
         case Pixel: return graph_pixel_pixel_farthest(&(self->pixel.pixel), direction);
         case NoPixel: return graph_pixel_no_pixel_farthest(&(self->pixel.no_pixel), direction);
     }
 }
 
-graph_pixel* graph_pixel_farthest_with_last(graph_pixel* self, graph_direction direction, graph_pixel* last) {
+graph_pixel_pixel* graph_pixel_farthest_with_last(graph_pixel* self, graph_direction direction, graph_pixel_pixel* last) {
     switch(self->type) {
         case Pixel: return graph_pixel_pixel_farthest_with_last(&(self->pixel.pixel), direction, last);
         case NoPixel: return graph_pixel_no_pixel_farthest_with_last(&(self->pixel.no_pixel), direction, last);

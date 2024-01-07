@@ -1,4 +1,5 @@
 #include <graph_image.h>
+#include <graph_pixel_pixel.h>
 #include <graph_pixel_no_pixel.h>
 
 #include <string.h>
@@ -8,6 +9,8 @@ graph_pixel** graph_from_file(stbi_uc* image_buffer, int width, int height);
 graph_pixel** allocate_no_pixels(graph_pixel** origin, int width, int height);
 
 graph_pixel** allocate_neighbor_array();
+
+graph_seam_node* next_vertical_seam(graph_image* image);
 
 stbi_uc* buffer_lookup(stbi_uc* image_buffer, int width, int row, int col);
 
@@ -19,7 +22,9 @@ graph_image* graph_image_from_image(stbi_uc* image_buffer, int width, int height
     graph_image* image = (graph_image*) malloc(sizeof(graph_image));
 
     image->width = width;
+    image->out_width = width;
     image->height = height;
+    image->out_height = height;
     image->horizontalSeamsRemoved = image->verticalSeamsRemoved = 0;
     image->graph = graph_from_file(image_buffer, width, height);
     image->nopixels = allocate_no_pixels(&(image->origin), width, height);
@@ -30,13 +35,51 @@ graph_image* graph_image_from_image(stbi_uc* image_buffer, int width, int height
 }
 
 int graph_image_remove_vertical_seam(graph_image* self) {
-    // TODO
-    return 0;
+    graph_seam_node* seam = next_vertical_seam(self);
+
+    graph_seam_remove_vertical(seam);
+
+    int seams_removed = graph_seam_remove_vertical(seam);
+
+    self->out_width -= seams_removed;
+
+    return seams_removed;
 }
 
 int graph_image_remove_horizontal_seam(graph_image* self) {
     // TODO
     return 0;
+}
+
+graph_seam_node* next_vertical_seam(graph_image* self) {
+    // TODO move seam updating to helper?
+    // TODO create some type of iterator wrapper to reuse this loop structure
+    graph_pixel_no_pixel* top_left_no_pixel = &self->origin->pixel.no_pixel;
+    graph_pixel* row_start = top_left_no_pixel->neighbors[DOWN_RIGHT];
+    while (row_start->type == Pixel) {
+        graph_pixel* current = row_start;
+        while (current->type == Pixel) {
+            graph_pixel_pixel* pixel = &current->pixel.pixel;
+            graph_pixel_pixel_update_seam_vertically(pixel);
+            current = pixel->neighbors[RIGHT];
+        }
+        row_start = row_start->pixel.pixel.neighbors[DOWN];
+    }
+
+    graph_pixel_pixel* bottom_row_pixel = graph_pixel_farthest(self->origin->pixel.no_pixel.neighbors[DOWN_RIGHT], DOWN);
+    graph_seam_node* best_seam = &GRAPH_SEAM_EMPTY_SINGLETON;
+    bool have_new_pixel = true;
+    while (have_new_pixel) {
+        best_seam = graph_seam_best(best_seam, &bottom_row_pixel->seam);
+        graph_pixel* next = bottom_row_pixel->neighbors[RIGHT];
+        if (next->type == Pixel) {
+            bottom_row_pixel = &next->pixel.pixel;
+        } else {
+            have_new_pixel = false;
+        }
+    }
+
+    return best_seam;
 }
 
 void graph_image_write_to_image_buffer(graph_image* self, stbi_uc* image_buffer) {
@@ -49,8 +92,7 @@ void graph_image_write_to_image_buffer(graph_image* self, stbi_uc* image_buffer)
         graph_pixel* current = row_start;
         while (current->type == Pixel) {
             graph_pixel_pixel* pixel = &current->pixel.pixel;
-            // TODO - make sure we have the correct current width once we start removing seams
-            stbi_uc* dst_start = buffer_lookup(image_buffer, self->width, pixel->row, pixel->col);
+            stbi_uc* dst_start = buffer_lookup(image_buffer, self->out_width, pixel->row, pixel->col);
             memcpy(dst_start, pixel->rgb, STBI_rgb);
             current = pixel->neighbors[RIGHT];
 
