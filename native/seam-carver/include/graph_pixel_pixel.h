@@ -21,6 +21,8 @@ graph_pixel* graph_pixel_pixel_find_position(graph_pixel_pixel* self, unsigned i
 
 void graph_pixel_pixel_update_seam_vertically(graph_pixel_pixel* self);
 
+void graph_pixel_pixel_update_seam_horizontally(graph_pixel_pixel* self);
+
 int graph_pixel_pixel_remove(graph_pixel_pixel* self, graph_direction shift_dir);
 
 #endif // graph_pixel_pixel_h

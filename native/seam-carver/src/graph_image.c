@@ -11,6 +11,7 @@ graph_pixel** allocate_no_pixels(graph_pixel** origin, int width, int height);
 graph_pixel** allocate_neighbor_array();
 
 graph_seam_node* next_vertical_seam(graph_image* image);
+graph_seam_node* next_horizontal_seam(graph_image* image);
 
 stbi_uc* buffer_lookup(stbi_uc* image_buffer, int width, int row, int col);
 
@@ -45,11 +46,26 @@ int graph_image_remove_vertical_seam(graph_image* self) {
 }
 
 int graph_image_remove_horizontal_seam(graph_image* self) {
-    // TODO
-    return 0;
+    graph_seam_node* seam = next_horizontal_seam(self);
+
+    int seams_removed = graph_seam_remove_horizontal(seam);
+
+    self->out_height -= seams_removed;
+
+    return seams_removed;
 }
 
+graph_seam_node* next_seam(graph_image* self, graph_direction dir1, graph_direction dir2, void(*update_fn)(graph_pixel_pixel*));
+
 graph_seam_node* next_vertical_seam(graph_image* self) {
+    return next_seam(self, RIGHT, DOWN, &graph_pixel_pixel_update_seam_vertically);
+}
+
+graph_seam_node* next_horizontal_seam(graph_image* self) {
+    return next_seam(self, DOWN, RIGHT, &graph_pixel_pixel_update_seam_horizontally);
+}
+
+graph_seam_node* next_seam(graph_image* self, graph_direction dir1, graph_direction dir2, void(*update_fn)(graph_pixel_pixel*)) {
     // TODO move seam updating to helper?
     // TODO create some type of iterator wrapper to reuse this loop structure
     graph_pixel_no_pixel* top_left_no_pixel = &self->origin->pixel.no_pixel;
@@ -58,18 +74,18 @@ graph_seam_node* next_vertical_seam(graph_image* self) {
         graph_pixel* current = row_start;
         while (current->type == Pixel) {
             graph_pixel_pixel* pixel = &current->pixel.pixel;
-            graph_pixel_pixel_update_seam_vertically(pixel);
-            current = pixel->neighbors[RIGHT];
+            update_fn(pixel);
+            current = pixel->neighbors[dir1];
         }
-        row_start = row_start->pixel.pixel.neighbors[DOWN];
+        row_start = row_start->pixel.pixel.neighbors[dir2];
     }
 
-    graph_pixel_pixel* bottom_row_pixel = graph_pixel_farthest(self->origin->pixel.no_pixel.neighbors[DOWN_RIGHT], DOWN);
+    graph_pixel_pixel* bottom_row_pixel = graph_pixel_farthest(self->origin->pixel.no_pixel.neighbors[DOWN_RIGHT], dir2);
     graph_seam_node* best_seam = &GRAPH_SEAM_EMPTY_SINGLETON;
     bool have_new_pixel = true;
     while (have_new_pixel) {
         best_seam = graph_seam_best(best_seam, &bottom_row_pixel->seam);
-        graph_pixel* next = bottom_row_pixel->neighbors[RIGHT];
+        graph_pixel* next = bottom_row_pixel->neighbors[dir1];
         if (next->type == Pixel) {
             bottom_row_pixel = &next->pixel.pixel;
         } else {

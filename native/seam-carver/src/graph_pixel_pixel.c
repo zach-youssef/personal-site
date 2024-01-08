@@ -85,6 +85,12 @@ void graph_pixel_pixel_update_seam_vertically(graph_pixel_pixel* self) {
     update_seam(self, update_dirs);
 }
 
+void graph_pixel_pixel_update_seam_horizontally(graph_pixel_pixel* self) {
+    graph_direction update_dirs[3];
+    graph_direction_left(update_dirs);
+    update_seam(self, update_dirs);
+}
+
 void update_seam(graph_pixel_pixel* self, graph_direction* update_dirs) {
     graph_seam_node* best_seam = &GRAPH_SEAM_EMPTY_SINGLETON;
 

@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
     }
 
     // TODO take in a target width and height, and output file
-    int target_width = width - 1/*/ 2*/, target_height = height / 2;
+    int target_width = width - 5, target_height = height - 5;
     const char* outfilename = "out.png";
 
     // Create graph representation

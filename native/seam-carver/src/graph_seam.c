@@ -28,6 +28,17 @@ int graph_seam_remove_vertical(graph_seam_node* seam) {
            * graph_seam_remove_vertical(node->came_from);
 }
 
+int graph_seam_remove_horizontal(graph_seam_node* seam) {
+    if (seam->type == graph_seam_node_type_no_node) {
+        return 1;
+    }
+
+    graph_seam_node_node* node = &seam->node.node;
+
+    return graph_pixel_pixel_remove(node->pixel, UP) 
+           * graph_seam_remove_horizontal(node->came_from);
+}
+
 graph_seam_node* graph_seam_best_dd(graph_seam_node_node* node, graph_seam_node* node_parent, graph_seam_node* other);
 
 graph_seam_node* graph_seam_best(graph_seam_node* seam1, graph_seam_node* seam2) {
