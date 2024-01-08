@@ -39,18 +39,3 @@ void graph_direction_left(graph_direction* left_directions){
     left_directions[1] = LEFT;
     left_directions[2] = DOWN_LEFT;
 }
-
-void graph_direction_shift_indices(graph_direction direction, int* row, int* col) {
-    if (direction == TOP_LEFT || direction == UP || direction == TOP_RIGHT) {
-        *row--;
-    }
-    if (direction == DOWN_LEFT || direction == DOWN || direction == DOWN_RIGHT) {
-        *row++;
-    }
-    if (direction == TOP_RIGHT || direction == RIGHT || direction == DOWN_RIGHT) {
-        *col++;
-    }
-    if (direction == TOP_LEFT || direction == LEFT || direction == DOWN_LEFT) {
-        *col--;
-    }
-}

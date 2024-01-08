@@ -17,6 +17,4 @@ void graph_direction_right(graph_direction* right_directions);
 
 void graph_direction_left(graph_direction* left_directions);
 
-void graph_direction_shift_indices(graph_direction direction, int* row, int* col);
-
 #endif // graph_direction_h

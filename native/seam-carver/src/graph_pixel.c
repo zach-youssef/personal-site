@@ -54,7 +54,11 @@ void graph_pixel_shift_in(graph_pixel* self, graph_pixel** neighbors, graph_dire
     while (current) {
         if (current->type == Pixel) {
             graph_pixel_pixel* pixel = &current->pixel.pixel;
-            graph_direction_shift_indices(direction, &pixel->row, &pixel->col);
+            if (direction == LEFT){
+                pixel->col -= 1;
+            } else if (direction == UP) {
+                pixel->row -= 1;
+            }
         } 
 
         for (int dir = 0; dir < 8; ++dir) {

@@ -170,6 +170,10 @@ graph_pixel** allocate_no_pixels(graph_pixel** origin, int width, int height) {
             subclass.no_pixel = no_pixel;
             graph_pixel pixel_nopixel = {NoPixel, subclass};
             nopixels[row][col] = pixel_nopixel;
+            // Initialize each nopixel edge
+            for (int i = 0; i < 8; ++i) {
+                nopixels[row][col].pixel.no_pixel.neighbors[i] = NULL;
+            }
 
             if(is_origin) {
                 *origin = &nopixels[row][col];
