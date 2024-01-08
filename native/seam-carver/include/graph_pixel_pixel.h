@@ -15,10 +15,6 @@ graph_pixel_pixel* graph_pixel_pixel_farthest(graph_pixel_pixel* self, graph_dir
 
 graph_pixel_pixel* graph_pixel_pixel_farthest_with_last(graph_pixel_pixel* self, graph_direction direction, graph_pixel_pixel* last); 
 
-void graph_pixel_pixel_add_if_pixel(graph_pixel_pixel* self, graph_pixel_list* pixel_list); 
-
-graph_pixel* graph_pixel_pixel_find_position(graph_pixel_pixel* self, unsigned int x, unsigned int y); 
-
 void graph_pixel_pixel_update_seam_vertically(graph_pixel_pixel* self);
 
 void graph_pixel_pixel_update_seam_horizontally(graph_pixel_pixel* self);

@@ -6,7 +6,6 @@
 
 #include <graph_direction.h>
 #include <graph_seam.h>
-#include <graph_pixel_list.h>
 
 enum graph_pixel_type {
     Pixel,
@@ -57,15 +56,5 @@ void graph_pixel_add_neighbor(graph_pixel* self, graph_pixel* other, graph_direc
 graph_pixel_pixel* graph_pixel_farthest(graph_pixel* self, graph_direction direction); // abstract
 
 graph_pixel_pixel* graph_pixel_farthest_with_last(graph_pixel* self, graph_direction direction, graph_pixel_pixel* last); // abstract
-
-void graph_pixel_add_if_pixel(graph_pixel* self, graph_pixel_list* pixel_list); // abstract
-
-void graph_pixel_add_neighbor_if_pixel(graph_pixel* self, graph_direction direction, graph_pixel_list* pixel_list);
-
-void graph_pixel_shift_out(graph_pixel* self, graph_direction direction);
-
-bool graph_pixel_has_neighbor(graph_pixel* self, graph_direction dir, graph_pixel* pixel);
-
-graph_pixel* graph_pixel_find_position(graph_pixel* self, unsigned int x, unsigned int y);
 
 #endif // graph_pixel_h

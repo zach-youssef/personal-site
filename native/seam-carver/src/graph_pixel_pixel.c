@@ -70,15 +70,6 @@ graph_pixel_pixel* graph_pixel_pixel_farthest_with_last(graph_pixel_pixel* self,
     return graph_pixel_farthest_with_last(self->neighbors[direction], direction, self);
 }
 
-void graph_pixel_pixel_add_if_pixel(graph_pixel_pixel* self, graph_pixel_list* pixel_list) {
-    // TODO
-}
-
-graph_pixel* graph_pixel_pixel_find_position(graph_pixel_pixel* self, unsigned int x, unsigned int y) {
-    // TODO
-    return NULL;
-}
-
 void graph_pixel_pixel_update_seam_vertically(graph_pixel_pixel* self) {
     graph_direction update_dirs[3];
     graph_direction_top(update_dirs);

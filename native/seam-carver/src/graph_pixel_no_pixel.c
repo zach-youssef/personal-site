@@ -26,15 +26,6 @@ graph_pixel_pixel* graph_pixel_no_pixel_farthest_with_last(graph_pixel_no_pixel*
     return last;
 } 
 
-void graph_pixel_no_pixel_add_if_pixel(graph_pixel_no_pixel* self, graph_pixel_list* pixel_list){
-    // TODO
-} 
-
-graph_pixel* graph_pixel_no_pixel_find_position(graph_pixel_no_pixel* self, unsigned int x, unsigned int y){
-    // TODO
-    return NULL;
-} 
-
 void no_pixel_set_as_origin(graph_pixel* pixel) {
     if (pixel->type == NoPixel) {
         graph_pixel_no_pixel* self = &pixel->pixel.no_pixel;

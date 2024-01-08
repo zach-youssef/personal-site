@@ -98,25 +98,3 @@ graph_pixel_pixel* graph_pixel_farthest_with_last(graph_pixel* self, graph_direc
         case NoPixel: return graph_pixel_no_pixel_farthest_with_last(&(self->pixel.no_pixel), direction, last);
     }
 }
-
-void graph_pixel_add_if_pixel(graph_pixel* self, graph_pixel_list* pixel_list) {
-    // TODO
-}
-
-void graph_pixel_add_neighbor_if_pixel(graph_pixel* self, graph_direction direction, graph_pixel_list* pixel_list) {
-    // TODO
-}
-
-void graph_pixel_shift_out(graph_pixel* self, graph_direction direction) {
-    // TODO
-}
-
-bool graph_pixel_has_neighbor(graph_pixel* self, graph_direction dir, graph_pixel* pixel) {
-    // TODO
-    return false;
-}
-
-graph_pixel* graph_pixel_find_position(graph_pixel* self, unsigned int x, unsigned int y) {
-    // TODO 
-    return NULL;
-}

@@ -10,6 +10,7 @@ graph_pixel** allocate_no_pixels(graph_pixel** origin, int width, int height);
 
 graph_pixel** allocate_neighbor_array();
 
+graph_seam_node* next_seam(graph_image* self, graph_direction dir1, graph_direction dir2, void(*update_fn)(graph_pixel_pixel*));
 graph_seam_node* next_vertical_seam(graph_image* image);
 graph_seam_node* next_horizontal_seam(graph_image* image);
 
@@ -55,7 +56,6 @@ int graph_image_remove_horizontal_seam(graph_image* self) {
     return seams_removed;
 }
 
-graph_seam_node* next_seam(graph_image* self, graph_direction dir1, graph_direction dir2, void(*update_fn)(graph_pixel_pixel*));
 
 graph_seam_node* next_vertical_seam(graph_image* self) {
     return next_seam(self, RIGHT, DOWN, &graph_pixel_pixel_update_seam_vertically);
