@@ -9,11 +9,7 @@ import ProjectsPage from './features/projectDisplay/ProjectsPage';
 function App() {
   return (
     <Router>
-      <div className="App">
-        <header className="App-header">
           <Navigation />
-        </header>
-        <body>
           <Container >
             <Switch>
               <Route path="/projects">
@@ -24,8 +20,6 @@ function App() {
               </Route>
             </Switch>
           </Container>
-        </body>
-      </div>
     </Router>
   );
 }

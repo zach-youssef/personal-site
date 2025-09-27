@@ -11,6 +11,7 @@ import SokobanPage from '../sokoban/SokobanPage';
 import SeamCarverPage from '../seamCarver/SeamCarverPage';
 import WebGLDemoPage from '../webgl/WebGLDemoPage';
 import RaytracerPage from '../raytracer/RaytracerPage';
+import { Container, Row } from 'react-bootstrap';
 
 function ProjectsPage() {
     let match = useRouteMatch();
@@ -31,8 +32,16 @@ function ProjectsPage() {
                     <WebGLDemoPage />
                 </Route>
                 <Route path={match.path}>
-                    <h1>{SiteTextContents[SiteText.ProjectHeader]}</h1>
-                    <ProjectDisplayContainer />
+                    <Container>
+                        <Row>
+                            <p>
+                                <h2>{SiteTextContents[SiteText.ProjectHeader]}</h2>
+                            </p>
+                        </Row>
+                        <Row>
+                            <ProjectDisplayContainer />
+                        </Row>
+                    </Container>
                 </Route>
             </Switch>
         </Router>

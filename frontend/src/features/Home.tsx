@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Row, Jumbotron } from 'react-bootstrap';
+import { Row, Container } from 'react-bootstrap';
 import { SiteTextContents, SiteText } from '../content/text/SiteText';
 import { ProjectDisplayFeatured } from './projectDisplay/ProjectDisplay';
 import { fetchGraphQL } from '../FetchHelper';
@@ -40,19 +40,23 @@ function Home() {
     }
 
     return (
-        <div>
+        <Container >
           <Row>
-            <Jumbotron>
               <h2>{SiteTextContents[SiteText.AboutMeHeader]}</h2>
-              {SiteTextContents[SiteText.AboutDesc].split("\n").map(line => 
-                <p>{line}</p>
-              )}
-            </Jumbotron>
           </Row>
-          {
-            featuredProject != null ?  <ProjectDisplayFeatured projectInfo={featuredProject!!}/> : <div />
-          }
-        </div>
+          <Row>
+            <p>
+              {SiteTextContents[SiteText.AboutDesc].split("\n").map(line => 
+                <div>{line}</div>
+              )}
+            </p>
+          </Row>
+          <Row>
+            {
+              featuredProject != null ?  <ProjectDisplayFeatured projectInfo={featuredProject!!}/> : <div />
+            }
+          </Row>
+        </Container>
     );
 }
 

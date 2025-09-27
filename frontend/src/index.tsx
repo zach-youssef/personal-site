@@ -8,7 +8,7 @@ import * as serviceWorker from './serviceWorker';
 
 ReactDOM.render(
   <React.StrictMode>
-    <link rel="stylesheet" href="https://bootswatch.com/5/pulse/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://bootswatch.com/4/slate/bootstrap.min.css"/>
     <Provider store={store}>
       <App />
     </Provider>
