@@ -28,7 +28,13 @@ class SimpleProjectInfoRepository : IProjectInfoRepository {
             "webglDemo",
             "A demonstration of webgl shaders and lighting",
             "$cdnUrl/webGlDemoThumbnail.png"
-        )
+        ),
+        "foundationDbFs" to ProjectInfo(
+            "FoundationDB-FS",
+            "foundationDbFs",
+            "A distributed file system built on top of FoundationDB",
+            "$cdnUrl/fdb_arch_noalpha.png"
+        ),
     )
 
     val featuredIds: Set<String> = setOf("sokoban")

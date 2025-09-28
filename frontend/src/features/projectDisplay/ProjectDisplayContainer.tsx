@@ -17,7 +17,7 @@ function ProjectDisplayContainer(){
     const mediumThreshold = 1100;
     const smallThreshold = 512;
     
-    const largeCardsPerRow = 4;
+    const largeCardsPerRow = 5;
     const mediumCardsPerRow = 2;
     const smallCardPerRow = 1;
 
