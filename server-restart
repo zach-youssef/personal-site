@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+SERVER_VERSION=0.0.1-SNAPSHOT
+EC2_USER=ec2-user
+SERVER_ROOT=/home/${EC2_USER}
+
+# Ensure we are in the correct directory
+cd ${SERVER_ROOT}
+# Find and kill existing server instance
+sudo kill $(sudo netstat -nlp |grep :::80 |perl -pe 's|^.*?(\d*)/java|\1|')
+# Restart server
+sudo nohup java -Xmx400m -jar graphql-server-${SERVER_VERSION}-standalone.jar -port=80 &
