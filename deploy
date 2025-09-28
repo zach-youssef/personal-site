@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+BUNDLE_DIR=/tmp/site-bundle
+
+SERVER_VERSION=0.0.1-SNAPSHOT
+
+EC2_USER=ec2-user
+DOMAIN=zyoussef.com
+SERVER_ROOT=/home/${EC2_USER}
+
+# Create temporary directory for assembling server bundle
+mkdir -p ${BUNDLE_DIR}
+
+# Build frontend
+cd ${SCRIPT_DIR}/frontend
+npm run build
+# Copy output to bundle
+cp -r build ${BUNDLE_DIR}/
+# Move assets to bundle root
+mv ${BUNDLE_DIR}/build/assets ${BUNDLE_DIR}/
+
+# Build backend
+cd ${SCRIPT_DIR}/graphql-server
+./gradlew build
+# Copy output to bundle
+cp build/libs/graphql-server-${SERVER_VERSION}-standalone.jar ${BUNDLE_DIR}/
+
+# Zip bundle
+cd ${BUNDLE_DIR}
+zip -r ${BUNDLE_DIR}.zip *
+# Transfer bundle to server
+scp ${BUNDLE_DIR}.zip ${EC2_USER}@${DOMAIN}:${SERVER_ROOT}/
