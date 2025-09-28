@@ -65,12 +65,15 @@ fun Application.module(testing: Boolean = false) {
             }
 
             // Frontend top-level files
+            // TODO - find a way to not need to manualy list out all these routes
             file("asset-manifest.json", "build/asset-manifest.json")
             file("favicon.ico", "build/favicon.ico")
             file("logo192.png", "build/logo192.png")
             file("logo512.png", "build/logo512.png")
             file("manifest.json", "build/manifest.json")
             file("robots.txt", "build/robots.txt")
+            file("github-mark.svg", "build/github-mark.svg")
+            file("InBug-Black.png", "build/InBug-Black.png")
 
             // WebGL Demo entrypoint
             file("Scenegraphs.html", "hogwarts/Scenegraphs.html")
