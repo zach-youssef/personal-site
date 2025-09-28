@@ -17,8 +17,9 @@ class SokobanEngine : ISokobanRepository {
     override fun solveQAgent(levelId: SokobanLevelId): List<SokobanMove> {
         return when(levelId) {
             SokobanLevelId.LEVEL_0 -> QLearnedResults.level0
-            SokobanLevelId.LEVEL_1 -> QLearnedResults.level1
-            SokobanLevelId.LEVEL_2 -> QLearnedResults.level2
+            // For some reason the site has levels 1 & 2 swapped
+            SokobanLevelId.LEVEL_2 -> QLearnedResults.level1
+            SokobanLevelId.LEVEL_1 -> QLearnedResults.level2
         }
     }
 
