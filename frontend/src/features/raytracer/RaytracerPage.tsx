@@ -18,7 +18,9 @@ function RaytracerPage () {
             <h2>Browser Raytracer</h2>
             <p>
                 At the end of my graduate graphics course, we implemented a Raytracer in typescript that was capable of shadows, reflections, and transparency with refraction.
-                The final product, being browser based, is quite slow. This page will display some sample renders until I finally get around to implementing a CUDA implementation.
+                While it can render textured objects, these models are limited to a small set of primitives (cubes, cylinders, cones, spheres) for which ray intersection was implemented.
+                The final product, being browser based, is quite slow. 
+                Below are some sample output images that highlight reflective surfaces and refraction when passing through a transparent sphere.
             </p>
             <Carousel fade>
                 {images && 
