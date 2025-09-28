@@ -40,6 +40,16 @@ fun Application.module(testing: Boolean = false) {
                 files("build/static")
             }
 
+            // I don't know why after migrating from CRA to Vite, asset requests have their routed
+            // prefix associated with them, so we need duplicate routes to redirect those requests
+            // to the correct asset
+            static("projects/assets"){
+                files("assets")
+                file("favicon.ico", "build/favicon.ico")
+                file("logo192.png", "build/logo192.png")
+                file("logo512.png", "build/logo512.png")
+            }
+
             // WebGL Demo resources
             static("out") {
                 files("hogwarts/out")
