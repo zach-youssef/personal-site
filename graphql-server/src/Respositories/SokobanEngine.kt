@@ -7,6 +7,7 @@ import com.zyoussef.Sokoban.AStar.AStarAgent
 import com.zyoussef.Sokoban.AStar.UnmatchedBoxHeuristic
 import com.zyoussef.Sokoban.SokobanParser
 import com.zyoussef.Sokoban.State
+import com.zyoussef.Sokoban.QLearnedResults
 
 class SokobanEngine : ISokobanRepository {
     override fun solveAStar(levelId: SokobanLevelId): List<SokobanMove> {
@@ -14,8 +15,11 @@ class SokobanEngine : ISokobanRepository {
     }
 
     override fun solveQAgent(levelId: SokobanLevelId): List<SokobanMove> {
-        //TODO("Not yet implemented")
-        return emptyList()
+        return when(levelId) {
+            SokobanLevelId.LEVEL_0 -> QLearnedResults.level0
+            SokobanLevelId.LEVEL_1 -> QLearnedResults.level1
+            SokobanLevelId.LEVEL_2 -> QLearnedResults.level2
+        }
     }
 
     override fun getLevel(levelId: SokobanLevelId): SokobanLevel {
