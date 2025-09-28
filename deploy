@@ -28,6 +28,8 @@ cd ${SCRIPT_DIR}/graphql-server
 ./gradlew build
 # Copy output to bundle
 cp build/libs/graphql-server-${SERVER_VERSION}-standalone.jar ${BUNDLE_DIR}/
+# Add backend assets to bundle
+cp -r assets ${BUNDLE_DIR}/
 
 # Insert startup script into bundle
 cp ${SCRIPT_DIR}/server-restart ${BUNDLE_DIR}/
