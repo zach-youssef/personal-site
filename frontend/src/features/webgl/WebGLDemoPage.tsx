@@ -1,5 +1,6 @@
 import React, {useLayoutEffect, useState} from 'react'
 import ServerDomain from './../../ServerDomain';
+import { Container } from 'react-bootstrap';
 
 function WebGLDemoPage() {
     const [screenWidth, setScreenWidth] = useState(1024);
@@ -15,12 +16,14 @@ function WebGLDemoPage() {
     }, []);
 
 	return (
-		<iframe 
-			title="WebGL Demo"
-			src={`http://${ServerDomain}/Scenegraphs.html`}
-			width={screenWidth}
-			height={screenHeight}
-		/>
+		<Container>
+			<iframe 
+				title="WebGL Demo"
+				src={`http://${ServerDomain}/Scenegraphs.html`}
+				width={540}
+				height={540}
+			/>
+		</Container>
 	);
 }
 
