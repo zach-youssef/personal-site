@@ -126,6 +126,11 @@ function Sokoban() {
                     setSolutionData([]);
                     setSolutionIndex(0);
                     break;
+                case AgentType.QAGENT:
+                    const qMoves: Move[] = response.data.qLearningSolution
+                    setSolutionData(qMoves);
+                    setSolutionIndex(0);
+                    break;
                 default:
                     console.log("UNKNOWN AGENT %s", agentType)
             }

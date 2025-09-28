@@ -15,7 +15,8 @@ export const GetLevelAndSolutionQuery = `
                 row
             }
         },
-        aStarSolution(levelId: $level)
+        aStarSolution(levelId: $level),
+        qLearningSolution(levelId: $level)
     }
 `
 
