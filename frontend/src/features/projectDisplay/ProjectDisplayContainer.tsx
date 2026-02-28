@@ -31,7 +31,7 @@ function ProjectDisplayContainer(){
         let isMounted = true;
         fetchGraphQL(`
             query FetchProjectsQuery {
-                projectInfos {
+                projectInfos(category: UNIVERSITY) {
                     name,
                     description,
                     id,

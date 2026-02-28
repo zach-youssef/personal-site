@@ -1,7 +1,7 @@
 package com.zyoussef
 
 import com.apurebase.kgraphql.GraphQL
-import com.zyoussef.Models.ProjectInfo.ProjectInfo
+import com.zyoussef.Models.ProjectInfo.*
 import com.zyoussef.Models.Sokoban.*
 import com.zyoussef.Respositories.*
 import io.ktor.application.*
@@ -130,6 +130,11 @@ fun Application.module(testing: Boolean = false) {
                 description = "Metadata for a project featured on the website"
             }
 
+            enum<ProjectCategory> {
+                description = "Types of projects featured on the website"
+            }
+
+
             query("projectInfo") {
                 description = "Retrieve a projects metadata by id"
                 resolver { id: String ->
@@ -139,10 +144,8 @@ fun Application.module(testing: Boolean = false) {
 
             query("projectInfos") {
                 description = "Retrieve all project metadata, with optional filter for featured projects"
-                resolver { featured: Boolean? ->
-                    projectInfoRepository.getAllProjects(featured ?: false)
-                }.withArgs {
-                    arg <Boolean> { name = "featured"; defaultValue = false }
+                resolver { featured: Boolean?, category: ProjectCategory? ->
+                    projectInfoRepository.getAllProjects(featured ?: false, category)
                 }
             }
 

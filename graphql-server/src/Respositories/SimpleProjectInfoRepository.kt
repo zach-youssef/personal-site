@@ -1,6 +1,7 @@
 package com.zyoussef.Respositories
 
 import com.zyoussef.Models.ProjectInfo.ProjectInfo
+import com.zyoussef.Models.ProjectInfo.ProjectCategory
 
 class SimpleProjectInfoRepository : IProjectInfoRepository {
     val cdnUrl = "http://zyoussef.com/assets/projectThumbnail"
@@ -37,15 +38,28 @@ class SimpleProjectInfoRepository : IProjectInfoRepository {
         ),
     )
 
+    val categories: Map<ProjectCategory, Set<String>> = mapOf(
+        ProjectCategory.UNIVERSITY to setOf(
+            "sokoban", 
+            "seamCarver", 
+            "raytracer", 
+            "webglDemo", 
+            "foundationDbFs"
+        ),
+        ProjectCategory.PROFESSIONAL to setOf(),
+        ProjectCategory.PERSONAL to setOf()
+    )
+
     val featuredIds: Set<String> = setOf("sokoban")
 
     override fun getProject(id: String): ProjectInfo? {
         return projectInfos[id];
     }
 
-    override fun getAllProjects(featured: Boolean): List<ProjectInfo> {
+    override fun getAllProjects(featured: Boolean, category: ProjectCategory?): List<ProjectInfo> {
         return projectInfos.filter {
-            !featured || featuredIds.contains(it.key)
+            (!featured || featuredIds.contains(it.key))
+            && (category == null || categories[category]?.contains(it.key) ?: false)
         }.values.toList()
     }
 }
