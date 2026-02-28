@@ -36,6 +36,24 @@ class SimpleProjectInfoRepository : IProjectInfoRepository {
             "A distributed file system built on top of FoundationDB",
             "$cdnUrl/fdb_arch_noalpha.png"
         ),
+        "broadAR" to ProjectInfo (
+            "Broad Museum AR Experience",
+            "broadAR",
+            "Location tracked AR Experience I worked on at Meta",
+            "$cdnUrl/broad.png"
+        ),
+        "metaAvatars" to ProjectInfo (
+            "Mobile 3D Avatars",
+            "metaAvatars",
+            "Mobile & AR rendering changes for Avatar Style Upgrade",
+            "$cdnUrl/ava.png"
+        ),
+        "vkPPU" to ProjectInfo (
+            "Vulkan Retro PPU",
+            "vkPPU",
+            "Vulkan Compute Pipeline for rendering NES games",
+            "$cdnUrl/ppu.png"
+        ),
     )
 
     val categories: Map<ProjectCategory, Set<String>> = mapOf(
@@ -46,8 +64,8 @@ class SimpleProjectInfoRepository : IProjectInfoRepository {
             "webglDemo", 
             "foundationDbFs"
         ),
-        ProjectCategory.PROFESSIONAL to setOf(),
-        ProjectCategory.PERSONAL to setOf()
+        ProjectCategory.PROFESSIONAL to setOf("broadAR", "metaAvatars"),
+        ProjectCategory.PERSONAL to setOf("vkPPU")
     )
 
     val featuredIds: Set<String> = setOf("sokoban")

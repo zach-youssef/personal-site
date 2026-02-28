@@ -19,6 +19,7 @@ function ProjectsPage() {
     let categoryLabels = [
         ["PROFESSIONAL", SiteTextContents[SiteText.WorkHeader]],
         ["UNIVERSITY", SiteTextContents[SiteText.ProjectHeader]],
+        ["PERSONAL", SiteTextContents[SiteText.Personal]],
     ];
 
     return(
@@ -40,11 +41,23 @@ function ProjectsPage() {
                     window.location.href="https://github.com/zach-youssef/foundationdb-fs";
                     return null;
                 }}/>
+                <Route path={`${match.path}/vkPPU`} component={ () => { 
+                    window.location.href="https://github.com/zach-youssef/vk_ppu";
+                    return null;
+                }}/>
+                <Route path={`${match.path}/broadAR`} component={ () => { 
+                    window.location.href="https://buck.co/work/meta-x-murakami-at-the-broad";
+                    return null;
+                }}/>
+                <Route path={`${match.path}/metaAvatars`} component={ () => { 
+                    window.location.href="https://www.theverge.com/2024/9/25/24254331/meta-metaverse-avatars-glow-up-connect-2024";
+                    return null;
+                }}/>
                 <Route path={match.path}>
                     <Container>
                         {
                             categoryLabels.map(entry => (
-                                <div>
+                                <div style={{padding: "0em 0em 2em"}}>
                                     <Row>
                                         <p>
                                             <h2>{entry[1]}</h2>

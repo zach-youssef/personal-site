@@ -5,6 +5,7 @@ enum SiteText {
     FeaturedProjectHeader,
     ProjectHeader,
     WorkHeader,
+    Personal,
 }
 
 const SiteTextContents: { [key in SiteText]: string } = {
@@ -14,6 +15,7 @@ const SiteTextContents: { [key in SiteText]: string } = {
     [SiteText.FeaturedProjectHeader] : "Featured Project",
     [SiteText.ProjectHeader] : "University Projects",
     [SiteText.WorkHeader] : "Professional Work",
+    [SiteText.Personal] : "Side Projects",
 };
 
 export { SiteText, SiteTextContents }
