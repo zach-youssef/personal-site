@@ -3,7 +3,11 @@ import { ProjectDisplayCard } from './ProjectDisplay';
 import { CardGroup } from 'react-bootstrap';
 import { fetchGraphQL } from '../../FetchHelper'
 
-function ProjectDisplayContainer(){
+interface Props {
+    category: String
+}
+
+function ProjectDisplayContainer({category}: Props){
     const [projectInfos, setProjectInfos] = useState([]);
 
     const [screenSize, setScreenSize] = useState(1024);
@@ -30,15 +34,15 @@ function ProjectDisplayContainer(){
     function loadProjectInfos() {
         let isMounted = true;
         fetchGraphQL(`
-            query FetchProjectsQuery {
-                projectInfos(category: UNIVERSITY) {
+            query FetchProjectsQuery($category: ProjectCategory) {
+                projectInfos(category: $category) {
                     name,
                     description,
                     id,
                     imagePath
                 }
             }
-        `, {}).then(response => {
+        `, {"category": category}).then(response => {
             if(!isMounted){
                 return;
             }

@@ -16,6 +16,11 @@ import { Container, Row } from 'react-bootstrap';
 function ProjectsPage() {
     let match = useRouteMatch();
 
+    let categoryLabels = [
+        ["PROFESSIONAL", SiteTextContents[SiteText.WorkHeader]],
+        ["UNIVERSITY", SiteTextContents[SiteText.ProjectHeader]],
+    ];
+
     return(
         <Router>
             <Switch>
@@ -37,14 +42,20 @@ function ProjectsPage() {
                 }}/>
                 <Route path={match.path}>
                     <Container>
-                        <Row>
-                            <p>
-                                <h2>{SiteTextContents[SiteText.ProjectHeader]}</h2>
-                            </p>
-                        </Row>
-                        <Row>
-                            <ProjectDisplayContainer />
-                        </Row>
+                        {
+                            categoryLabels.map(entry => (
+                                <div>
+                                    <Row>
+                                        <p>
+                                            <h2>{entry[1]}</h2>
+                                        </p>
+                                    </Row>
+                                    <Row>
+                                        <ProjectDisplayContainer category={entry[0]}/>
+                                    </Row>
+                                </div>
+                            ))
+                        }
                     </Container>
                 </Route>
             </Switch>

@@ -3,7 +3,8 @@ enum SiteText {
     AboutMeHeader,
     AboutDesc,
     FeaturedProjectHeader,
-    ProjectHeader
+    ProjectHeader,
+    WorkHeader,
 }
 
 const SiteTextContents: { [key in SiteText]: string } = {
@@ -11,8 +12,8 @@ const SiteTextContents: { [key in SiteText]: string } = {
     [SiteText.AboutMeHeader] : "About Me",
     [SiteText.AboutDesc] : "Software Engineer, Northeastern University Alum. \n I created this site as an interactive portfolio through which to continue practicing skills I don't necessarily use in my day job.",
     [SiteText.FeaturedProjectHeader] : "Featured Project",
-    [SiteText.ProjectHeader] : "University Projects"
-
+    [SiteText.ProjectHeader] : "University Projects",
+    [SiteText.WorkHeader] : "Professional Work",
 };
 
 export { SiteText, SiteTextContents }
