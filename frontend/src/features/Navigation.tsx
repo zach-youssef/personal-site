@@ -20,7 +20,7 @@ function Navigation() {
                 <Nav.Link href="https://github.com/zach-youssef">
                     <img src="/github-mark.svg" height={externalLogoHeight}/>
                 </Nav.Link>
-                <Nav.Link href="https://www.linkedin.com/in/zachary-youssef-3a9ab012b">
+                <Nav.Link href="https://www.linkedin.com/in/zach-youssef-3a9ab012b">
                     <img src="/InBug-Black.png" height={externalLogoHeight}/>
                 </Nav.Link>
             </Row>
