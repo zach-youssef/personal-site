@@ -68,7 +68,7 @@ class SimpleProjectInfoRepository : IProjectInfoRepository {
         ProjectCategory.PERSONAL to setOf("vkPPU")
     )
 
-    val featuredIds: Set<String> = setOf("sokoban")
+    val featuredIds: Set<String> = setOf("vkPPU")
 
     override fun getProject(id: String): ProjectInfo? {
         return projectInfos[id];
