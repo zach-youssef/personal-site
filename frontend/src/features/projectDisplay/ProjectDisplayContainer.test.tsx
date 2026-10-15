@@ -36,6 +36,17 @@ describe('ProjectDisplayContainer', () => {
             .toEqual(['/projects/sokoban', '/projects/seamCarver', '/projects/vkPPU']);
     });
 
+    it('requests its projects once even when the response has none', async () => {
+        const server = mockGraphQL({});
+        const { container } = renderContainer();
+
+        await vi.waitFor(() => expect(server.fetchMock).toHaveBeenCalled());
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        expect(server.fetchMock).toHaveBeenCalledTimes(1);
+        expect(container.querySelectorAll('.card')).toHaveLength(0);
+    });
+
     it.each([
         [1200, 1],
         [800, 2],

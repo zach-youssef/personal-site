@@ -34,10 +34,6 @@ function Home() {
     }
 
     useEffect(loadFeaturedProject, []);
-    
-    if (featuredProject === null || featuredProject === undefined){
-      loadFeaturedProject()
-    }
 
     return (
         <Container >

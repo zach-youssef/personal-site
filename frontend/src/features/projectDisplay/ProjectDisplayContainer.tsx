@@ -47,7 +47,7 @@ function ProjectDisplayContainer({category}: Props){
                 return;
             }
             const data = response.data;
-            setProjectInfos(data.projectInfos);
+            setProjectInfos(data.projectInfos ?? []);
         }).catch(error => {
             console.error(error);
         });
@@ -58,11 +58,6 @@ function ProjectDisplayContainer({category}: Props){
     }
 
     useEffect(loadProjectInfos, [])
-    
-    if (projectInfos === null || projectInfos === undefined) {
-        loadProjectInfos()
-        return <div/>
-    }
     
     return(
         <div>

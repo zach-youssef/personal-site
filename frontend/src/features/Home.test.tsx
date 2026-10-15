@@ -24,7 +24,8 @@ describe('Home', () => {
         render(<Home />);
 
         expect(await screen.findByText('Featured: Vulkan Retro PPU')).toBeInTheDocument();
-        expect(server.requests().every(request => /projectInfos\(featured: true\)/.test(request.query))).toBe(true);
+        expect(server.requests()).toHaveLength(1);
+        expect(server.requests()[0].query).toMatch(/projectInfos\(featured: true\)/);
     });
 
     it('logs and survives a failed request', async () => {
