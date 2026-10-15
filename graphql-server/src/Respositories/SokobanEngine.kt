@@ -8,6 +8,7 @@ import com.zyoussef.Sokoban.AStar.UnmatchedBoxHeuristic
 import com.zyoussef.Sokoban.SokobanParser
 import com.zyoussef.Sokoban.State
 import com.zyoussef.Sokoban.QLearnedResults
+import java.util.concurrent.ConcurrentHashMap
 
 class SokobanEngine : ISokobanRepository {
     override fun solveAStar(levelId: SokobanLevelId): List<SokobanMove> {
@@ -37,7 +38,8 @@ class SokobanEngine : ISokobanRepository {
 
     companion object {
         // Cache levels we've already loaded into memory
-        private val levels = mutableMapOf<SokobanLevelId, SokobanLevel>()
+        // GraphQL resolves fields of a query concurrently, so the cache must be thread safe
+        private val levels = ConcurrentHashMap<SokobanLevelId, SokobanLevel>()
 
         fun loadLevel(levelId: SokobanLevelId): SokobanLevel {
             return levels.computeIfAbsent(levelId){ SokobanParser.loadLevel(it) }

@@ -6,6 +6,9 @@ import com.zyoussef.Models.Sokoban.SokobanSquare
 import com.zyoussef.Sokoban.SokobanParser
 import com.zyoussef.Sokoban.SokobanTestLevels.applyMoves
 import com.zyoussef.Sokoban.State
+import java.util.concurrent.CyclicBarrier
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -23,6 +26,30 @@ class SokobanEngineTest {
     fun `getLevel matches the parsed level file`() {
         for (id in SokobanLevelId.values()) {
             assertEquals(SokobanParser.loadLevel(id), engine.getLevel(id))
+        }
+    }
+
+    @Test
+    fun `levels can be loaded concurrently from a cold cache`() {
+        // GraphQL resolves sokobanLevel, aStarSolution and qLearningSolution in parallel
+        val cache = SokobanEngine::class.java.getDeclaredField("levels").apply { isAccessible = true }.get(null) as MutableMap<*, *>
+        val threadCount = 16
+        val pool = Executors.newFixedThreadPool(threadCount)
+        try {
+            repeat(20) {
+                cache.clear()
+                val barrier = CyclicBarrier(threadCount)
+                val results = (0 until threadCount).map { i ->
+                    pool.submit<Unit> {
+                        val id = SokobanLevelId.values()[i % SokobanLevelId.values().size]
+                        barrier.await()
+                        assertEquals(SokobanParser.loadLevel(id), engine.getLevel(id))
+                    }
+                }
+                results.forEach { it.get(10, TimeUnit.SECONDS) }
+            }
+        } finally {
+            pool.shutdownNow()
         }
     }
 
