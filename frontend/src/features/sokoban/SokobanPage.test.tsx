@@ -78,12 +78,11 @@ describe('SokobanPage', () => {
 
         fireEvent.keyDown(document, { key: 'ArrowRight' });
         await waitFor(() => expect(playerColumn(container)).toBe(2));
-        // Manual moves are sent as ordinals of the page's Move enum, which matches the server's SokobanMove order
-        expect(lastActions()).toEqual({ level: 'LEVEL_0', actions: [3] });
+        expect(lastActions()).toEqual({ level: 'LEVEL_0', actions: ['RIGHT'] });
 
         fireEvent.keyDown(document, { key: 'ArrowLeft' });
         await waitFor(() => expect(playerColumn(container)).toBe(1));
-        expect(lastActions()).toEqual({ level: 'LEVEL_0', actions: [3, 2] });
+        expect(lastActions()).toEqual({ level: 'LEVEL_0', actions: ['RIGHT', 'LEFT'] });
 
         // Other keys are ignored
         const requestCount = server.requests().length;

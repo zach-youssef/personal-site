@@ -16,8 +16,13 @@ interface SokobanLevel {
     level: SokobanRow[]
 }
 
+// Values match the server's SokobanMove names, so moves can be sent to it as-is
 enum Move {
-    UP, DOWN, LEFT, RIGHT, UNDEF
+    UP = "UP",
+    DOWN = "DOWN",
+    LEFT = "LEFT",
+    RIGHT = "RIGHT",
+    UNDEF = "UNDEF",
 }
 
 function forceMapSquare(raw: string): SquareType {
