@@ -1,0 +1,159 @@
+@use "sass:color";
+
+// Theme variables, derived from Bootswatch Slate 4.6.2 (MIT, Thomas Park).
+// Keeps Slate's charcoal palette, but flattens it and adds a violet accent with purple
+// buttons, with body text and controls brightened for legibility on the dark background.
+
+//
+// Color system
+//
+
+$white:    #fff;
+$gray-100: #f1f3f5;
+$gray-200: #e3e6e9;
+$gray-300: #cfd4d9;
+$gray-400: #aab1b8;
+$gray-500: #8a929a;
+$gray-600: #6c747c;
+$gray-700: #464c53;
+$gray-800: #30353b;
+$gray-900: #22262b;
+$black:    #000;
+
+// Slate's palette, with red and green nudged to read better as text on dark surfaces
+$red:     #f0716d;
+$orange:  #fd7e14;
+$yellow:  #f89406;
+$green:   #62c462;
+$cyan:    #5bc0de;
+
+// Violet for links, focus rings and highlights; a deeper purple fills buttons,
+// which keeps white button text readable
+$accent:        #a78bfa;
+$purple:        #7c3aed;
+
+$primary:       $purple;
+$secondary:     $gray-700;
+$success:       $green;
+$info:          $cyan;
+$warning:       $yellow;
+$danger:        $red;
+$light:         $gray-200;
+$dark:          $gray-900;
+
+// Puts white text on the purple and grays, and dark text on the lighter colours
+$yiq-contrasted-threshold:  150;
+$yiq-text-dark:             $gray-900;
+
+$enable-shadows:            false;
+$enable-gradients:          false;
+
+// Surfaces, from back to front
+$body-bg:                   #1d2125;
+$surface:                   #272c31;
+$surface-raised:            #30363c;
+$border-subtle:             rgba($white, .08);
+
+$body-color:                #c9ced3;
+$headings-color:            $gray-100;
+$text-muted:                $gray-500;
+
+// Links
+
+$link-color:                color.adjust($accent, $lightness: 8%);
+$link-hover-color:          color.adjust($accent, $lightness: 22%);
+$link-hover-decoration:     none;
+
+// Fonts
+
+$font-family-sans-serif:    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+$font-size-base:            1rem;
+$font-size-sm:              $font-size-base * .875;
+$line-height-base:          1.6;
+$headings-font-weight:      600;
+$headings-line-height:      1.25;
+
+$border-radius:             .5rem;
+$border-radius-lg:          .75rem;
+$border-radius-sm:          .375rem;
+$border-color:              $border-subtle;
+
+// Buttons and inputs
+
+$input-btn-padding-y:       .5rem;
+$input-btn-padding-x:       1rem;
+$input-btn-focus-width:     .2rem;
+$input-btn-focus-color:     rgba($accent, .35);
+$btn-font-weight:           500;
+
+// Forms
+
+$input-bg:                  $surface;
+$input-color:               $gray-100;
+$input-border-color:        rgba($white, .14);
+$input-focus-bg:            $surface;
+$input-focus-color:         $white;
+$input-focus-border-color:  $accent;
+$input-placeholder-color:   $gray-500;
+$input-disabled-bg:         $gray-800;
+$form-group-margin-bottom:  1.25rem;
+$custom-select-bg:          $surface;
+
+// Dropdowns
+
+$dropdown-bg:               $surface-raised;
+$dropdown-border-color:     $border-subtle;
+$dropdown-divider-bg:       $border-subtle;
+$dropdown-link-color:       $body-color;
+$dropdown-link-hover-color: $white;
+$dropdown-link-hover-bg:    rgba($accent, .16);
+$dropdown-link-active-color: $gray-900;
+$dropdown-link-active-bg:   $accent;
+$dropdown-padding-y:        .375rem;
+$dropdown-item-padding-y:   .375rem;
+
+// Navbar
+
+$navbar-padding-y:          .625rem;
+$navbar-dark-color:         rgba($white, .72);
+$navbar-dark-hover-color:   $white;
+$navbar-dark-active-color:  $white;
+$navbar-dark-toggler-border-color: rgba($white, .15);
+
+// Cards
+
+// Project cards use a muted version of the purple, so they pick up the accent
+$card-bg:                   hsl(258, 14%, 19%);
+$card-border-color:         rgba($accent, .12);
+
+// The header is a darker shade of the card colour
+$navbar-bg:                 color.adjust($card-bg, $lightness: -7%);
+$card-border-radius:        $border-radius-lg;
+$card-cap-bg:               transparent;
+$card-spacer-x:             1.25rem;
+$card-spacer-y:             1rem;
+
+// Alerts
+
+$alert-border-width:        0;
+$alert-padding-y:           .625rem;
+
+// Carousel
+
+$carousel-indicator-active-bg: $accent;
+$carousel-control-color:        $accent;
+// Opaque enough that the violet reads as violet against the dark renders
+$carousel-control-opacity:      .8;
+
+// Everything else keeps Slate's treatment of the dark surfaces
+
+$table-color:               $body-color;
+$table-border-color:        $border-subtle;
+$list-group-bg:             $surface;
+$list-group-border-color:   $border-subtle;
+$modal-content-bg:          $surface;
+$popover-bg:                $surface-raised;
+$toast-background-color:    $surface;
+$progress-bg:               $surface;
+$jumbotron-bg:              $surface;
+$pre-color:                 inherit;

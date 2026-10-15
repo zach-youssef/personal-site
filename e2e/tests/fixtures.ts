@@ -1,9 +1,5 @@
 import { test as base, expect, Page, Response } from '@playwright/test';
-import { resolve } from 'node:path';
 import { BACKEND_ORIGIN, PRODUCTION_ORIGIN } from './servers';
-
-// The site loads a Bootswatch theme from its CDN; serve the installed Bootstrap build instead
-const BOOTSTRAP_CSS = resolve(__dirname, '../../frontend/node_modules/bootstrap/dist/css/bootstrap.min.css');
 
 export const test = base.extend({
     context: async ({ context, baseURL }, use) => {
@@ -16,8 +12,6 @@ export const test = base.extend({
                 if (response) {
                     await route.fulfill({ response }).catch(() => {});
                 }
-            } else if (url.hostname === 'bootswatch.com' && url.pathname.endsWith('/bootstrap.min.css')) {
-                await route.fulfill({ path: BOOTSTRAP_CSS });
             } else if (url.origin === new URL(baseURL!).origin) {
                 await route.continue();
             } else {

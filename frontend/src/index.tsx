@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import './theme/theme.scss';
 import './index.css';
 import App from './App';
 import { store } from './app/store';
@@ -8,7 +9,6 @@ import * as serviceWorker from './serviceWorker';
 
 ReactDOM.render(
   <React.StrictMode>
-    <link rel="stylesheet" href="https://bootswatch.com/4/slate/bootstrap.min.css"/>
     <Provider store={store}>
       <App />
     </Provider>
