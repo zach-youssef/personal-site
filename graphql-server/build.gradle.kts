@@ -47,6 +47,8 @@ dependencies {
     implementation("com.apurebase:kgraphql-ktor:$KGraphQLVersion")
     testImplementation("io.ktor:ktor-server-tests:$ktor_version")
     testImplementation(kotlin("test-junit"))
+    // Matches the version KGraphQL uses at runtime
+    testImplementation("com.fasterxml.jackson.core:jackson-databind:2.12.2")
 }
 
 tasks.test {
