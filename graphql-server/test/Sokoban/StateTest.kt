@@ -144,4 +144,15 @@ class StateTest {
         assertEquals(Pair(5, 4), State.newPos(SokobanMove.LEFT, origin))
         assertEquals(Pair(5, 6), State.newPos(SokobanMove.RIGHT, origin))
     }
+
+    @Test
+    fun `opposite reverses every direction`() {
+        assertEquals(SokobanMove.DOWN, State.opposite(SokobanMove.UP))
+        assertEquals(SokobanMove.UP, State.opposite(SokobanMove.DOWN))
+        assertEquals(SokobanMove.RIGHT, State.opposite(SokobanMove.LEFT))
+        assertEquals(SokobanMove.LEFT, State.opposite(SokobanMove.RIGHT))
+        for (dir in SokobanMove.values()) {
+            assertEquals(Pair(5, 5), State.newPos(State.opposite(dir), State.newPos(dir, Pair(5, 5))))
+        }
+    }
 }

@@ -278,8 +278,8 @@ class State {
             return when(dir){
                 SokobanMove.UP -> SokobanMove.DOWN
                 SokobanMove.DOWN -> SokobanMove.UP
-                SokobanMove.LEFT -> SokobanMove.LEFT
-                SokobanMove.RIGHT -> SokobanMove.RIGHT
+                SokobanMove.LEFT -> SokobanMove.RIGHT
+                SokobanMove.RIGHT -> SokobanMove.LEFT
             }
         }
     }
