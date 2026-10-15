@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { resolve } from "node:path";
 import { readFileSync, existsSync } from "node:fs";
 import { defineConfig, loadEnv, Plugin } from "vite";
@@ -23,6 +24,13 @@ export default defineConfig(({ mode }) => {
       
       
     ],
+    test: {
+      environment: "jsdom",
+      // Testing Library registers its automatic cleanup through the global afterEach
+      globals: true,
+      setupFiles: ["src/setupTests.ts"],
+      include: ["src/**/*.test.{ts,tsx}"],
+    },
   };
 });
 
