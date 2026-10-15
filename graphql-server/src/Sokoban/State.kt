@@ -99,7 +99,8 @@ class State {
                 val pushedFrom = newPos(dir, valid)
                 // Position the player would need to be in to push the box here
                 val playerPos = newPos(dir, pushedFrom)
-                if(!(walls.contains(playerPos) || walls.contains(pushedFrom)))
+                // Levels aren't always enclosed by walls, so the grid edge also blocks pushes
+                if(isOnGrid(playerPos) && !(walls.contains(playerPos) || walls.contains(pushedFrom)))
                 {
                     frontier.add(pushedFrom)
                 }
@@ -128,11 +129,9 @@ class State {
 
     fun getSuccessor(dir: SokobanMove): State? {
         val newPos = newPos(dir, player)
-        val newRow = newPos.first
-        val newCol = newPos.second
 
         // Verify the position is on the grid
-        if (newRow >= numRows || newCol >= numCols || newRow < 0 || newCol < 0 ){
+        if (!isOnGrid(newPos)){
             return null
         }
         // Verify we aren't walking into a wall
@@ -148,6 +147,10 @@ class State {
         return if (canBoxBePushed(dir, newPos))
             pushBox(dir, newPos)
         else null
+    }
+
+    private fun isOnGrid(pos: Pair<Int, Int>): Boolean {
+        return pos.first in 0 until numRows && pos.second in 0 until numCols
     }
 
     fun isGoalState(): Boolean {

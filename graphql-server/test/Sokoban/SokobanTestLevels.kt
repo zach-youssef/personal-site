@@ -11,7 +11,6 @@ object SokobanTestLevels {
     fun level(vararg lines: String, id: SokobanLevelId = SokobanLevelId.LEVEL_0): SokobanLevel =
         SokobanLevel(id, lines.map { line -> SokobanRow(line.map(::square)) })
 
-    // State's dead square search assumes walls enclose every spot, or it never terminates
     fun state(vararg lines: String): State = State(level(*lines))
 
     // A single row level with walls above and below it

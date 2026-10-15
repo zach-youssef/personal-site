@@ -2,6 +2,8 @@ package com.zyoussef.Sokoban
 
 import com.zyoussef.Models.Sokoban.SokobanLevelId
 import com.zyoussef.Models.Sokoban.SokobanMove
+import com.zyoussef.Sokoban.AStar.AStarAgent
+import com.zyoussef.Sokoban.AStar.UnmatchedBoxHeuristic
 import com.zyoussef.Sokoban.SokobanTestLevels.level
 import com.zyoussef.Sokoban.SokobanTestLevels.corridor
 import com.zyoussef.Sokoban.SokobanTestLevels.state
@@ -46,7 +48,6 @@ class StateTest {
 
     @Test
     fun `moving off the edge of the grid is illegal`() {
-        // No spots, so this level doesn't need to be enclosed
         val s = state("@ ")
         assertNull(s.getSuccessor(SokobanMove.LEFT))
         assertNull(s.getSuccessor(SokobanMove.UP))
@@ -154,5 +155,18 @@ class StateTest {
         for (dir in SokobanMove.values()) {
             assertEquals(Pair(5, 5), State.newPos(State.opposite(dir), State.newPos(dir, Pair(5, 5))))
         }
+    }
+
+    @Test(timeout = 10_000)
+    fun `levels that are not enclosed by walls can be loaded and solved`() {
+        val open = state("@ $ .")
+
+        assertTrue(open.isSolvable())
+        // Nothing can stand left of a box on the edge to push it right
+        val stuck = state("$ @ .")
+        assertFalse(stuck.isSolvable())
+
+        val solved = SokobanTestLevels.applyMoves(open, AStarAgent(UnmatchedBoxHeuristic()).solve(open))
+        assertTrue(solved.isGoalState())
     }
 }
