@@ -1,0 +1,93 @@
+// Bootstrap variables shared by both themes, built from the base colours and a palette
+
+$success:       $green;
+$info:          $cyan;
+$warning:       $yellow;
+$danger:        $red;
+$light:         $gray-200;
+$dark:          $gray-900;
+
+// Puts white text on the button colour and dark grays, and dark text on the lighter colours
+$yiq-contrasted-threshold:  150;
+$yiq-text-dark:             $gray-900;
+
+$enable-shadows:            false;
+$enable-gradients:          false;
+
+$link-hover-decoration:     none;
+
+// Fonts
+
+$font-family-sans-serif:    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+$font-size-base:            1rem;
+$font-size-sm:              $font-size-base * .875;
+$line-height-base:          1.6;
+$headings-font-weight:      600;
+$headings-line-height:      1.25;
+
+$border-radius:             .5rem;
+$border-radius-lg:          .75rem;
+$border-radius-sm:          .375rem;
+$border-color:              $border-subtle;
+
+// Buttons and inputs
+
+$input-btn-padding-y:       .5rem;
+$input-btn-padding-x:       1rem;
+$input-btn-focus-width:     .2rem;
+$input-btn-focus-color:     rgba($accent, .35);
+$btn-font-weight:           500;
+
+// Forms
+
+$input-focus-bg:            $input-bg;
+$input-focus-border-color:  $accent;
+$input-placeholder-color:   $text-muted;
+$form-group-margin-bottom:  1.25rem;
+$custom-select-bg:          $input-bg;
+
+// Dropdowns
+
+$dropdown-border-color:     $border-subtle;
+$dropdown-divider-bg:       $border-subtle;
+$dropdown-link-color:       $body-color;
+$dropdown-link-hover-bg:    rgba($accent, .16);
+$dropdown-link-active-bg:   $accent;
+$dropdown-padding-y:        .375rem;
+$dropdown-item-padding-y:   .375rem;
+
+// Navbar
+
+$navbar-padding-y:          .625rem;
+
+// Cards
+
+$card-border-radius:        $border-radius-lg;
+$card-cap-bg:               transparent;
+$card-spacer-x:             1.25rem;
+$card-spacer-y:             1rem;
+
+// Alerts
+
+$alert-border-width:        0;
+$alert-padding-y:           .625rem;
+
+// Carousel
+
+$carousel-indicator-active-bg: $accent;
+$carousel-control-color:        $accent;
+// Opaque enough that the violet reads as violet against the dark renders
+$carousel-control-opacity:      .8;
+
+// Everything else uses the palette's surfaces
+
+$table-color:               $body-color;
+$table-border-color:        $border-subtle;
+$list-group-bg:             $surface;
+$list-group-border-color:   $border-subtle;
+$modal-content-bg:          $surface;
+$popover-bg:                $surface-raised;
+$toast-background-color:    $surface;
+$progress-bg:               $surface;
+$jumbotron-bg:              $surface;
+$pre-color:                 inherit;

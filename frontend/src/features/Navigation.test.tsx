@@ -12,11 +12,11 @@ describe('Navigation', () => {
         expect(screen.getByRole('link', { name: 'Projects' })).toHaveAttribute('href', '/projects');
     });
 
-    it('links to external profiles', () => {
-        const { container } = render(<Navigation />);
+    it('links to external profiles by name', () => {
+        render(<Navigation />);
 
-        const hrefs = Array.from(container.querySelectorAll('a')).map(a => a.getAttribute('href'));
-        expect(hrefs).toContain('https://github.com/zach-youssef');
-        expect(hrefs).toContain('https://www.linkedin.com/in/zach-youssef-3a9ab012b');
+        expect(screen.getByRole('link', { name: 'GitHub' })).toHaveAttribute('href', 'https://github.com/zach-youssef');
+        expect(screen.getByRole('link', { name: 'LinkedIn' }))
+            .toHaveAttribute('href', 'https://www.linkedin.com/in/zach-youssef-3a9ab012b');
     });
 });

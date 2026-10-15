@@ -1,0 +1,63 @@
+@use "sass:color";
+
+// Dark theme: Slate's charcoal, with body text and controls brightened for legibility
+
+$color-scheme:              dark;
+
+// Slate's red, nudged to read better as text on dark surfaces
+$red:                       #f0716d;
+
+// Violet for links, focus rings and highlights, and a deep purple for buttons
+// that keeps white button text readable
+$accent:                    #a78bfa;
+$primary:                   $purple;
+$secondary:                 $gray-700;
+
+// Surfaces, from back to front
+$body-bg:                   #1d2125;
+$surface:                   #272c31;
+$surface-raised:            #30363c;
+$border-subtle:             rgba($white, .08);
+
+$body-color:                #c9ced3;
+$headings-color:            $gray-100;
+$text-muted:                $gray-500;
+$card-text-color:           $gray-400;
+$label-color:               $gray-200;
+$selection-color:           $white;
+$shadow-color:              rgba($black, .35);
+
+$link-color:                color.adjust($accent, $lightness: 8%);
+$link-hover-color:          color.adjust($accent, $lightness: 22%);
+
+// Forms
+
+$input-bg:                  $surface;
+$input-color:               $gray-100;
+$input-border-color:        rgba($white, .14);
+$input-focus-color:         $white;
+$input-disabled-bg:         $gray-800;
+$btn-secondary-border-color: rgba($white, .1);
+
+// Dropdowns
+
+$dropdown-bg:               $surface-raised;
+$dropdown-link-hover-color: $white;
+$dropdown-link-active-color: $gray-900;
+
+// Navbar: react-bootstrap's dark variant
+
+$navbar-dark-color:         rgba($white, .72);
+$navbar-dark-hover-color:   $white;
+$navbar-dark-active-color:  $white;
+$navbar-dark-toggler-border-color: rgba($white, .15);
+$nav-link-hover-bg:         rgba($white, .06);
+
+// Project cards use a muted version of the purple, so they pick up the accent,
+// and the header is a darker shade of the same colour
+$card-bg:                   hsl(258, 14%, 19%);
+$card-border-color:         rgba($accent, .12);
+$navbar-bg:                 color.adjust($card-bg, $lightness: -7%);
+
+// Alerts: tinted panels whose text is a lighter shade of their colour
+$alert-text-lightness:      18%;

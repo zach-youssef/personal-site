@@ -4,8 +4,8 @@
 // with flat surfaces, rounded corners and a little depth on hover.
 
 :root {
-  // Native controls (scrollbars, number spinners, the file picker) render dark too
-  color-scheme: dark;
+  // Native controls (scrollbars, number spinners, the file picker) follow the theme
+  color-scheme: $color-scheme;
 }
 
 body {
@@ -16,7 +16,7 @@ body {
 
 ::selection {
   background: rgba($accent, .35);
-  color: $white;
+  color: $selection-color;
 }
 
 h1, h2, h3 {
@@ -42,26 +42,131 @@ h1, h2, h3 {
   letter-spacing: -.01em;
 }
 
-.navbar-dark .navbar-nav .nav-link {
+// Narrow phones fit the brand, theme switch and menu button on one row
+@include media-breakpoint-down(xs) {
+  .navbar {
+    padding-right: .75rem;
+    padding-left: .75rem;
+  }
+
+  .navbar-brand {
+    font-size: 1.125rem;
+  }
+
+  .navbar-toggler {
+    padding: .25rem .5rem;
+  }
+}
+
+// The smallest phones keep the switch and the moon, but drop the sun
+@media (max-width: 359.98px) {
+  .navbar {
+    padding-right: .5rem;
+    padding-left: .5rem;
+  }
+
+  .navbar-brand {
+    margin-right: .25rem;
+    font-size: .9375rem;
+  }
+
+  .navbar-toggler {
+    font-size: 1rem;
+  }
+
+  .theme-toggle .theme-icon-light {
+    display: none;
+  }
+
+  .theme-toggle .custom-switch {
+    margin-left: 0 !important;
+  }
+}
+
+.navbar .navbar-nav .nav-link {
   border-radius: $border-radius-sm;
   transition: color .15s, background-color .15s;
 
   &:hover,
   &:focus {
-    background-color: rgba($white, .06);
+    background-color: $nav-link-hover-bg;
   }
 }
 
-// The GitHub and LinkedIn marks are black; invert them to read on the dark bar
-.navbar .nav-link img {
-  filter: invert(1);
-  opacity: .72;
-  transition: opacity .15s;
+// The GitHub and LinkedIn marks are drawn in the button colour, using the official
+// logo files as masks, and brighten towards the link hover colour on hover
+.brand-logo {
+  display: block;
+  height: 20px;
+  background-color: $primary;
+  -webkit-mask: var(--logo) center / contain no-repeat;
+  mask: var(--logo) center / contain no-repeat;
+  transition: background-color .15s;
+
+  .nav-link:hover &,
+  .nav-link:focus & {
+    background-color: $link-hover-color;
+  }
+
+  &-github {
+    --logo: url("/github-mark.svg");
+    aspect-ratio: 98 / 96;
+  }
+
+  &-linkedin {
+    --logo: url("/InBug-Black.png");
+    aspect-ratio: 840 / 779;
+  }
 }
 
-.navbar .nav-link:hover img,
-.navbar .nav-link:focus img {
-  opacity: 1;
+// The sun and moon either side of the theme switch take the link colour
+.navbar-dark .theme-toggle {
+  color: $navbar-dark-color;
+}
+
+.navbar-light .theme-toggle {
+  color: $navbar-light-color;
+}
+
+// Light isn't "off", so the switch is filled in either position, with the knob marking the theme
+.theme-toggle .custom-control-input:not(:disabled) ~ .custom-control-label::before {
+  background-color: $primary;
+  border-color: $primary;
+}
+
+.theme-toggle .custom-control-label::after {
+  background-color: $custom-control-indicator-bg;
+}
+
+// The icon for the current theme takes the button colour: the sun in light, the moon in dark
+.theme-toggle .theme-icon-#{$color-scheme} {
+  color: $primary;
+}
+
+// Bootstrap draws the switch to the left of an empty label, which leaves nothing to click
+// but the track; draw it inside a label sized to the track instead
+.theme-toggle .custom-switch {
+  padding-left: 0;
+
+  .custom-control-label {
+    display: block;
+    width: $custom-switch-width;
+    min-height: $font-size-base * $line-height-base;
+    margin-bottom: 0;
+    cursor: pointer;
+
+    &::before {
+      left: 0;
+    }
+
+    &::after {
+      left: $custom-control-indicator-border-width * 2;
+    }
+  }
+}
+
+.theme-icon {
+  cursor: pointer;
 }
 
 // Cards =======================================================================
@@ -84,18 +189,16 @@ h1, h2, h3 {
 }
 
 .card-text {
-  color: $gray-400;
+  color: $card-text-color;
 }
 
-// Give every project image the same frame, letterboxing rather than cropping it
-.card-img-top {
+// Give every project image, in the project cards and the featured card, the same frame,
+// letterboxing rather than cropping it
+.card-img-top,
+.card-img {
   aspect-ratio: 16 / 10;
   object-fit: contain;
   background-color: color.adjust($card-bg, $lightness: -4%);
-  border-radius: $border-radius;
-}
-
-.card-img {
   border-radius: $border-radius;
 }
 
@@ -128,7 +231,7 @@ h1, h2, h3 {
     &:hover {
       transform: translateY(-3px);
       border-color: rgba($accent, .45);
-      box-shadow: 0 .75rem 2rem rgba($black, .35);
+      box-shadow: 0 .75rem 2rem $shadow-color;
     }
   }
 
@@ -168,7 +271,7 @@ h1, h2, h3 {
 }
 
 .btn-secondary {
-  border-color: rgba($white, .1);
+  border-color: $btn-secondary-border-color;
 }
 
 .btn-toolbar {
@@ -184,7 +287,7 @@ h1, h2, h3 {
 // Forms =======================================================================
 
 label {
-  color: $gray-200;
+  color: $label-color;
   font-weight: 500;
 }
 
@@ -195,15 +298,15 @@ label {
 }
 
 .form-control-file {
-  color: $gray-400;
+  color: $card-text-color;
 
   &::file-selector-button {
     margin-right: .75rem;
     padding: .375rem .875rem;
-    border: 1px solid rgba($white, .1);
+    border: 1px solid $btn-secondary-border-color;
     border-radius: $border-radius-sm;
     background-color: $secondary;
-    color: $white;
+    color: color-yiq($secondary);
     font-weight: 500;
     cursor: pointer;
     transition: background-color .15s;
@@ -225,7 +328,7 @@ label {
     &-#{$color} {
       background-color: rgba($value, .14);
       border-left-color: $value;
-      color: color.adjust($value, $lightness: 18%);
+      color: color.adjust($value, $lightness: $alert-text-lightness);
     }
   }
 }
@@ -233,7 +336,7 @@ label {
 // Dropdowns ===================================================================
 
 .dropdown-menu {
-  box-shadow: 0 .75rem 2rem rgba($black, .4);
+  box-shadow: 0 .75rem 2rem $shadow-color;
 }
 
 .dropdown-item {
@@ -248,7 +351,7 @@ label {
   overflow: hidden;
   border-radius: $border-radius-lg;
   border: 1px solid $border-subtle;
-  box-shadow: 0 1rem 3rem rgba($black, .35);
+  box-shadow: 0 1rem 3rem $shadow-color;
 }
 
 .spinner-border {

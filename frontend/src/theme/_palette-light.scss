@@ -1,0 +1,66 @@
+@use "sass:color";
+
+// Light theme: the dark theme's structure in pinks on eggshell, with the grays warmed
+// to match
+
+$color-scheme:              light;
+
+$red:                       #d63b36;
+
+// Pink deep enough to read as link text on eggshell, and a brighter pink for buttons
+// that still keeps white button text readable
+$accent:                    #9d174d;
+$primary:                   $pink;
+$secondary:                 #ece1e4;
+
+// Surfaces, from back to front
+// Eggshell rather than white, with inputs and menus a shade lighter than the page
+$body-bg:                   #f5f1e8;
+$surface:                   #fbf9f4;
+$surface-raised:            #fbf9f4;
+$border-subtle:             rgba($black, .08);
+
+$body-color:                #362a30;
+$headings-color:            #241b20;
+$text-muted:                #76626b;
+$card-text-color:           #5e4f57;
+$label-color:               #362a30;
+$selection-color:           $headings-color;
+$shadow-color:              rgba(#7a2a50, .14);
+
+$link-color:                $accent;
+$link-hover-color:          color.adjust($accent, $lightness: -12%);
+
+// Forms
+
+$input-bg:                  $surface;
+$input-color:               $body-color;
+$input-border-color:        rgba($black, .16);
+$input-focus-color:         $headings-color;
+$input-disabled-bg:         #efe8e4;
+$btn-secondary-border-color: rgba($black, .08);
+
+// Dropdowns
+
+$dropdown-bg:               $surface-raised;
+$dropdown-link-hover-color: $headings-color;
+$dropdown-link-active-color: $white;
+
+// Navbar: react-bootstrap's light variant
+
+$navbar-light-color:        rgba($black, .66);
+$navbar-light-hover-color:  $black;
+$navbar-light-active-color: $black;
+$navbar-light-brand-color:  $headings-color;
+$navbar-light-brand-hover-color: $headings-color;
+$navbar-light-toggler-border-color: rgba($black, .15);
+$nav-link-hover-bg:         rgba($black, .05);
+
+// Project cards use a muted version of the pink, so they pick up the accent,
+// and the header is a darker shade of the same colour
+$card-bg:                   hsl(348, 60%, 95%);
+$card-border-color:         rgba($accent, .14);
+$navbar-bg:                 color.adjust($card-bg, $lightness: -5%);
+
+// Alerts: tinted panels whose text is a darker shade of their colour
+$alert-text-lightness:      -14%;
