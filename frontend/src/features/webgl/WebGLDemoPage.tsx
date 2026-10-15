@@ -1,5 +1,4 @@
 import React, {useLayoutEffect, useState} from 'react'
-import ServerDomain from './../../ServerDomain';
 import { Container } from 'react-bootstrap';
 
 function WebGLDemoPage() {
@@ -19,7 +18,7 @@ function WebGLDemoPage() {
 		<Container>
 			<iframe 
 				title="WebGL Demo"
-				src={`http://${ServerDomain}/Scenegraphs.html`}
+				src="/Scenegraphs.html"
 				width={540}
 				height={540}
 			/>

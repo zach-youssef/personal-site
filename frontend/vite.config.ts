@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => {
       sourcemapPlugin(),
       buildPathPlugin(),
       basePlugin(),
+      backendProxyPlugin(),
       importPrefixPlugin(),
       htmlPlugin(mode),
       
@@ -161,6 +162,37 @@ function basePlugin(): Plugin {
 				// Absolute asset paths, so pages on nested routes like /projects/sokoban can load them
 				base: PUBLIC_URL || "/",
 			};
+		},
+	};
+}
+
+// Paths the Ktor backend serves. In production it serves the site too, so the frontend requests
+// these relative to the page; the dev and preview servers forward them to a backend instead.
+// Frontend build output also lives under /assets, so only the backend's asset folders are listed.
+const BACKEND_PATHS = [
+	"/graphql",
+	"/seamCarver",
+	"/assets/projectThumbnail",
+	"/assets/raytracer",
+	"/Scenegraphs.html",
+	"/out",
+	"/json",
+	"/models",
+	"/textures",
+];
+
+// BACKEND_URL picks the backend, e.g. a local one on another port or the live site;
+// it defaults to the port the backend listens on when run locally
+function backendProxyPlugin(): Plugin {
+	return {
+		name: "backend-proxy-plugin",
+		config(_, { mode }) {
+			const { BACKEND_URL } = loadEnv(mode, ".", ["BACKEND_URL"]);
+			const target = BACKEND_URL || "http://localhost:8080";
+			const proxy = Object.fromEntries(
+				BACKEND_PATHS.map((path) => [path, { target, changeOrigin: true }]),
+			);
+			return { server: { proxy }, preview: { proxy } };
 		},
 	};
 }

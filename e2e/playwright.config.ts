@@ -1,9 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
-import { BACKEND_PORT, FRONTEND_PORT } from './tests/servers';
+import { BACKEND_ORIGIN, BACKEND_PORT, FRONTEND_PORT } from './tests/servers';
 
 // Runs the real backend and a production build of the frontend side by side.
-// The frontend hard-codes zyoussef.com as its API host, so tests/fixtures.ts
-// redirects those requests to the local backend.
+// The frontend requests the backend relative to the page, and the preview
+// server forwards those requests to the local backend, as Ktor does in production.
 export default defineConfig({
     testDir: './tests',
     fullyParallel: true,
@@ -30,8 +30,8 @@ export default defineConfig({
         {
             command: `npm run build && npx vite preview --port ${FRONTEND_PORT} --strictPort`,
             cwd: '../frontend',
-            // Stop Vite from opening a browser window
-            env: { BROWSER: 'none' },
+            // Stop Vite from opening a browser window, and point its proxy at the test backend
+            env: { BROWSER: 'none', BACKEND_URL: BACKEND_ORIGIN },
             url: `http://localhost:${FRONTEND_PORT}`,
             timeout: 120_000,
             reuseExistingServer: !process.env.CI,

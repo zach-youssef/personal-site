@@ -195,7 +195,7 @@ fun Application.module(testing: Boolean = false) {
 
             // Raytracer
             val raytracerRepository: IRaytracerRepository =
-                RaytracerImageRepository(File("assets/raytracer"), "http://zyoussef.com/assets/raytracer")
+                RaytracerImageRepository(File("assets/raytracer"), "/assets/raytracer")
 
             query("raytracerImages") {
                 description = "Returns a list of images output from my raytracer"

@@ -13,7 +13,7 @@ describe('fetchGraphQL', () => {
         const response = await fetchGraphQL('query { levels }', { a: 1 });
 
         expect(response).toEqual({ data: { levels: ['LEVEL_0'] } });
-        expect(fetchMock).toHaveBeenCalledWith('http://zyoussef.com/graphql', {
+        expect(fetchMock).toHaveBeenCalledWith('/graphql', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ query: 'query { levels }', variables: { a: 1 } }),

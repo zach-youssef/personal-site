@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import ServerDomain from './../../ServerDomain';
 import { Alert, Button, Col, Container, Form, Image as Img, Row,Spinner } from 'react-bootstrap';
 import { useForm, ValidateResult } from 'react-hook-form'
 
@@ -34,7 +33,7 @@ function SeamCarverPage() {
         form.append('height', data.height)
         form.append('file', imageFile)
         
-        let response = await fetch(`http://${ServerDomain}/seamCarver/upload`, {
+        let response = await fetch('/seamCarver/upload', {
             method: 'POST',
             body: form
         });
@@ -87,7 +86,7 @@ function SeamCarverPage() {
     return (
         <Container>
             <Form 
-                action="http://zyoussef.com/seamCarver/upload" 
+                action="/seamCarver/upload" 
                 method="post" 
                 encType="multipart/form-data"
                 onSubmit={handleSubmit(onSubmit)}

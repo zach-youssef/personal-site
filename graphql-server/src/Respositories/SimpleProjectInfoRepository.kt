@@ -4,7 +4,8 @@ import com.zyoussef.Models.ProjectInfo.ProjectInfo
 import com.zyoussef.Models.ProjectInfo.ProjectCategory
 
 class SimpleProjectInfoRepository : IProjectInfoRepository {
-    val cdnUrl = "http://zyoussef.com/assets/projectThumbnail"
+    // Relative, so thumbnails load over whichever protocol the page uses
+    val cdnUrl = "/assets/projectThumbnail"
     val projectInfos: Map<String, ProjectInfo> = mapOf(
         "sokoban" to ProjectInfo(
             "Sokoban AI",

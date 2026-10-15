@@ -112,7 +112,7 @@ describe('SeamCarverPage', () => {
         expect(screen.getByAltText('Input file')).toHaveAttribute('src', 'blob:small.png');
 
         const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-        expect(url).toBe('http://zyoussef.com/seamCarver/upload');
+        expect(url).toBe('/seamCarver/upload');
         expect(init.method).toBe('POST');
         const form = init.body as FormData;
         expect(form.get('width')).toBe('50');

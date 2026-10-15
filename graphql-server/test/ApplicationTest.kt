@@ -111,7 +111,7 @@ class ApplicationTest {
     fun `raytracerImages lists image urls`() = withApp {
         // Works whether or not the gitignored assets/raytracer directory exists locally
         val urls = graphQL("{ raytracerImages }").path("raytracerImages").texts()
-        assertTrue(urls.all { it.startsWith("http://zyoussef.com/assets/raytracer/") }, "$urls")
+        assertTrue(urls.all { it.startsWith("/assets/raytracer/") }, "$urls")
     }
 
     @Test

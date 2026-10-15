@@ -45,3 +45,31 @@ for (const [id, url] of [
         await expect(page).toHaveURL(url);
     });
 }
+
+// Requests to another origin, like the hard-coded http://zyoussef.com URLs this replaced,
+// would be blocked as mixed content once the site is served over https
+test('pages only request their own origin', async ({ page, baseURL }) => {
+    const crossOrigin: string[] = [];
+    page.on('request', request => {
+        if (new URL(request.url()).origin !== new URL(baseURL!).origin) {
+            crossOrigin.push(request.url());
+        }
+    });
+
+    for (const path of ['/', '/projects', '/projects/sokoban', '/projects/seamCarver', '/projects/raytracer', '/projects/webglDemo']) {
+        await page.goto(path);
+        await page.waitForLoadState('networkidle');
+    }
+
+    expect(crossOrigin).toEqual([]);
+});
+
+test('project thumbnails load from the backend', async ({ page }) => {
+    await page.goto('/projects');
+    const thumbnails = page.locator('.card-img-top');
+    await expect(thumbnails.first()).toBeVisible();
+
+    for (const thumbnail of await thumbnails.all()) {
+        await expect.poll(() => thumbnail.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+    }
+});

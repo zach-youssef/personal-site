@@ -12,8 +12,8 @@ describe('RaytracerPage', () => {
 
     it('shows the rendered images from the server in a carousel', async () => {
         const images = [
-            'http://zyoussef.com/assets/raytracer/ConeAndCylinder.png',
-            'http://zyoussef.com/assets/raytracer/ReflectionsAndShadows.png',
+            '/assets/raytracer/ConeAndCylinder.png',
+            '/assets/raytracer/ReflectionsAndShadows.png',
         ];
         mockGraphQL({ raytracerImages: () => images });
         render(<RaytracerPage />);
@@ -23,7 +23,7 @@ describe('RaytracerPage', () => {
     });
 
     it('fetches the image list only once', async () => {
-        const server = mockGraphQL({ raytracerImages: () => ['http://zyoussef.com/assets/raytracer/a.png'] });
+        const server = mockGraphQL({ raytracerImages: () => ['/assets/raytracer/a.png'] });
         render(<RaytracerPage />);
 
         await screen.findByAltText('Demo');
@@ -38,6 +38,6 @@ describe('WebGLDemoPage', () => {
     it('embeds the demo served by the backend', () => {
         render(<WebGLDemoPage />);
 
-        expect(screen.getByTitle('WebGL Demo')).toHaveAttribute('src', 'http://zyoussef.com/Scenegraphs.html');
+        expect(screen.getByTitle('WebGL Demo')).toHaveAttribute('src', '/Scenegraphs.html');
     });
 });
