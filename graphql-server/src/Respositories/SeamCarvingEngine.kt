@@ -30,8 +30,10 @@ class SeamCarvingEngine(private val outputDir: File) : ISeamCarvingRepository {
             return null;
         }
 
+        outputDir.mkdirs()
         outputImage.saveImage(output.path);
-        return output
+        // saveImage logs and swallows write failures
+        return if (output.exists()) output else null
     }
 
     companion object{

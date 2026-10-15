@@ -98,7 +98,8 @@ fun Application.module(testing: Boolean = false) {
                         }
                     }
                     is PartData.FileItem -> {
-                        imageFile = File("assets/seamcarver/input/upload.png")
+                        // A file per request, so concurrent uploads can't overwrite each other
+                        imageFile = File.createTempFile("seamcarver-upload", ".png")
                         imageFile!!.writeBytes(part.streamProvider().readBytes())
                     }
                     else -> {}
@@ -118,6 +119,7 @@ fun Application.module(testing: Boolean = false) {
                     call.respondText("Ran out of memory, try a smaller image", status = HttpStatusCode(413, "Input image too large"))
                 }
             }
+            imageFile?.delete()
         }
     }
     install(GraphQL) {

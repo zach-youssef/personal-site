@@ -10,6 +10,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class SeamCarvingEngineTest {
@@ -64,5 +65,22 @@ class SeamCarvingEngineTest {
 
         assertNotEquals(original, engine.carve(gradient("b.png", 1), 9, 7))
         assertNotEquals(original, engine.carve(gradient("a.png", 0), 8, 7))
+    }
+
+    @Test
+    fun `creates the output directory if it is missing`() {
+        val outputDir = File(dir, "nested/output")
+        val carved = assertNotNull(SeamCarvingEngine(outputDir).carve(gradient("in.png", 0), 9, 7))
+
+        assertEquals(outputDir, carved.parentFile)
+        assertTrue(carved.exists())
+    }
+
+    @Test
+    fun `returns null when the output can't be written`() {
+        // A file where the output directory should be
+        val blocked = File(dir, "blocked").apply { writeText("") }
+
+        assertNull(SeamCarvingEngine(blocked).carve(gradient("in.png", 0), 9, 7))
     }
 }

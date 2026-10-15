@@ -1,21 +1,17 @@
-import { mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { existsSync, readdirSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const SEAM_CARVER_DIR = resolve(__dirname, '../../graphql-server/assets/seamcarver');
+// The backend writes carved images here, relative to its working directory
+const OUTPUT_DIR = resolve(__dirname, '../../graphql-server/assets/seamcarver/output');
 
-// The seam carver upload route writes to these gitignored directories, relative to the
-// backend's working directory, and fails if they don't exist
+const listOutputs = () => existsSync(OUTPUT_DIR) ? readdirSync(OUTPUT_DIR) : [];
+
+// Remove the carved images the tests produce
 export default function globalSetup() {
-    for (const dir of ['input', 'output']) {
-        mkdirSync(resolve(SEAM_CARVER_DIR, dir), { recursive: true });
-    }
-
-    // Remove the carved images the tests produce
-    const outputDir = resolve(SEAM_CARVER_DIR, 'output');
-    const existing = new Set(readdirSync(outputDir));
+    const existing = new Set(listOutputs());
     return () => {
-        for (const file of readdirSync(outputDir).filter(file => !existing.has(file))) {
-            rmSync(resolve(outputDir, file));
+        for (const file of listOutputs().filter(file => !existing.has(file))) {
+            rmSync(resolve(OUTPUT_DIR, file));
         }
     };
 }

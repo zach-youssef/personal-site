@@ -135,10 +135,9 @@ class ApplicationTest {
 
     @Test
     fun `seam carver upload returns an image of the requested size`() = withApp {
-        // The upload route writes to these gitignored directories relative to the working directory
-        File("assets/seamcarver/input").mkdirs()
-        val outputDir = File("assets/seamcarver/output").apply { mkdirs() }
-        val existingOutputs = outputDir.listFiles()!!.toSet()
+        // Carved images are written to this gitignored directory, which the server creates if needed
+        val outputDir = File("assets/seamcarver/output")
+        val existingOutputs = outputDir.listFiles()?.toSet() ?: emptySet()
 
         val input = BufferedImage(12, 10, BufferedImage.TYPE_INT_RGB)
         for (x in 0 until input.width) for (y in 0 until input.height) {
@@ -171,7 +170,7 @@ class ApplicationTest {
             assertEquals(9, carved.width)
             assertEquals(7, carved.height)
         } finally {
-            outputDir.listFiles()!!.filter { it !in existingOutputs }.forEach { it.delete() }
+            outputDir.listFiles()?.filter { it !in existingOutputs }?.forEach { it.delete() }
         }
     }
 }
