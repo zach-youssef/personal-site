@@ -91,8 +91,10 @@ export function sokobanResolvers() {
         qLearningSolution: () => ['RIGHT', 'LEFT', 'RIGHT', 'RIGHT', 'RIGHT'],
         levelAfterActions: ({ actions }: Variables) => {
             let position = 0;
-            for (const action of actions as string[]) {
-                position += action === 'RIGHT' ? 1 : action === 'LEFT' ? -1 : 0;
+            for (const action of actions as (string | number)[]) {
+                // Manual moves are sent as enum ordinals, which the server maps onto SokobanMove
+                const move = typeof action === 'number' ? ['UP', 'DOWN', 'LEFT', 'RIGHT'][action] : action;
+                position += move === 'RIGHT' ? 1 : move === 'LEFT' ? -1 : 0;
             }
             return asLevel(level0AfterRightMoves(Math.min(Math.max(position, 0), 3)));
         },
