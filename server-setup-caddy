@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# One-time setup of Caddy on the server, which then serves the site over https in front of
+# the Ktor server. Safe to re-run. Run it from this directory with:
+#
+#   ssh ec2-user@zyoussef.com 'bash -s' < server-setup-caddy
+#
+# It installs Caddy as a systemd service but doesn't start it, as Ktor still holds port 80
+# until the next deploy; server-restart then moves Ktor to port 8080 and starts Caddy.
+
+set -euo pipefail
+
+CADDY_VERSION=2.11.6
+EC2_USER=ec2-user
+SERVER_ROOT=/home/${EC2_USER}
+
+# Install the Caddy binary, checking it against the release's published checksums
+if [ "$(/usr/bin/caddy version 2>/dev/null | cut -d' ' -f1)" != "v${CADDY_VERSION}" ]; then
+    DOWNLOAD_DIR=$(mktemp -d)
+    trap 'rm -rf "${DOWNLOAD_DIR}"' EXIT
+    cd "${DOWNLOAD_DIR}"
+    RELEASE_URL=https://github.com/caddyserver/caddy/releases/download/v${CADDY_VERSION}
+    ARCHIVE=caddy_${CADDY_VERSION}_linux_amd64.tar.gz
+    curl -fsSLO "${RELEASE_URL}/${ARCHIVE}"
+    curl -fsSLO "${RELEASE_URL}/caddy_${CADDY_VERSION}_checksums.txt"
+    grep " ${ARCHIVE}\$" caddy_${CADDY_VERSION}_checksums.txt | sha512sum --check --strict
+    tar -xzf "${ARCHIVE}" caddy
+    sudo install -m 755 caddy /usr/bin/caddy
+    cd - > /dev/null
+fi
+/usr/bin/caddy version
+
+# Caddy runs as its own unprivileged user, and keeps its certificates in its home directory
+if ! getent group caddy > /dev/null; then
+    sudo groupadd --system caddy
+fi
+if ! id caddy > /dev/null 2>&1; then
+    sudo useradd --system --gid caddy --create-home --home-dir /var/lib/caddy \
+        --shell /usr/sbin/nologin --comment "Caddy web server" caddy
+fi
+sudo mkdir -p /etc/caddy
+
+# The service definition recommended by Caddy's documentation. Binding ports 80 and 443
+# needs CAP_NET_BIND_SERVICE rather than root.
+sudo tee /etc/systemd/system/caddy.service > /dev/null <<'EOF'
+[Unit]
+Description=Caddy
+Documentation=https://caddyserver.com/docs/
+After=network.target network-online.target
+Requires=network-online.target
+
+[Service]
+Type=notify
+User=caddy
+Group=caddy
+ExecStart=/usr/bin/caddy run --environ --config /etc/caddy/Caddyfile
+ExecReload=/usr/bin/caddy reload --config /etc/caddy/Caddyfile --force
+TimeoutStopSec=5s
+LimitNOFILE=1048576
+PrivateTmp=true
+ProtectSystem=full
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target
+EOF
+sudo systemctl daemon-reload
+
+# Ktor used to run as root to bind port 80, so hand back the files it created
+sudo chown ${EC2_USER}:${EC2_USER} ${SERVER_ROOT}/callTrace.log 2>/dev/null || true
+
+echo "Caddy is installed. Deploy to move Ktor to port 8080 and start serving https."

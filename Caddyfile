@@ -1,0 +1,10 @@
+# Caddy serves the site over https on the server, obtaining and renewing its Let's Encrypt
+# certificate and redirecting http to https. It forwards requests to the Ktor server, which
+# listens only on the instance itself. server-restart installs this file on each deploy.
+
+zyoussef.com {
+	# The JS bundle compresses to about a quarter of its size
+	encode zstd gzip
+
+	reverse_proxy 127.0.0.1:8080
+}

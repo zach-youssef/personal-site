@@ -3,12 +3,38 @@
 SERVER_VERSION=0.0.1-SNAPSHOT
 EC2_USER=ec2-user
 SERVER_ROOT=/home/${EC2_USER}
+SERVER_JAR=graphql-server-${SERVER_VERSION}-standalone.jar
+# Matches the running server by its command line. The brackets stop it matching the
+# commands below that contain it, like sudo's own process for "sudo pkill".
+SERVER_PATTERN="[j]ava .*-jar ${SERVER_JAR}"
+# Ktor listens only on the instance itself; Caddy serves ports 80 and 443 and forwards to it
+BACKEND_PORT=8080
 
 # Ensure we are in the correct directory
 cd ${SERVER_ROOT}
-# Find and kill existing server instance
-sudo kill $(sudo netstat -nlp |grep :::80 |perl -pe 's|^.*?(\d*)/java|\1|')
+
+# Without Caddy nothing would serve the site once Ktor leaves port 80, so leave the
+# running server alone until it is set up
+if ! systemctl cat caddy > /dev/null 2>&1; then
+    echo "Caddy isn't installed; run server-setup-caddy first. The running server is unchanged." >&2
+    exit 1
+fi
+
+# Stop the running server, whichever port it was started on. It is matched by its jar,
+# as servers started before the move to port 8080 ran as root.
+sudo pkill -f "${SERVER_PATTERN}"
+for _ in $(seq 30); do
+    pgrep -f "${SERVER_PATTERN}" > /dev/null || break
+    sleep 1
+done
+sudo pkill -9 -f "${SERVER_PATTERN}"
+
 # Restart server. Its output goes to a log rather than this shell's streams: when the
 # script runs over ssh, a background process holding them keeps the session open forever.
-sudo nohup java -Xmx400m -jar graphql-server-${SERVER_VERSION}-standalone.jar -port=80 \
+nohup java -Xmx400m -jar ${SERVER_JAR} -host=127.0.0.1 -port=${BACKEND_PORT} \
     > server.log 2>&1 < /dev/null &
+
+# Install this deploy's Caddy config and apply it, starting Caddy if it isn't running
+sudo install -m 644 Caddyfile /etc/caddy/Caddyfile
+sudo systemctl enable --quiet caddy
+sudo systemctl reload-or-restart caddy
