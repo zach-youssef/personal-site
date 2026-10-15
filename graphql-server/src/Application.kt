@@ -82,7 +82,7 @@ fun Application.module(testing: Boolean = false) {
         }
 
         post("/seamCarver/upload") {
-            val seamCarvingRepository = SeamCarvingEngine()
+            val seamCarvingRepository = SeamCarvingEngine(File("assets/seamcarver/output"))
 
             val multiPartData = call.receiveMultipart()
             var imageFile: File? = null

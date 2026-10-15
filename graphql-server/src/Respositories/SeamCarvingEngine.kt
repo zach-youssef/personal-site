@@ -8,11 +8,16 @@ import java.io.File
 import java.nio.file.Files
 import java.security.MessageDigest
 
-class SeamCarvingEngine() : ISeamCarvingRepository {
+// Carved images are cached in outputDir, keyed by the input's content and the target size
+class SeamCarvingEngine(private val outputDir: File) : ISeamCarvingRepository {
     val carver: SeamCarverAPI = SeamCarver()
 
     override fun carve(image: File, targetWidth: Int, targetHeight: Int): File? {
-        val outputPath = "assets/seamcarver/output/${sha256(image)}-$targetWidth-$targetHeight.png"
+        val output = File(outputDir, "${sha256(image)}-$targetWidth-$targetHeight.png")
+        if (output.exists()) {
+            return output
+        }
+
         var outputImage: WorldImage? = null
 
         try{
@@ -25,14 +30,14 @@ class SeamCarvingEngine() : ISeamCarvingRepository {
             return null;
         }
 
-        outputImage.saveImage(outputPath);
-        return File(outputPath)
+        outputImage.saveImage(output.path);
+        return output
     }
 
     companion object{
         private fun sha256(file: File): String {
             val hash: ByteArray = MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(file.toPath()))
-            return hash.toString()
+            return hash.joinToString("") { "%02x".format(it) }
         }
     }
 }
