@@ -36,7 +36,7 @@ function SokobanGrid({data}: Props) {
                 {data.flatMap((rowData, rowIndex) => 
                     rowData.map((squareType, colIndex) => 
                         (
-                            <SokobanSquare type={squareType} row={rowIndex} col={colIndex} sideLength={sideLength}/>
+                            <SokobanSquare key={`${rowIndex},${colIndex}`} type={squareType} row={rowIndex} col={colIndex} sideLength={sideLength}/>
                         )
                     )
                 )}
@@ -44,7 +44,7 @@ function SokobanGrid({data}: Props) {
                 {data.flatMap((rowData, rowIndex) => 
                     rowData.map((squareType, colIndex) => 
                         (
-                            <SokobanPiece type={squareType} row={rowIndex} col={colIndex} sideLength={sideLength}/>
+                            <SokobanPiece key={`${rowIndex},${colIndex}`} type={squareType} row={rowIndex} col={colIndex} sideLength={sideLength}/>
                         )
                     )
                 )}

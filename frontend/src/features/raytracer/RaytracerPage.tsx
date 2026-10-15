@@ -35,7 +35,7 @@ function RaytracerPage () {
             <Carousel fade>
                 {images && 
                     images.map(src => (
-                        <Carousel.Item>
+                        <Carousel.Item key={src}>
                             <img 
                                 src={src}
                                 className="d-block w-100"

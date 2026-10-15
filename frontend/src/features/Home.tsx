@@ -42,8 +42,11 @@ function Home() {
           </Row>
           <Row>
             <p>
-              {SiteTextContents[SiteText.AboutDesc].split("\n").map(line => 
-                <div>{line}</div>
+              {SiteTextContents[SiteText.AboutDesc].split("\n").map((line, index) =>
+                <React.Fragment key={index}>
+                  {index > 0 && <br/>}
+                  {line}
+                </React.Fragment>
               )}
             </p>
           </Row>

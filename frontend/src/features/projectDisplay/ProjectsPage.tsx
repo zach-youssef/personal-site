@@ -57,11 +57,11 @@ function ProjectsPage() {
                     <Container>
                         {
                             categoryLabels.map(entry => (
-                                <div style={{padding: "0em 0em 2em"}}>
+                                <div key={entry[0]} style={{padding: "0em 0em 2em"}}>
                                     <Row>
-                                        <p>
+                                        <div className="mb-3">
                                             <h2>{entry[1]}</h2>
-                                        </p>
+                                        </div>
                                     </Row>
                                     <Row>
                                         <ProjectDisplayContainer category={entry[0]}/>

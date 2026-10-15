@@ -37,6 +37,7 @@ function LevelSelector({onLevelSelect}: Props) {
             <Dropdown.Menu>
                 {levelIds.map(levelId => (
                     <Dropdown.Item
+                        key={levelId}
                         onSelect = {() => onLevelSelect(levelId)}
                     >
                         {levelId}

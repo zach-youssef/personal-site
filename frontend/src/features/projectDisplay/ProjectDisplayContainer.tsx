@@ -2,13 +2,14 @@ import React, { useEffect, useState, useLayoutEffect } from 'react'
 import { ProjectDisplayCard } from './ProjectDisplay';
 import { CardGroup } from 'react-bootstrap';
 import { fetchGraphQL } from '../../FetchHelper'
+import ProjectInfo from './ProjectInfo';
 
 interface Props {
     category: String
 }
 
 function ProjectDisplayContainer({category}: Props){
-    const [projectInfos, setProjectInfos] = useState([]);
+    const [projectInfos, setProjectInfos] = useState<ProjectInfo[]>([]);
 
     const [screenSize, setScreenSize] = useState(1024);
     const updateScreenSize = () => setScreenSize(window.innerWidth);
@@ -64,11 +65,11 @@ function ProjectDisplayContainer({category}: Props){
             {
                 Array.from(Array(Math.ceil(projectInfos.length / cardsPerRow)).keys())
                     .map(row => (
-                        <CardGroup>
+                        <CardGroup key={row}>
                             {
                                 projectInfos.slice(row * cardsPerRow, (row * cardsPerRow) + cardsPerRow)
                                     .map((projectInfo, index) => 
-                                        <ProjectDisplayCard projectInfo={projectInfo} index={index}/>)
+                                        <ProjectDisplayCard key={projectInfo.id} projectInfo={projectInfo} index={index}/>)
                             }
                         </CardGroup>
                     ))
