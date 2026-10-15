@@ -19,9 +19,7 @@ export const test = base.extend({
             } else if (url.hostname === 'bootswatch.com' && url.pathname.endsWith('/bootstrap.min.css')) {
                 await route.fulfill({ path: BOOTSTRAP_CSS });
             } else if (url.origin === new URL(baseURL!).origin) {
-                // The build references its assets relative to the page, so nested routes request
-                // /projects/assets/...; production serves these through a matching backend route
-                await route.continue({ url: url.href.replace('/projects/assets/', '/assets/') });
+                await route.continue();
             } else {
                 // Keep the tests hermetic, e.g. when following links to external project pages
                 await route.fulfill({ status: 200, contentType: 'text/html', body: '' });

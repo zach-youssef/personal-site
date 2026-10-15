@@ -148,7 +148,8 @@ function basePlugin(): Plugin {
 		config(_, { mode }) {
 			const { PUBLIC_URL } = loadEnv(mode, ".", ["PUBLIC_URL"]);
 			return {
-				base: PUBLIC_URL || "",
+				// Absolute asset paths, so pages on nested routes like /projects/sokoban can load them
+				base: PUBLIC_URL || "/",
 			};
 		},
 	};
