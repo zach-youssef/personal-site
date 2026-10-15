@@ -46,6 +46,14 @@ dependencies {
     implementation("com.apurebase:kgraphql:$KGraphQLVersion")
     implementation("com.apurebase:kgraphql-ktor:$KGraphQLVersion")
     testImplementation("io.ktor:ktor-server-tests:$ktor_version")
+    testImplementation(kotlin("test-junit"))
+}
+
+tasks.test {
+    testLogging {
+        events("failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
 }
 
 
