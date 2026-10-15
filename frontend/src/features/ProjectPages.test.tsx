@@ -16,11 +16,21 @@ describe('RaytracerPage', () => {
             'http://zyoussef.com/assets/raytracer/ReflectionsAndShadows.png',
         ];
         mockGraphQL({ raytracerImages: () => images });
-        const { unmount } = render(<RaytracerPage />);
+        render(<RaytracerPage />);
 
         expect(screen.getByRole('heading', { name: 'Browser Raytracer' })).toBeInTheDocument();
         await vi.waitFor(() => expect(screen.getAllByAltText('Demo').map(img => img.getAttribute('src'))).toEqual(images));
-        unmount();
+    });
+
+    it('fetches the image list only once', async () => {
+        const server = mockGraphQL({ raytracerImages: () => ['http://zyoussef.com/assets/raytracer/a.png'] });
+        render(<RaytracerPage />);
+
+        await screen.findByAltText('Demo');
+        // Give any re-render triggered fetches a chance to happen
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        expect(server.fetchMock).toHaveBeenCalledTimes(1);
     });
 });
 

@@ -4,15 +4,25 @@ import { fetchGraphQL } from '../../FetchHelper';
 
 function RaytracerPage () {
     const [images, setImages] = useState([])
+    // Load the image list once; without the empty dependency list every update re-fetched it
     useEffect(() => {
+        let isMounted = true;
         fetchGraphQL(`
             query {
                 raytracerImages
             }
         `, {}).then(response => {
-            setImages(response.data.raytracerImages)
-        })
-    });
+            if (isMounted) {
+                setImages(response.data.raytracerImages)
+            }
+        }).catch(error => {
+            console.error(error);
+        });
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
     return (
         <div>
             <h2>Browser Raytracer</h2>
