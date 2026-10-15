@@ -86,7 +86,7 @@ describe('SeamCarverPage', () => {
         await page.fill('small.png', '101', '81');
         await page.submit();
 
-        expect(await screen.findByText(/must <= the input image's width, 100/)).toBeInTheDocument();
+        expect(await screen.findByText("Target width must be <= the input image's width, 100")).toBeInTheDocument();
         expect(screen.getByText("Target height must be <= the input image's height, 80")).toBeInTheDocument();
     });
 

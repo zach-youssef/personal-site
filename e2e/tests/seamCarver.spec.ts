@@ -36,6 +36,6 @@ test('rejects target sizes larger than the image before uploading', async ({ pag
     await page.locator('input[name="height"]').fill('40');
     await page.getByRole('button', { name: 'Carve' }).click();
 
-    await expect(page.getByText(/must <= the input image's width, 60/)).toBeVisible();
+    await expect(page.getByText("Target width must be <= the input image's width, 60")).toBeVisible();
     expect(uploads).toBe(0);
 });

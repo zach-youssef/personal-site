@@ -59,7 +59,7 @@ function SeamCarverPage() {
         let imageFile = getValues("file")[0];
         if (imageFile) {
             let image = await loadImagePromise(imageFile);
-            return parseInt(width) <= image.width ? true : `Target height must <= the input image's width, ${image.width}`
+            return parseInt(width) <= image.width ? true : `Target width must be <= the input image's width, ${image.width}`
         }
         return 'Image is not selected - unable to validate target width'
     }
