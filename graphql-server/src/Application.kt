@@ -201,13 +201,13 @@ fun Application.module(testing: Boolean = false) {
                 }
             }
 
+            // Raytracer
+            val raytracerRepository: IRaytracerRepository =
+                RaytracerImageRepository(File("assets/raytracer"), "http://zyoussef.com/assets/raytracer")
+
             query("raytracerImages") {
                 description = "Returns a list of images output from my raytracer"
-                resolver { ->
-                    File("assets/raytracer").list().map {
-                        "http://zyoussef.com/assets/raytracer/$it"
-                    }
-                }
+                resolver { -> raytracerRepository.getImageUrls() }
             }
         }
     }
