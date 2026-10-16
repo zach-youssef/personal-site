@@ -14,6 +14,7 @@ import javax.imageio.ImageIO
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 // Exercises the real application module over HTTP, including the GraphQL schema and resolvers
@@ -123,14 +124,15 @@ class ApplicationTest {
     }
 
     @Test
-    fun `CORS preflight allows cross origin GraphQL requests`() = withApp {
+    fun `other origins aren't allowed to call the backend`() = withApp {
+        // The frontend is served by the backend, or proxied to it in development, so its
+        // requests are same-origin and the backend grants no cross-origin access
         val call = handleRequest(HttpMethod.Options, "/graphql") {
-            addHeader(HttpHeaders.Origin, "http://localhost:3000")
+            addHeader(HttpHeaders.Origin, "https://example.com")
             addHeader(HttpHeaders.AccessControlRequestMethod, "POST")
             addHeader(HttpHeaders.AccessControlRequestHeaders, "content-type")
         }
-        assertEquals(HttpStatusCode.OK, call.response.status())
-        assertEquals("http://localhost:3000", call.response.headers[HttpHeaders.AccessControlAllowOrigin])
+        assertNull(call.response.headers[HttpHeaders.AccessControlAllowOrigin])
     }
 
     @Test
