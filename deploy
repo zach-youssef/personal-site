@@ -35,8 +35,10 @@ cp -r assets ${BUNDLE_DIR}/
 cp ${SCRIPT_DIR}/server-restart ${BUNDLE_DIR}/
 cp ${SCRIPT_DIR}/Caddyfile ${BUNDLE_DIR}/
 
-# Zip bundle
+# Zip bundle. zip adds to an existing archive, so start a new one each time, or files
+# from earlier deploys, like old frontend bundles, would keep shipping.
 cd ${BUNDLE_DIR}
+rm -f ${BUNDLE_DIR}.zip
 zip -r ${BUNDLE_DIR}.zip *
 
 # Transfer bundle to server
