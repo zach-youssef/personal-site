@@ -15,9 +15,27 @@ import java.io.File
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
+// How long browsers may reuse a response before checking it again; null leaves it unset
+internal fun cachingOptions(content: OutgoingContent): CachingOptions? = when {
+    // Files are streamed (static() wraps them in its own type); GraphQL replies are text
+    content !is OutgoingContent.ReadChannelContent -> null
+    // Pages name the current frontend bundle, so they're checked on every visit
+    content.contentType?.match(ContentType.Text.Html) == true -> CachingOptions(CacheControl.NoCache(null))
+    // Everything else may be reused for a day before being checked again. Images keep
+    // their names when they're replaced, so they can't be cached for good.
+    else -> CachingOptions(CacheControl.MaxAge(maxAgeSeconds = 24 * 60 * 60))
+}
+
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
+    // Static files carry Last-Modified, so browsers can revalidate a cached copy and get a
+    // 304 instead of downloading it again
+    install(ConditionalHeaders)
+    install(CachingHeaders) {
+        options(::cachingOptions)
+    }
+
     routing {
     	static {
             // CDN Assets

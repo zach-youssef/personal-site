@@ -62,6 +62,32 @@ class ApplicationTest {
     }
 
     @Test
+    fun `images may be cached for a day and are revalidated with a 304`() = withApp {
+        val path = "/assets/raytracer/ConeAndCylinder.webp"
+        val first = handleRequest(HttpMethod.Get, path)
+        assertEquals(HttpStatusCode.OK, first.response.status())
+        assertEquals("max-age=86400", first.response.headers[HttpHeaders.CacheControl])
+        val lastModified = assertNotNull(first.response.headers[HttpHeaders.LastModified])
+
+        val again = handleRequest(HttpMethod.Get, path) {
+            addHeader(HttpHeaders.IfModifiedSince, lastModified)
+        }
+        assertEquals(HttpStatusCode.NotModified, again.response.status())
+    }
+
+    @Test
+    fun `pages are checked on every visit`() {
+        val page = File.createTempFile("page", ".html").apply { deleteOnExit() }
+        val options = assertNotNull(cachingOptions(LocalFileContent(page)))
+        assertEquals("no-cache", options.cacheControl.toString())
+    }
+
+    @Test
+    fun `GraphQL responses carry no caching headers`() = withApp {
+        assertNull(postGraphQL("{ levels }").response.headers[HttpHeaders.CacheControl])
+    }
+
+    @Test
     fun `projectInfos filters by category variable`() = withApp {
         val data = graphQL(
             "query FetchProjectsQuery(\$category: ProjectCategory) { projectInfos(category: \$category) { id } }",
