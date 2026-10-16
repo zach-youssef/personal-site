@@ -70,6 +70,8 @@ test('project thumbnails load from the backend', async ({ page }) => {
     await expect(thumbnails.first()).toBeVisible();
 
     for (const thumbnail of await thumbnails.all()) {
+        // Thumbnails load lazily, as they're scrolled to
+        await thumbnail.scrollIntoViewIfNeeded();
         await expect.poll(() => thumbnail.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
     }
 });

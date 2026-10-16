@@ -18,6 +18,8 @@ describe('ProjectDisplayCard', () => {
         expect(screen.getByText('Sokoban AI')).toBeInTheDocument();
         expect(screen.getByText(projects.sokoban.description)).toBeInTheDocument();
         expect(screen.getByRole('img')).toHaveAttribute('src', projects.sokoban.imagePath);
+        // Cards load as they're scrolled to
+        expect(screen.getByRole('img')).toHaveAttribute('loading', 'lazy');
         expect(screen.getByRole('link', { name: 'View' })).toHaveAttribute('href', '/projects/sokoban');
     });
 });
@@ -29,5 +31,7 @@ describe('ProjectDisplayFeatured', () => {
         expect(screen.getByText('Featured: Vulkan Retro PPU')).toBeInTheDocument();
         expect(screen.getByText(projects.vkPPU.description)).toBeInTheDocument();
         expect(screen.getByAltText('Vulkan Retro PPU')).toHaveAttribute('src', projects.vkPPU.imagePath);
+        // The featured image is near the top of the page, so it loads right away
+        expect(screen.getByAltText('Vulkan Retro PPU')).not.toHaveAttribute('loading');
     });
 });

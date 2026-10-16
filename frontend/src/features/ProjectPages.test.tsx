@@ -20,6 +20,8 @@ describe('RaytracerPage', () => {
 
         expect(screen.getByRole('heading', { name: 'Browser Raytracer' })).toBeInTheDocument();
         await vi.waitFor(() => expect(screen.getAllByAltText('Demo').map(img => img.getAttribute('src'))).toEqual(images));
+        // Only the first slide is shown at first, so the others wait to load
+        expect(screen.getAllByAltText('Demo').map(img => img.getAttribute('loading'))).toEqual([null, 'lazy']);
     });
 
     it('fetches the image list only once', async () => {

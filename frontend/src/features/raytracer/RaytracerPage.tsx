@@ -34,12 +34,15 @@ function RaytracerPage () {
             </p>
             <Carousel fade>
                 {images && 
-                    images.map(src => (
+                    images.map((src, index) => (
                         <Carousel.Item key={src}>
                             <img 
                                 src={src}
                                 className="d-block w-100"
                                 alt="Demo"
+                                // Hidden slides wait to load until they're first shown
+                                loading={index === 0 ? undefined : "lazy"}
+                                decoding="async"
                             />
                         </Carousel.Item>
                     ))

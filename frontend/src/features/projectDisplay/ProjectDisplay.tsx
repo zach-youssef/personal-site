@@ -14,7 +14,8 @@ export function ProjectDisplayCard({projectInfo, index}: Props) {
                 <Card.Title>{name}</Card.Title>
             </Card.Header>
             <Card.Body>
-                <Card.Img variant="top" src={imagePath}/>
+                {/* Most cards are below the fold, so they load as they're scrolled to */}
+                <Card.Img variant="top" src={imagePath} loading="lazy" decoding="async"/>
             </Card.Body>
             <Card.Body>
                 <Card.Text>{description}</Card.Text>
