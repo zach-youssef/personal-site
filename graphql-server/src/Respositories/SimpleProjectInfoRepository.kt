@@ -11,49 +11,50 @@ class SimpleProjectInfoRepository : IProjectInfoRepository {
             "Sokoban AI",
             "sokoban",
             "A* and Q Learning implementations to solve the game Sokoban",
-            "$cdnUrl/sokoban.png"
+            "$cdnUrl/sokoban.webp"
         ),
         "seamCarver" to ProjectInfo(
             "Seam Carver",
             "seamCarver",
             "An algorithm for reshaping an image's aspect ratio",
-            "$cdnUrl/seamCarver.png"
+            "$cdnUrl/seamCarver.webp"
         ),
         "raytracer" to ProjectInfo(
             "Raytracer",
             "raytracer",
             "A simple raytracing algorithm",
-            "$cdnUrl/raytrace.png"
+            // Also shown on the raytracer page, so the browser downloads it once for both
+            "/assets/raytracer/TransparencyWithMirrorWalls.webp"
         ),
         "webglDemo" to ProjectInfo(
             "Web GL Demo",
             "webglDemo",
             "A demonstration of webgl shaders and lighting",
-            "$cdnUrl/webGlDemoThumbnail.png"
+            "$cdnUrl/webGlDemoThumbnail.webp"
         ),
         "foundationDbFs" to ProjectInfo(
             "FoundationDB-FS",
             "foundationDbFs",
             "A distributed file system built on top of FoundationDB",
-            "$cdnUrl/fdb_arch_noalpha.png"
+            "$cdnUrl/fdb_arch_noalpha.webp"
         ),
         "broadAR" to ProjectInfo (
             "Broad Museum AR Experience",
             "broadAR",
             "Location tracked AR Experience I worked on at Meta",
-            "$cdnUrl/broad.png"
+            "$cdnUrl/broad.webp"
         ),
         "metaAvatars" to ProjectInfo (
             "Mobile 3D Avatars",
             "metaAvatars",
             "Mobile & AR rendering changes for Avatar Style Upgrade",
-            "$cdnUrl/ava.png"
+            "$cdnUrl/ava.webp"
         ),
         "vkPPU" to ProjectInfo (
             "Vulkan Retro PPU",
             "vkPPU",
             "Vulkan Compute Pipeline for rendering NES games",
-            "$cdnUrl/ppu.png"
+            "$cdnUrl/ppu.webp"
         ),
     )
 

@@ -46,19 +46,19 @@ export const projects = {
         id: 'vkPPU',
         name: 'Vulkan Retro PPU',
         description: 'Vulkan Compute Pipeline for rendering NES games',
-        imagePath: '/assets/projectThumbnail/ppu.png',
+        imagePath: '/assets/projectThumbnail/ppu.webp',
     },
     sokoban: {
         id: 'sokoban',
         name: 'Sokoban AI',
         description: 'A* and Q Learning implementations to solve the game Sokoban',
-        imagePath: '/assets/projectThumbnail/sokoban.png',
+        imagePath: '/assets/projectThumbnail/sokoban.webp',
     },
     seamCarver: {
         id: 'seamCarver',
         name: 'Seam Carver',
         description: "An algorithm for reshaping an image's aspect ratio",
-        imagePath: '/assets/projectThumbnail/seamCarver.png',
+        imagePath: '/assets/projectThumbnail/seamCarver.webp',
     },
 };
 

@@ -47,7 +47,18 @@ class ApplicationTest {
 
         assertEquals(listOf("vkPPU"), projects.map { it.path("id").asText() })
         assertEquals("Vulkan Retro PPU", projects[0].path("name").asText())
-        assertTrue(projects[0].path("imagePath").asText().endsWith("/ppu.png"))
+        assertTrue(projects[0].path("imagePath").asText().endsWith("/ppu.webp"))
+    }
+
+    @Test
+    fun `every project thumbnail is served as webp`() = withApp {
+        val paths = graphQL("{ projectInfos { imagePath } }").path("projectInfos").map { it.path("imagePath").asText() }
+        assertTrue(paths.isNotEmpty())
+        for (path in paths) {
+            val call = handleRequest(HttpMethod.Get, path)
+            assertEquals(HttpStatusCode.OK, call.response.status(), path)
+            assertEquals(ContentType.parse("image/webp"), call.response.headers[HttpHeaders.ContentType]?.let(ContentType::parse), path)
+        }
     }
 
     @Test

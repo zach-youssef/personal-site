@@ -12,8 +12,8 @@ describe('RaytracerPage', () => {
 
     it('shows the rendered images from the server in a carousel', async () => {
         const images = [
-            '/assets/raytracer/ConeAndCylinder.png',
-            '/assets/raytracer/ReflectionsAndShadows.png',
+            '/assets/raytracer/ConeAndCylinder.webp',
+            '/assets/raytracer/ReflectionsAndShadows.webp',
         ];
         mockGraphQL({ raytracerImages: () => images });
         render(<RaytracerPage />);
