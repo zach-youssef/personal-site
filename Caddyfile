@@ -2,9 +2,19 @@
 # certificate and redirecting http to https. It forwards requests to the Ktor server, which
 # listens only on the instance itself. server-restart installs this file on each deploy.
 
+{
+	# Let's Encrypt sends warnings here, e.g. if the certificate is failing to renew
+	email zacharysamiyoussef@gmail.com
+}
+
 zyoussef.com {
 	# The JS bundle compresses to about a quarter of its size
 	encode zstd gzip
+
+	# Browsers that have seen this use https for the site without trying http first.
+	# They remember it for max-age seconds, so it starts at a day while https is new;
+	# raise it (e.g. to a year, 31536000) once https has proven stable.
+	header Strict-Transport-Security "max-age=86400"
 
 	reverse_proxy 127.0.0.1:8080
 }
