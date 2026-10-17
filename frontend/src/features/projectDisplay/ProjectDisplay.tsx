@@ -26,7 +26,7 @@ export function ProjectDisplayCard({projectInfo, index}: Props) {
 }
 
 export function ProjectDisplayFeatured({projectInfo, index}: Props) {
-    const { name, description, imagePath } = projectInfo;
+    const { name, description, imagePath, id } = projectInfo;
 
     let imageCol = (
         <Col>
@@ -37,6 +37,8 @@ export function ProjectDisplayFeatured({projectInfo, index}: Props) {
     let descCol = (
         <Col>
             <Card.Text>{description}</Card.Text>
+            {/* The featured card is on the home page, so it links into the projects section */}
+            <Card.Link href={`/projects/${id}`}>View</Card.Link>
         </Col>
     )
 

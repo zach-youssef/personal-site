@@ -8,6 +8,14 @@ test('home page shows the featured project from the backend', async ({ page }) =
     await expect(page.getByText('Vulkan Compute Pipeline for rendering NES games')).toBeVisible();
 });
 
+test('featured project links to its project page', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('link', { name: 'View' }).click();
+
+    // The featured project's page sends visitors on to its GitHub repository
+    await expect(page).toHaveURL('https://github.com/zach-youssef/vk_ppu');
+});
+
 test('projects page lists every project by category', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('link', { name: 'Projects' }).click();

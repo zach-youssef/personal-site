@@ -24,6 +24,7 @@ describe('Home', () => {
         render(<Home />);
 
         expect(await screen.findByText('Featured: Vulkan Retro PPU')).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: 'View' })).toHaveAttribute('href', `/projects/${projects.vkPPU.id}`);
         expect(server.requests()).toHaveLength(1);
         expect(server.requests()[0].query).toMatch(/projectInfos\(featured: true\)/);
     });
