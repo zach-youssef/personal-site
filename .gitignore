@@ -1,1 +1,4 @@
 .vscode/
+
+# Paths for deploy to delete from the server; see README
+.server_tombstones

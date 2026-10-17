@@ -1,0 +1,3 @@
+# Notes for Claude
+
+- Deploys don't delete anything from the server. When a change makes a file on the server obsolete (renaming or removing a file under `frontend/public` or `graphql-server/assets`, renaming the backend jar, and so on), append its server path to `.server_tombstones` in the same change so the next `./deploy` deletes it. For a frontend change, also list the bundle the live site uses now, which the deploy replaces: the `assets/index-*.js` and `.css` that `~/build/index.html` names on the server (check read-only over ssh). The deploy skips any it reproduces. See "Deployment" in README.md for the format and what must never be listed.

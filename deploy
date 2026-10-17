@@ -48,3 +48,35 @@ scp ${BUNDLE_DIR}.zip ${EC2_USER}@${DOMAIN}:${SERVER_ROOT}/
 ssh ${EC2_USER}@${DOMAIN} "unzip -o site-bundle.zip"
 # Restart Server
 ssh ${EC2_USER}@${DOMAIN} "./server-restart"
+
+# Delete files that earlier deploys left behind and nothing uses any more. Unzipping only
+# adds and overwrites, so changes that make a server path obsolete list it, relative to
+# the server's home directory, on its own line in .server_tombstones (a directory goes
+# with everything in it). The list is deleted once the server has removed them.
+TOMBSTONES=${SCRIPT_DIR}/.server_tombstones
+if [ -f "${TOMBSTONES}" ]; then
+    paths=()
+    while IFS= read -r path || [ -n "${path}" ]; do
+        [ -z "${path}" ] && continue
+        case "${path}" in
+            /*|..|../*|*/..|*/../*)
+                echo "Not deleting ${path}: tombstones must be inside ${SERVER_ROOT}" >&2
+                exit 1;;
+        esac
+        # Keeps what was just deployed, e.g. a listed bundle this build reproduced, or a
+        # typo like "assets"
+        if [ -e "${BUNDLE_DIR}/${path}" ]; then
+            echo "Not deleting ${path}: this deploy ships it" >&2
+            continue
+        fi
+        paths+=("${path}")
+    done < "${TOMBSTONES}"
+
+    if [ ${#paths[@]} -eq 0 ] || printf '%s\0' "${paths[@]}" |
+            ssh ${EC2_USER}@${DOMAIN} "cd ${SERVER_ROOT} && xargs -0 rm -rfv --"; then
+        rm "${TOMBSTONES}"
+    else
+        echo "Deleting tombstones on the server failed; keeping ${TOMBSTONES}" >&2
+        exit 1
+    fi
+fi
