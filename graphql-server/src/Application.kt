@@ -43,14 +43,8 @@ fun Application.module(testing: Boolean = false) {
                 files("assets")
             }
 
-            // Main frontend static
-            static("static") {
-                files("build/static")
-            }
-
             // Frontend top-level files
             // TODO - find a way to not need to manualy list out all these routes
-            file("asset-manifest.json", "build/asset-manifest.json")
             file("favicon.ico", "build/favicon.ico")
             file("logo192.png", "build/logo192.png")
             file("logo512.png", "build/logo512.png")
