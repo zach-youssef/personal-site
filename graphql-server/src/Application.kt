@@ -48,20 +48,6 @@ fun Application.module(testing: Boolean = false) {
                 files("build/static")
             }
 
-            // WebGL Demo resources
-            static("out") {
-                files("hogwarts/out")
-            }
-            static("json") {
-                files("hogwarts/json")
-            }
-            static("models") {
-                files("hogwarts/models")
-            }
-            static("textures") {
-                files("hogwarts/textures")
-            }
-
             // Frontend top-level files
             // TODO - find a way to not need to manualy list out all these routes
             file("asset-manifest.json", "build/asset-manifest.json")
@@ -72,9 +58,6 @@ fun Application.module(testing: Boolean = false) {
             file("robots.txt", "build/robots.txt")
             file("github-mark.svg", "build/github-mark.svg")
             file("InBug-Black.png", "build/InBug-Black.png")
-
-            // WebGL Demo entrypoint
-            file("Scenegraphs.html", "hogwarts/Scenegraphs.html")
 
             file("{...}", "build/index.html")
         }
