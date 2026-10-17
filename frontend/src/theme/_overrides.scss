@@ -270,6 +270,13 @@ h1, h2, h3 {
   }
 }
 
+// Clicking a button or switch focuses it; the focus ring is only for keyboard users, who need to
+// see where they are, rather than a glow left behind on whatever was last clicked
+.btn:focus:not(:focus-visible),
+.custom-control-input:focus:not(:focus-visible) ~ .custom-control-label::before {
+  box-shadow: none;
+}
+
 .btn-secondary {
   border-color: $btn-secondary-border-color;
 }
@@ -285,6 +292,11 @@ h1, h2, h3 {
 }
 
 // Forms =======================================================================
+
+// Bootstrap leaves the default cursor on switches and checkboxes, so they don't look clickable
+.custom-control-input:not(:disabled) ~ .custom-control-label {
+  cursor: pointer;
+}
 
 label {
   color: $label-color;
