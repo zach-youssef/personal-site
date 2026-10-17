@@ -11,6 +11,10 @@ const STORAGE_KEY = 'theme';
 const STYLE_ELEMENT_ID = 'theme-stylesheet';
 const DARK_QUERY = '(prefers-color-scheme: dark)';
 
+// The header's colour in each theme ($navbar-bg in the palettes), which browsers use to tint their
+// toolbar. index.html starts with these for the system theme, before the visitor's choice is known.
+export const THEME_COLORS: Record<Theme, string> = { light: '#f5d6dc', dark: '#1d1a23' };
+
 function isTheme(value: unknown): value is Theme {
     return value === 'light' || value === 'dark';
 }
@@ -69,4 +73,6 @@ export function applyTheme(theme: Theme) {
     }
     style.textContent = stylesheets[theme];
     document.documentElement.dataset.theme = theme;
+    // The toggle can pick a theme other than the system's, so every theme-color tag follows it
+    document.querySelectorAll('meta[name="theme-color"]').forEach(meta => meta.setAttribute('content', THEME_COLORS[theme]));
 }

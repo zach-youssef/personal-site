@@ -5,10 +5,12 @@
     <!-- Browsers keep favicons in their own cache, so bump v whenever the icons change -->
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico?v=2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
+    <!-- Browsers tint their toolbar to match the site header; the theme toggle updates these -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5d6dc" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1d1a23" />
     <meta
       name="description"
-      content="Web site created using create-react-app"
+      content="Zach Youssef's personal website, with interactive demos of his graphics and AI projects"
     />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png?v=2" />
     <!--
