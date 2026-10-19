@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Builds the Vulkan Retro PPU's games for the web (WebGPU) and copies them into the backend's
+# assets, which it serves as /assets/ppu/<game>/<game>.zgal.html for the project page's frames.
+# The output is ignored by git; ./deploy runs this and ships it with the other backend assets.
+#
+#   ./build-ppu [ppu checkout]     defaults to the external/vk_ppu submodule
+#
+# Building needs what the PPU's `make web` needs: Racket 8 (ZGAL's compiler), Node 24 and npm.
+set -euo pipefail
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+PPU_DIR=${1:-${SCRIPT_DIR}/external/vk_ppu}
+OUT_DIR=${SCRIPT_DIR}/graphql-server/assets/ppu
+
+# The games the page shows; each is built into ${PPU_DIR}/build/web/<game>
+GAMES=(smb3 batman)
+
+if [ ! -f "${PPU_DIR}/Makefile" ]; then
+    echo "No PPU checkout at ${PPU_DIR}; run: git submodule update --init --recursive" >&2
+    exit 1
+fi
+
+make -C "${PPU_DIR}" web
+
+rm -rf "${OUT_DIR}"
+for game in "${GAMES[@]}"; do
+    built=${PPU_DIR}/build/web/${game}
+    mkdir -p "${OUT_DIR}/${game}"
+    # The page, its scripts, the runtime and the memory dumps. The TypeScript sources and the
+    # node_modules link only matter for building and running under Node.
+    cp "${built}/${game}.zgal.html" "${built}"/*.js "${OUT_DIR}/${game}/"
+    cp -R "${built}/zgal" "${built}/assets" "${OUT_DIR}/${game}/"
+    # What the game draws, for browsers without WebGPU: its approved screenshot of frame 60
+    cp "${PPU_DIR}/tests/approved/${game}/60.png" "${OUT_DIR}/${game}/screenshot.png"
+done

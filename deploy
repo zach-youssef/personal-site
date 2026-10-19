@@ -23,6 +23,9 @@ cp -r build ${BUNDLE_DIR}/
 # Move assets to bundle root
 mv ${BUNDLE_DIR}/build/assets ${BUNDLE_DIR}/
 
+# Build the PPU's games for the web into the backend's assets, which ship below
+${SCRIPT_DIR}/build-ppu || exit 1
+
 # Build backend
 cd ${SCRIPT_DIR}/graphql-server
 ./gradlew build
