@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Builds ZGAL's particles example for the web (WebGPU) and copies it into the backend's assets,
+# which it serves as /assets/zgal/particles/particles.zgal.html for the ZGAL page's frame, beside
+# the example's source, which the page shows. The output is ignored by git; ./deploy runs this and
+# ships it with the other backend assets.
+#
+#   ./build-zgal [zgal checkout]    defaults to the external/zgal submodule
+#
+# Building needs what ZGAL's `make web` needs: Racket 8 (ZGAL's compiler), Node 24 and npm. The
+# screenshot for browsers without WebGPU is drawn under Node on Dawn, so it needs a GPU too, and
+# cwebp (brew install webp) compresses it.
+set -euo pipefail
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+ZGAL_DIR=${1:-${SCRIPT_DIR}/external/zgal}
+OUT_DIR=${SCRIPT_DIR}/graphql-server/assets/zgal
+
+if [ ! -f "${ZGAL_DIR}/zgal.mk" ]; then
+    echo "No ZGAL checkout at ${ZGAL_DIR}; run: git submodule update --init --recursive" >&2
+    exit 1
+fi
+
+make -C "${ZGAL_DIR}" web
+
+rm -rf "${OUT_DIR}"
+built=${ZGAL_DIR}/build/web/particles
+mkdir -p "${OUT_DIR}/particles"
+# The page, its scripts and the runtime. The TypeScript sources and the node_modules link only
+# matter for building and running under Node.
+cp "${built}/particles.zgal.html" "${built}"/*.js "${OUT_DIR}/particles/"
+cp -R "${built}/zgal" "${OUT_DIR}/particles/"
+# The program itself, which the page shows beside it
+cp "${ZGAL_DIR}/examples/particles/particles.zgal" "${OUT_DIR}/particles/"
+# What it draws, for browsers without WebGPU: frame 240, headless under Node
+capture=$(mktemp -d)
+trap 'rm -rf "${capture}"' EXIT
+node "${built}/particles.zgal.main.js" --frames 240 --size 1024x640 --capture "${capture}/screenshot.png"
+cwebp -quiet -q 85 "${capture}/screenshot.png" -o "${OUT_DIR}/particles/screenshot.webp"

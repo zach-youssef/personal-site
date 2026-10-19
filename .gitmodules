@@ -4,3 +4,6 @@
 [submodule "external/vk_ppu"]
 	path = external/vk_ppu
 	url = git@github.com:zach-youssef/vk_ppu.git
+[submodule "external/zgal"]
+	path = external/zgal
+	url = git@github.com:zach-youssef/vulkan_testing.git
