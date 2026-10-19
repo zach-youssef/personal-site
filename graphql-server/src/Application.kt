@@ -43,6 +43,18 @@ fun Application.module(testing: Boolean = false) {
                 files("assets")
             }
 
+            // ZGAL's documentation, which ./build-zgal builds into the assets. The page names its
+            // stylesheets and scripts relative to itself, so it's served from the directory's URL.
+            static("zgal/docs") {
+                get {
+                    call.respondRedirect("/zgal/docs/", permanent = true)
+                }
+                get("/") {
+                    call.respondFile(File("assets/zgal/docs/zgal.html"))
+                }
+                files("assets/zgal/docs")
+            }
+
             // Frontend top-level files
             // TODO - find a way to not need to manualy list out all these routes
             file("favicon.ico", "build/favicon.ico")

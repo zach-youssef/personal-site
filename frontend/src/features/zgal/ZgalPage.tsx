@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Button, Col, Container, Row } from 'react-bootstrap';
+import { Alert, Button, ButtonToolbar, Col, Container, Row } from 'react-bootstrap';
 import ZgalFrame, { hasWebGPU } from './ZgalFrame';
 
 export const GITHUB_URL = 'https://github.com/zach-youssef/vulkan_testing';
+// ZGAL's documentation, which ./build-zgal builds and the backend serves
+export const DOCS_URL = '/zgal/docs/';
 
 // What ./build-zgal builds into the backend's assets: the particles example's generated page, the
 // program it was built from and a frame it drew
@@ -81,7 +83,10 @@ function ZgalPage() {
 				a compute pass pulls a hundred thousand particles towards an attractor, and a graphics pass
 				draws them with additive blending.
 			</p>
-			<Button variant="primary" href={GITHUB_URL} className="mb-4">View on GitHub</Button>
+			<ButtonToolbar className="mb-4">
+				<Button variant="primary" href={GITHUB_URL} className="mr-2 mb-2">View on GitHub</Button>
+				<Button variant="outline-primary" href={DOCS_URL} className="mb-2">Read the documentation</Button>
+			</ButtonToolbar>
 			{!webGPU && (
 				<Alert variant="warning">
 					This program needs a browser that supports WebGPU, so below is a frame from it.

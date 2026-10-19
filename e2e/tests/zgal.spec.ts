@@ -23,6 +23,31 @@ test('shows the program\'s source', async ({ page }) => {
     await expect(page.getByLabel('particles.zgal')).toContainText('(compute-material ParticleSim');
 });
 
+test('links to the documentation, which the backend serves with its stylesheets and scripts', async ({ page }) => {
+    const failed: string[] = [];
+    page.on('response', response => {
+        if (!response.ok()) {
+            failed.push(`${response.status()} ${response.url()}`);
+        }
+    });
+    await page.goto('/projects/zgal');
+    await page.getByRole('link', { name: 'Read the documentation' }).click();
+
+    await expect(page).toHaveURL(/\/zgal\/docs\/$/);
+    await expect(page).toHaveTitle(/ZGAL/);
+    // The page's four stylesheets, which only load from the directory's URL; the scripts and the
+    // fonts the stylesheets import must load too
+    await expect.poll(() => page.evaluate(() =>
+        [...document.styleSheets].filter(sheet => sheet.cssRules.length > 0).length)).toBe(4);
+    expect(failed).toEqual([]);
+});
+
+test('redirects the documentation\'s bare URL to its directory', async ({ request }) => {
+    const response = await request.get('/zgal/docs', { maxRedirects: 0 });
+    expect(response.status()).toBe(301);
+    expect(response.headers()['location']).toBe('/zgal/docs/');
+});
+
 test('says so when the example can\'t get a WebGPU adapter', async ({ page }) => {
     // Without the switch, headless Chromium has WebGPU but no adapter
     await page.goto('/projects/zgal');

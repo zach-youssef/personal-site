@@ -61,5 +61,7 @@ describe('App routing', () => {
         renderAt('/projects/zgal');
 
         expect(screen.getByRole('heading', { name: 'ZGAL', level: 2 })).toBeInTheDocument();
+        // The backend serves the documentation, so the link leaves the app
+        expect(screen.getByRole('link', { name: 'Read the documentation' })).toHaveAttribute('href', '/zgal/docs/');
     });
 });

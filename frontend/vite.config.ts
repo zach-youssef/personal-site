@@ -176,6 +176,7 @@ const BACKEND_PATHS = [
 	"/assets/raytracer",
 	"/assets/ppu",
 	"/assets/zgal",
+	"/zgal/docs",
 ];
 
 // BACKEND_URL picks the backend, e.g. a local one on another port or the live site;

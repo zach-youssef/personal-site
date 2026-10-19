@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Builds ZGAL's particles example for the web (WebGPU) and copies it into the backend's assets,
 # which it serves as /assets/zgal/particles/particles.zgal.html for the ZGAL page's frame, beside
-# the example's source, which the page shows. The output is ignored by git; ./deploy runs this and
-# ships it with the other backend assets.
+# the example's source, which the page shows. Also builds ZGAL's documentation, which the backend
+# serves at /zgal/docs/. The output is ignored by git; ./deploy runs this and ships it with the
+# other backend assets.
 #
 #   ./build-zgal [zgal checkout]    defaults to the external/zgal submodule
 #
@@ -20,7 +21,7 @@ if [ ! -f "${ZGAL_DIR}/zgal.mk" ]; then
     exit 1
 fi
 
-make -C "${ZGAL_DIR}" web
+make -C "${ZGAL_DIR}" web docs
 
 rm -rf "${OUT_DIR}"
 built=${ZGAL_DIR}/build/web/particles
@@ -36,3 +37,7 @@ capture=$(mktemp -d)
 trap 'rm -rf "${capture}"' EXIT
 node "${built}/particles.zgal.main.js" --frames 240 --size 1024x640 --capture "${capture}/screenshot.png"
 cwebp -quiet -q 85 "${capture}/screenshot.png" -o "${OUT_DIR}/particles/screenshot.webp"
+
+# The documentation: its page, zgal.html, which the backend serves for /zgal/docs/, with its
+# stylesheets and scripts, and zgal.txt, the same as plain text
+cp -R "${ZGAL_DIR}/build/docs" "${OUT_DIR}/docs"

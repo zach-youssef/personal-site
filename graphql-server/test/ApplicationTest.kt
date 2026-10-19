@@ -83,6 +83,39 @@ class ApplicationTest {
     }
 
     @Test
+    fun `ZGAL's documentation is served from its directory's URL`() = withApp {
+        // ./build-zgal builds the documentation into this gitignored directory; without it, the
+        // test stands in a page and stylesheet of its own
+        val docsDir = File("assets/zgal/docs")
+        val stubbed = !docsDir.exists()
+        if (stubbed) {
+            docsDir.mkdirs()
+            File(docsDir, "zgal.html").writeText("<link rel=\"stylesheet\" href=\"scribble.css\"><title>ZGAL</title>")
+            File(docsDir, "scribble.css").writeText("body {}")
+        }
+        try {
+            // The page's relative links only resolve from the directory
+            val bare = handleRequest(HttpMethod.Get, "/zgal/docs")
+            assertEquals(HttpStatusCode.MovedPermanently, bare.response.status())
+            assertEquals("/zgal/docs/", bare.response.headers[HttpHeaders.Location])
+
+            val page = handleRequest(HttpMethod.Get, "/zgal/docs/")
+            assertEquals(HttpStatusCode.OK, page.response.status())
+            assertTrue(ContentType.parse(assertNotNull(page.response.headers[HttpHeaders.ContentType])).match(ContentType.Text.Html))
+            assertEquals("no-cache", page.response.headers[HttpHeaders.CacheControl])
+            assertEquals(File(docsDir, "zgal.html").readText(), page.response.content)
+
+            val stylesheet = handleRequest(HttpMethod.Get, "/zgal/docs/scribble.css")
+            assertEquals(HttpStatusCode.OK, stylesheet.response.status())
+            assertTrue(ContentType.parse(assertNotNull(stylesheet.response.headers[HttpHeaders.ContentType])).match(ContentType.Text.CSS))
+        } finally {
+            if (stubbed) {
+                docsDir.deleteRecursively()
+            }
+        }
+    }
+
+    @Test
     fun `GraphQL responses carry no caching headers`() = withApp {
         assertNull(postGraphQL("{ levels }").response.headers[HttpHeaders.CacheControl])
     }
