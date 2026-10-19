@@ -26,7 +26,7 @@ describe('App routing', () => {
 
     it('renders a section per project category on the projects page', async () => {
         const server = mockGraphQL({
-            projectInfos: ({ category }) => category === 'PERSONAL' ? [projects.vkPPU] : [],
+            projectInfos: ({ category }) => category === 'PERSONAL' ? [projects.vkPPU, projects.zgal] : [],
         });
         renderAt('/projects');
 
@@ -34,6 +34,7 @@ describe('App routing', () => {
         expect(screen.getAllByRole('heading', { level: 2 }).map(heading => heading.textContent))
             .toEqual(['Side Projects', 'Professional Work', 'University Projects']);
         expect(await screen.findByText('Vulkan Retro PPU')).toBeInTheDocument();
+        expect(screen.getByText('ZGAL')).toBeInTheDocument();
         expect(server.requests().map(request => request.variables.category).sort())
             .toEqual(['PERSONAL', 'PROFESSIONAL', 'UNIVERSITY']);
     });
@@ -52,5 +53,12 @@ describe('App routing', () => {
 
         expect(screen.getByRole('heading', { name: 'Vulkan Retro PPU' })).toBeInTheDocument();
         expect(window.location.pathname).toBe('/projects/vkPPU');
+    });
+
+    it('routes to the ZGAL page', () => {
+        vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, text: async () => '' }) as Response));
+        renderAt('/projects/zgal');
+
+        expect(screen.getByRole('heading', { name: 'ZGAL', level: 2 })).toBeInTheDocument();
     });
 });

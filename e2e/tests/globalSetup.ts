@@ -6,13 +6,19 @@ const OUTPUT_DIR = resolve(__dirname, '../../graphql-server/assets/seamcarver/ou
 
 const listOutputs = () => existsSync(OUTPUT_DIR) ? readdirSync(OUTPUT_DIR) : [];
 
-// The PPU's games, which the backend serves for the PPU page
-const PPU_DIR = resolve(__dirname, '../../graphql-server/assets/ppu');
+// The PPU's games and ZGAL's particles example, which the backend serves for their pages, and the
+// scripts that build them
+const BUILT_ASSETS = [
+    [resolve(__dirname, '../../graphql-server/assets/ppu'), './build-ppu'],
+    [resolve(__dirname, '../../graphql-server/assets/zgal'), './build-zgal'],
+];
 
 // Remove the carved images the tests produce
 export default function globalSetup() {
-    if (!existsSync(PPU_DIR)) {
-        throw new Error(`No PPU games in ${PPU_DIR}: run ./build-ppu first`);
+    for (const [dir, script] of BUILT_ASSETS) {
+        if (!existsSync(dir)) {
+            throw new Error(`Nothing built in ${dir}: run ${script} first`);
+        }
     }
     const existing = new Set(listOutputs());
     return () => {

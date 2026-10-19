@@ -1,0 +1,27 @@
+import { test, expect } from './fixtures';
+import { collectErrors, colorCount } from './pageChecks';
+
+// As for the PPU's games (see ppuWebGPU.spec.ts), headless Chromium needs the real GPU to run the
+// example
+test.use({ launchOptions: { args: ['--enable-unsafe-webgpu', '--enable-gpu'] } });
+
+test('runs the particles example in the page', async ({ page }) => {
+    const errors = collectErrors(page);
+    await page.goto('/projects/zgal');
+
+    const frame = page.locator('iframe[title="Particles"]');
+    const program = frame.contentFrame();
+    await expect(program.locator('html')).toHaveAttribute('data-zgal', 'running', { timeout: 15_000 });
+    // Particles in the canvas, rather than a cleared one, after drawing frames without errors,
+    // which the runner would show over it
+    await expect.poll(() => colorCount(page, program.locator('canvas')), { timeout: 15_000 }).toBeGreaterThan(100);
+    await expect(program.locator('#zgal-message')).toHaveCount(0);
+    await expect(program.locator('html')).toHaveAttribute('data-zgal', 'running');
+    // Scaled to the frame rather than cropped by it
+    const frameBox = (await frame.boundingBox())!;
+    const canvasBox = (await program.locator('canvas').boundingBox())!;
+    expect(canvasBox.width).toBeCloseTo(frameBox.width, 0);
+    expect(canvasBox.height).toBeCloseTo(frameBox.height, 0);
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    expect(errors).toEqual([]);
+});

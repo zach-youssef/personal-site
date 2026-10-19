@@ -23,11 +23,11 @@ test('projects page lists every project by category', async ({ page }) => {
     await expect(page).toHaveURL('/projects');
     // Side projects first
     await expect(page.getByRole('heading', { level: 2 })).toHaveText(['Side Projects', 'Professional Work', 'University Projects']);
-    for (const name of ['Broad Museum AR Experience', 'Sokoban AI', 'Seam Carver', 'Vulkan Retro PPU']) {
+    for (const name of ['Broad Museum AR Experience', 'Sokoban AI', 'Seam Carver', 'Vulkan Retro PPU', 'ZGAL']) {
         await expect(page.getByText(name, { exact: true })).toBeVisible();
     }
-    // 2 professional, 5 university and 1 personal project
-    await expect(page.getByRole('link', { name: 'View' })).toHaveCount(8);
+    // 2 professional, 5 university and 2 personal projects
+    await expect(page.getByRole('link', { name: 'View' })).toHaveCount(9);
 });
 
 test('project cards link to their demo pages', async ({ page }) => {
@@ -62,7 +62,7 @@ test('pages only request their own origin', async ({ page, baseURL }) => {
         }
     });
 
-    for (const path of ['/', '/projects', '/projects/sokoban', '/projects/seamCarver', '/projects/raytracer', '/projects/webglDemo']) {
+    for (const path of ['/', '/projects', '/projects/sokoban', '/projects/seamCarver', '/projects/raytracer', '/projects/webglDemo', '/projects/zgal']) {
         await page.goto(path);
         await page.waitForLoadState('networkidle');
     }

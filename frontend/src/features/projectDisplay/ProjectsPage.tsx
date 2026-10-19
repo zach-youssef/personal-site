@@ -12,6 +12,7 @@ import SeamCarverPage from '../seamCarver/SeamCarverPage';
 import WebGLDemoPage from '../webgl/WebGLDemoPage';
 import RaytracerPage from '../raytracer/RaytracerPage';
 import PpuPage from '../ppu/PpuPage';
+import ZgalPage from '../zgal/ZgalPage';
 import { Container, Row } from 'react-bootstrap';
 
 function ProjectsPage() {
@@ -44,6 +45,9 @@ function ProjectsPage() {
                 }}/>
                 <Route path={`${match.path}/vkPPU`}>
                     <PpuPage />
+                </Route>
+                <Route path={`${match.path}/zgal`}>
+                    <ZgalPage />
                 </Route>
                 <Route path={`${match.path}/broadAR`} component={ () => { 
                     window.location.href="https://buck.co/work/meta-x-murakami-at-the-broad";

@@ -175,6 +175,7 @@ const BACKEND_PATHS = [
 	"/assets/projectThumbnail",
 	"/assets/raytracer",
 	"/assets/ppu",
+	"/assets/zgal",
 ];
 
 // BACKEND_URL picks the backend, e.g. a local one on another port or the live site;

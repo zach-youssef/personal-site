@@ -374,3 +374,19 @@ iframe {
   border: 1px solid $border-subtle;
   border-radius: $border-radius-lg;
 }
+
+// Source listings ============================================================
+
+// A program's source beside its demo, scrolling within its own box
+.code-listing {
+  max-height: 32rem;
+  margin: 0;
+  padding: 1rem;
+  overflow: auto;
+  color: $body-color;
+  background-color: $surface;
+  border: 1px solid $border-subtle;
+  border-radius: $border-radius;
+  font-size: .8125rem;
+  line-height: 1.5;
+}

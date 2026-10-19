@@ -7,6 +7,7 @@ import { resolve } from 'node:path';
 import RaytracerPage from './raytracer/RaytracerPage';
 import WebGLDemoPage from './webgl/WebGLDemoPage';
 import PpuPage, { GITHUB_URL } from './ppu/PpuPage';
+import ZgalPage, { GITHUB_URL as ZGAL_GITHUB_URL } from './zgal/ZgalPage';
 import { CameraMode, WebGLDemo } from './webgl/WebGLDemo';
 import { sceneAssets } from './webgl/sceneAssets';
 import { mockGraphQL } from '../testUtils/mockGraphQL';
@@ -167,16 +168,16 @@ describe('sceneAssets', () => {
     });
 });
 
-describe('PpuPage', () => {
-    // jsdom has no WebGPU; these tests give the page a navigator.gpu when they need one
-    function setWebGPU(available: boolean) {
-        if (available) {
-            Object.defineProperty(navigator, 'gpu', { configurable: true, value: {} });
-        } else {
-            delete (navigator as { gpu?: unknown }).gpu;
-        }
+// jsdom has no WebGPU; the ZGAL pages' tests give the page a navigator.gpu when they need one
+function setWebGPU(available: boolean) {
+    if (available) {
+        Object.defineProperty(navigator, 'gpu', { configurable: true, value: {} });
+    } else {
+        delete (navigator as { gpu?: unknown }).gpu;
     }
+}
 
+describe('PpuPage', () => {
     afterEach(() => {
         setWebGPU(false);
     });
@@ -224,5 +225,92 @@ describe('PpuPage', () => {
         gameDocument.documentElement.dataset.zgal = 'failed';
 
         expect(await screen.findByRole('alert')).toHaveTextContent("Batman couldn't run in this browser.");
+        // The games keep the runner's whole-multiple scaling, so their pixels stay square
+        expect(gameDocument.head.querySelector('style')).toBeNull();
+    });
+});
+
+describe('ZgalPage', () => {
+    const SOURCE = ';; GPU particles\n(graph ParticlesGraph)\n';
+
+    function serveSource(response: Partial<Response>) {
+        const fetchMock = vi.fn(async () => response as Response);
+        vi.stubGlobal('fetch', fetchMock);
+        return fetchMock;
+    }
+
+    afterEach(() => {
+        setWebGPU(false);
+        vi.unstubAllGlobals();
+        vi.restoreAllMocks();
+    });
+
+    it('links to the project on GitHub', () => {
+        serveSource({ ok: true, text: async () => SOURCE });
+        render(<ZgalPage />);
+
+        expect(screen.getByRole('heading', { name: 'ZGAL', level: 2 })).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: 'View on GitHub' })).toHaveAttribute('href', ZGAL_GITHUB_URL);
+    });
+
+    it('runs the particles example beside its source', async () => {
+        setWebGPU(true);
+        const fetchMock = serveSource({ ok: true, text: async () => SOURCE });
+        render(<ZgalPage />);
+
+        expect(screen.getByTitle('Particles')).toHaveAttribute('src', '/assets/zgal/particles/particles.zgal.html');
+        expect(fetchMock).toHaveBeenCalledWith('/assets/zgal/particles/particles.zgal');
+        await vi.waitFor(() => expect(screen.getByLabelText('particles.zgal').textContent).toBe(SOURCE));
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('scales the example to its frame', () => {
+        setWebGPU(true);
+        serveSource({ ok: true, text: async () => SOURCE });
+        render(<ZgalPage />);
+        const frame = screen.getByTitle('Particles');
+        const programDocument = document.implementation.createHTMLDocument();
+        Object.defineProperty(frame, 'contentDocument', { value: programDocument });
+
+        act(() => {
+            frame.dispatchEvent(new Event('load'));
+        });
+
+        expect(programDocument.head.querySelector('style')?.textContent).toContain('canvas#zgal { width: 100% !important; height: 100% !important;');
+    });
+
+    it('shows a frame from the example when the browser has no WebGPU', () => {
+        setWebGPU(false);
+        serveSource({ ok: true, text: async () => SOURCE });
+        const { container } = render(<ZgalPage />);
+
+        expect(screen.getByRole('alert')).toHaveTextContent('This program needs a browser that supports WebGPU');
+        expect(container.querySelector('iframe')).toBeNull();
+        expect(screen.getByAltText('Particles')).toHaveAttribute('src', '/assets/zgal/particles/screenshot.webp');
+    });
+
+    it('says so when the source fails to load', async () => {
+        setWebGPU(true);
+        serveSource({ ok: false, status: 404 });
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        render(<ZgalPage />);
+
+        expect(await screen.findByRole('alert')).toHaveTextContent("The program's source couldn't be loaded.");
+    });
+
+    it('says so when the example fails to run', async () => {
+        setWebGPU(true);
+        serveSource({ ok: true, text: async () => SOURCE });
+        render(<ZgalPage />);
+        const frame = screen.getByTitle('Particles');
+        const programDocument = document.implementation.createHTMLDocument();
+        Object.defineProperty(frame, 'contentDocument', { value: programDocument });
+
+        act(() => {
+            frame.dispatchEvent(new Event('load'));
+        });
+        programDocument.documentElement.dataset.zgal = 'failed';
+
+        expect(await screen.findByRole('alert')).toHaveTextContent("Particles couldn't run in this browser.");
     });
 });

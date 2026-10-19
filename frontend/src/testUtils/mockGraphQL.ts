@@ -48,6 +48,12 @@ export const projects = {
         description: 'Vulkan Compute Pipeline for rendering NES games',
         imagePath: '/assets/projectThumbnail/ppu.webp',
     },
+    zgal: {
+        id: 'zgal',
+        name: 'ZGAL',
+        description: 'A language for GPU programs that compiles to Vulkan and WebGPU',
+        imagePath: '/assets/projectThumbnail/zgal.webp',
+    },
     sokoban: {
         id: 'sokoban',
         name: 'Sokoban AI',

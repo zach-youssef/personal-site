@@ -56,6 +56,12 @@ class SimpleProjectInfoRepository : IProjectInfoRepository {
             "Vulkan Compute Pipeline for rendering NES games",
             "$cdnUrl/ppu.webp"
         ),
+        "zgal" to ProjectInfo (
+            "ZGAL",
+            "zgal",
+            "A language for GPU programs that compiles to Vulkan and WebGPU",
+            "$cdnUrl/zgal.webp"
+        ),
     )
 
     val categories: Map<ProjectCategory, Set<String>> = mapOf(
@@ -67,7 +73,7 @@ class SimpleProjectInfoRepository : IProjectInfoRepository {
             "foundationDbFs"
         ),
         ProjectCategory.PROFESSIONAL to setOf("broadAR", "metaAvatars"),
-        ProjectCategory.PERSONAL to setOf("vkPPU")
+        ProjectCategory.PERSONAL to setOf("vkPPU", "zgal")
     )
 
     val featuredIds: Set<String> = setOf("vkPPU")
