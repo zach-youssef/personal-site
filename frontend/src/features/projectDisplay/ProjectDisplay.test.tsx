@@ -28,10 +28,16 @@ describe('ProjectDisplayFeatured', () => {
     it('shows the featured project with its image', () => {
         render(<ProjectDisplayFeatured projectInfo={projects.vkPPU} />);
 
-        expect(screen.getByText('Featured: Vulkan Retro PPU')).toBeInTheDocument();
+        expect(screen.getByText('Vulkan Retro PPU')).toBeInTheDocument();
         expect(screen.getByText(projects.vkPPU.description)).toBeInTheDocument();
         expect(screen.getByAltText('Vulkan Retro PPU')).toHaveAttribute('src', projects.vkPPU.imagePath);
         // The featured image is near the top of the page, so it loads right away
         expect(screen.getByAltText('Vulkan Retro PPU')).not.toHaveAttribute('loading');
+    });
+
+    it('lazy-loads the images of later featured projects', () => {
+        render(<ProjectDisplayFeatured projectInfo={projects.zgal} index={1} />);
+
+        expect(screen.getByAltText('ZGAL')).toHaveAttribute('loading', 'lazy');
     });
 });

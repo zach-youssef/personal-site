@@ -47,7 +47,7 @@ class SimpleProjectInfoRepositoryTest {
 
     @Test
     fun `featured and category filters combine`() {
-        assertEquals(listOf("vkPPU"), repository.getAllProjects(true, ProjectCategory.PERSONAL).map { it.id })
+        assertEquals(listOf("vkPPU", "zgal"), repository.getAllProjects(true, ProjectCategory.PERSONAL).map { it.id })
         assertEquals(emptyList(), repository.getAllProjects(true, ProjectCategory.UNIVERSITY))
     }
 

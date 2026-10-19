@@ -28,9 +28,12 @@ export function ProjectDisplayCard({projectInfo, index}: Props) {
 export function ProjectDisplayFeatured({projectInfo, index}: Props) {
     const { name, description, imagePath, id } = projectInfo;
 
+    // The first featured card is near the top of the page, so its image loads right away
     let imageCol = (
         <Col>
-            <Card.Img src={imagePath} alt={name}/>
+            {index === 0
+                ? <Card.Img src={imagePath} alt={name}/>
+                : <Card.Img src={imagePath} alt={name} loading="lazy" decoding="async"/>}
         </Col>
     )
     
@@ -45,7 +48,7 @@ export function ProjectDisplayFeatured({projectInfo, index}: Props) {
     return (
         <Card>
             <Card.Header>
-                Featured: {name}
+                <Card.Title>{name}</Card.Title>
             </Card.Header>
             <Card.Body>
                 <Row>

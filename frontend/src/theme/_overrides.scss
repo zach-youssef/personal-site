@@ -255,6 +255,20 @@ h1, h2, h3 {
   }
 }
 
+// The home page stacks its featured cards, with the link to every project as wide as they are
+.featured-projects {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
+  margin-bottom: 2rem;
+
+  > .card,
+  > .btn-block {
+    margin: 0;
+  }
+}
+
 // Buttons =====================================================================
 
 .btn {

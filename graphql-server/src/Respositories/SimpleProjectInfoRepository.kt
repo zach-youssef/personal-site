@@ -76,7 +76,8 @@ class SimpleProjectInfoRepository : IProjectInfoRepository {
         ProjectCategory.PERSONAL to setOf("vkPPU", "zgal")
     )
 
-    val featuredIds: Set<String> = setOf("vkPPU")
+    // Shown on the home page in projectInfos order
+    val featuredIds: Set<String> = setOf("vkPPU", "zgal")
 
     override fun getProject(id: String): ProjectInfo? {
         return projectInfos[id];

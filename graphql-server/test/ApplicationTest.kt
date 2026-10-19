@@ -41,11 +41,11 @@ class ApplicationTest {
     private fun JsonNode.texts(): List<String> = map { it.asText() }
 
     @Test
-    fun `projectInfos returns the featured project`() = withApp {
+    fun `projectInfos returns the featured projects`() = withApp {
         val data = graphQL("{ projectInfos(featured: true) { id, name, description, imagePath } }")
         val projects = data.path("projectInfos")
 
-        assertEquals(listOf("vkPPU"), projects.map { it.path("id").asText() })
+        assertEquals(listOf("vkPPU", "zgal"), projects.map { it.path("id").asText() })
         assertEquals("Vulkan Retro PPU", projects[0].path("name").asText())
         assertTrue(projects[0].path("imagePath").asText().endsWith("/ppu.webp"))
     }

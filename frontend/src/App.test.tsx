@@ -21,7 +21,8 @@ describe('App routing', () => {
         renderAt('/');
 
         expect(screen.getByRole('heading', { name: 'About Me' })).toBeInTheDocument();
-        expect(await screen.findByText('Featured: Vulkan Retro PPU')).toBeInTheDocument();
+        expect(await screen.findByRole('heading', { name: 'Featured Projects' })).toBeInTheDocument();
+        expect(screen.getByText('Vulkan Retro PPU')).toBeInTheDocument();
     });
 
     it('renders a section per project category on the projects page', async () => {

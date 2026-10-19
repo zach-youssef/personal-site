@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Row, Container } from 'react-bootstrap';
+import { Row, Container, Button } from 'react-bootstrap';
 import { SiteTextContents, SiteText } from '../content/text/SiteText';
 import { ProjectDisplayFeatured } from './projectDisplay/ProjectDisplay';
+import ProjectInfo from './projectDisplay/ProjectInfo';
 import { fetchGraphQL } from '../FetchHelper';
 
 function Home() {
-    const [featuredProject, setFeaturedProject] = useState(null)
+    const [featuredProjects, setFeaturedProjects] = useState<ProjectInfo[]>([]);
     
-    function loadFeaturedProject() {
+    function loadFeaturedProjects() {
       let isMounted = true;
       fetchGraphQL(`
         query FetchFeaturedProjectsQuery {
@@ -23,7 +24,7 @@ function Home() {
           return;
         }
         const data = response.data;
-        setFeaturedProject(data.projectInfos[0]);
+        setFeaturedProjects(data.projectInfos ?? []);
       }).catch(error => {
         console.error(error);
       });
@@ -33,7 +34,7 @@ function Home() {
       };
     }
 
-    useEffect(loadFeaturedProject, []);
+    useEffect(loadFeaturedProjects, []);
 
     return (
         <Container >
@@ -50,11 +51,23 @@ function Home() {
               )}
             </p>
           </Row>
-          <Row>
-            {
-              featuredProject != null ?  <ProjectDisplayFeatured projectInfo={featuredProject!!}/> : <div />
-            }
-          </Row>
+          {featuredProjects.length > 0 &&
+            <>
+              <Row>
+                <h2>{SiteTextContents[SiteText.FeaturedProjectHeader]}</h2>
+              </Row>
+              <Row>
+                <div className="featured-projects">
+                  {featuredProjects.map((projectInfo, index) =>
+                    <ProjectDisplayFeatured key={projectInfo.id} projectInfo={projectInfo} index={index}/>
+                  )}
+                  <Button variant="secondary" href="/projects" block>
+                    {SiteTextContents[SiteText.SeeMoreProjects]}
+                  </Button>
+                </div>
+              </Row>
+            </>
+          }
         </Container>
     );
 }

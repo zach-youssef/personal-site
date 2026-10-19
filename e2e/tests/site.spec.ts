@@ -1,19 +1,44 @@
 import { test, expect } from './fixtures';
 
-test('home page shows the featured project from the backend', async ({ page }) => {
+test('home page lists the featured projects from the backend', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.getByRole('heading', { name: 'About Me' })).toBeVisible();
-    await expect(page.getByText('Featured: Vulkan Retro PPU')).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2 })).toHaveText(['About Me', 'Featured Projects']);
+    await expect(page.locator('.featured-projects .card-title')).toHaveText(['Vulkan Retro PPU', 'ZGAL']);
     await expect(page.getByText('Vulkan Compute Pipeline for rendering NES games')).toBeVisible();
+    await expect(page.getByText('A language for GPU programs that compiles to Vulkan and WebGPU')).toBeVisible();
 });
 
-test('featured project links to its project page', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('link', { name: 'View' }).click();
+for (const [name, id] of [['Vulkan Retro PPU', 'vkPPU'], ['ZGAL', 'zgal']]) {
+    test(`featured ${name} links to its project page`, async ({ page }) => {
+        await page.goto('/');
+        await page.locator('.card').filter({ hasText: name }).getByRole('link', { name: 'View' }).click();
 
-    await expect(page).toHaveURL('/projects/vkPPU');
-    await expect(page.getByRole('heading', { name: 'Vulkan Retro PPU' })).toBeVisible();
+        await expect(page).toHaveURL(`/projects/${id}`);
+        await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
+    });
+}
+
+test('see more ends the featured projects, as wide as their cards, and opens the projects page', async ({ page }) => {
+    for (const width of [1280, 400]) {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto('/');
+        const seeMore = page.getByRole('link', { name: 'See more' });
+        const cards = page.locator('.featured-projects > .card');
+        await expect(cards).toHaveCount(2);
+
+        const button = (await seeMore.boundingBox())!;
+        for (const card of await cards.all()) {
+            const box = (await card.boundingBox())!;
+            expect(button.x, `${width}px`).toBeCloseTo(box.x, 0);
+            expect(button.width, `${width}px`).toBeCloseTo(box.width, 0);
+            expect(button.y, `${width}px`).toBeGreaterThan(box.y + box.height);
+        }
+    }
+
+    await page.getByRole('link', { name: 'See more' }).click();
+    await expect(page).toHaveURL('/projects');
+    await expect(page.getByRole('heading', { name: 'Side Projects' })).toBeVisible();
 });
 
 test('projects page lists every project by category', async ({ page }) => {
