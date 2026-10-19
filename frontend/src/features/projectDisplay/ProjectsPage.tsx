@@ -7,6 +7,7 @@ import {
 } from 'react-router-dom';
 import { SiteText, SiteTextContents } from '../../content/text/SiteText';
 import ProjectDisplayContainer from './ProjectDisplayContainer';
+import ProjectsLinkButton from './ProjectsLinkButton';
 import SokobanPage from '../sokoban/SokobanPage';
 import SeamCarverPage from '../seamCarver/SeamCarverPage';
 import WebGLDemoPage from '../webgl/WebGLDemoPage';
@@ -14,6 +15,18 @@ import RaytracerPage from '../raytracer/RaytracerPage';
 import PpuPage from '../ppu/PpuPage';
 import ZgalPage from '../zgal/ZgalPage';
 import { Container, Row } from 'react-bootstrap';
+
+// A project shown on this site, ending with a way back to the list
+function ProjectPage({children}: {children: React.ReactNode}) {
+    return (
+        <>
+            {children}
+            <Container className="my-4">
+                <ProjectsLinkButton>{SiteTextContents[SiteText.BackToProjects]}</ProjectsLinkButton>
+            </Container>
+        </>
+    );
+}
 
 function ProjectsPage() {
     let match = useRouteMatch();
@@ -28,26 +41,26 @@ function ProjectsPage() {
         <Router>
             <Switch>
                 <Route path={`${match.path}/sokoban`}>
-                    <SokobanPage />
+                    <ProjectPage><SokobanPage /></ProjectPage>
                 </Route>
                 <Route path={`${match.path}/raytracer`}>
-                    <RaytracerPage />
+                    <ProjectPage><RaytracerPage /></ProjectPage>
                 </Route>
                 <Route path={`${match.path}/seamCarver`}>
-                    <SeamCarverPage />
+                    <ProjectPage><SeamCarverPage /></ProjectPage>
                 </Route>
                 <Route path={`${match.path}/webglDemo`}>
-                    <WebGLDemoPage />
+                    <ProjectPage><WebGLDemoPage /></ProjectPage>
                 </Route>
                 <Route path={`${match.path}/foundationDbFs`} component={ () => { 
                     window.location.href="https://github.com/zach-youssef/foundationdb-fs";
                     return null;
                 }}/>
                 <Route path={`${match.path}/vkPPU`}>
-                    <PpuPage />
+                    <ProjectPage><PpuPage /></ProjectPage>
                 </Route>
                 <Route path={`${match.path}/zgal`}>
-                    <ZgalPage />
+                    <ProjectPage><ZgalPage /></ProjectPage>
                 </Route>
                 <Route path={`${match.path}/broadAR`} component={ () => { 
                     window.location.href="https://buck.co/work/meta-x-murakami-at-the-broad";

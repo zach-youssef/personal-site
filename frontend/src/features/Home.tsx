@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Row, Container, Button } from 'react-bootstrap';
+import { Row, Container } from 'react-bootstrap';
 import { SiteTextContents, SiteText } from '../content/text/SiteText';
 import { ProjectDisplayFeatured } from './projectDisplay/ProjectDisplay';
 import ProjectInfo from './projectDisplay/ProjectInfo';
+import ProjectsLinkButton from './projectDisplay/ProjectsLinkButton';
 import { fetchGraphQL } from '../FetchHelper';
 
 function Home() {
@@ -61,9 +62,9 @@ function Home() {
                   {featuredProjects.map((projectInfo, index) =>
                     <ProjectDisplayFeatured key={projectInfo.id} projectInfo={projectInfo} index={index}/>
                   )}
-                  <Button variant="secondary" href="/projects" block>
+                  <ProjectsLinkButton>
                     {SiteTextContents[SiteText.SeeMoreProjects]}
-                  </Button>
+                  </ProjectsLinkButton>
                 </div>
               </Row>
             </>

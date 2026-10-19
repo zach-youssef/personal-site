@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Carousel } from 'react-bootstrap';
+import { Carousel, Container } from 'react-bootstrap';
 import { fetchGraphQL } from '../../FetchHelper';
 
 function RaytracerPage () {
@@ -24,7 +24,7 @@ function RaytracerPage () {
         };
     }, []);
     return (
-        <div>
+        <Container>
             <h2>Browser Raytracer</h2>
             <p>
                 At the end of my graduate graphics course, we implemented a Raytracer in typescript that was capable of shadows, reflections, and transparency with refraction.
@@ -48,7 +48,7 @@ function RaytracerPage () {
                     ))
                 }
             </Carousel>
-        </div>
+        </Container>
     );
 }
 
