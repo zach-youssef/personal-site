@@ -21,9 +21,8 @@ test('projects page lists every project by category', async ({ page }) => {
     await page.getByRole('link', { name: 'Projects' }).click();
 
     await expect(page).toHaveURL('/projects');
-    for (const heading of ['Professional Work', 'University Projects', 'Side Projects']) {
-        await expect(page.getByRole('heading', { name: heading })).toBeVisible();
-    }
+    // Side projects first
+    await expect(page.getByRole('heading', { level: 2 })).toHaveText(['Side Projects', 'Professional Work', 'University Projects']);
     for (const name of ['Broad Museum AR Experience', 'Sokoban AI', 'Seam Carver', 'Vulkan Retro PPU']) {
         await expect(page.getByText(name, { exact: true })).toBeVisible();
     }

@@ -18,9 +18,9 @@ function ProjectsPage() {
     let match = useRouteMatch();
 
     let categoryLabels = [
+        ["PERSONAL", SiteTextContents[SiteText.Personal]],
         ["PROFESSIONAL", SiteTextContents[SiteText.WorkHeader]],
         ["UNIVERSITY", SiteTextContents[SiteText.ProjectHeader]],
-        ["PERSONAL", SiteTextContents[SiteText.Personal]],
     ];
 
     return(

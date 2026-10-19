@@ -30,9 +30,9 @@ describe('App routing', () => {
         });
         renderAt('/projects');
 
-        expect(screen.getByRole('heading', { name: 'Professional Work' })).toBeInTheDocument();
-        expect(screen.getByRole('heading', { name: 'University Projects' })).toBeInTheDocument();
-        expect(screen.getByRole('heading', { name: 'Side Projects' })).toBeInTheDocument();
+        // Side projects come first
+        expect(screen.getAllByRole('heading', { level: 2 }).map(heading => heading.textContent))
+            .toEqual(['Side Projects', 'Professional Work', 'University Projects']);
         expect(await screen.findByText('Vulkan Retro PPU')).toBeInTheDocument();
         expect(server.requests().map(request => request.variables.category).sort())
             .toEqual(['PERSONAL', 'PROFESSIONAL', 'UNIVERSITY']);
