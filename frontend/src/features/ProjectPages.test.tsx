@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import RaytracerPage from './raytracer/RaytracerPage';
 import WebGLDemoPage from './webgl/WebGLDemoPage';
+import PpuPage, { GITHUB_URL } from './ppu/PpuPage';
 import { CameraMode, WebGLDemo } from './webgl/WebGLDemo';
 import { sceneAssets } from './webgl/sceneAssets';
 import { mockGraphQL } from '../testUtils/mockGraphQL';
@@ -163,5 +164,65 @@ describe('sceneAssets', () => {
 
     it('rejects files the scene would need but are missing', () => {
         expect(() => sceneAssets.resolve('models/missing.obj')).toThrow('models/missing.obj');
+    });
+});
+
+describe('PpuPage', () => {
+    // jsdom has no WebGPU; these tests give the page a navigator.gpu when they need one
+    function setWebGPU(available: boolean) {
+        if (available) {
+            Object.defineProperty(navigator, 'gpu', { configurable: true, value: {} });
+        } else {
+            delete (navigator as { gpu?: unknown }).gpu;
+        }
+    }
+
+    afterEach(() => {
+        setWebGPU(false);
+    });
+
+    it('links to the project on GitHub', () => {
+        render(<PpuPage />);
+
+        expect(screen.getByRole('heading', { name: 'Vulkan Retro PPU' })).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: 'View on GitHub' })).toHaveAttribute('href', GITHUB_URL);
+    });
+
+    it('runs each game in a frame of its generated page', () => {
+        setWebGPU(true);
+        render(<PpuPage />);
+
+        expect(screen.getByTitle('Super Mario Bros. 3')).toHaveAttribute('src', '/assets/ppu/smb3/smb3.zgal.html');
+        expect(screen.getByTitle('Batman')).toHaveAttribute('src', '/assets/ppu/batman/batman.zgal.html');
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('shows a frame from each game when the browser has no WebGPU', () => {
+        setWebGPU(false);
+        const { container } = render(<PpuPage />);
+
+        expect(screen.getByRole('alert')).toHaveTextContent('These games need a browser that supports WebGPU');
+        expect(container.querySelector('iframe')).toBeNull();
+        expect(screen.getByAltText('Super Mario Bros. 3')).toHaveAttribute('src', '/assets/ppu/smb3/screenshot.png');
+        expect(screen.getByAltText('Batman')).toHaveAttribute('src', '/assets/ppu/batman/screenshot.png');
+    });
+
+    it('says so when a game fails to run', async () => {
+        setWebGPU(true);
+        render(<PpuPage />);
+        // jsdom doesn't load the game's page, so the frame gets a document standing in for it
+        const frame = screen.getByTitle('Batman');
+        const gameDocument = document.implementation.createHTMLDocument();
+        Object.defineProperty(frame, 'contentDocument', { value: gameDocument });
+
+        act(() => {
+            frame.dispatchEvent(new Event('load'));
+        });
+        gameDocument.documentElement.dataset.zgal = 'running';
+        await new Promise(resolve => setTimeout(resolve, 0));
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        gameDocument.documentElement.dataset.zgal = 'failed';
+
+        expect(await screen.findByRole('alert')).toHaveTextContent("Batman couldn't run in this browser.");
     });
 });

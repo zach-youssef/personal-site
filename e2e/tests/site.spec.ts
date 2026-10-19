@@ -12,8 +12,8 @@ test('featured project links to its project page', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('link', { name: 'View' }).click();
 
-    // The featured project's page sends visitors on to its GitHub repository
-    await expect(page).toHaveURL('https://github.com/zach-youssef/vk_ppu');
+    await expect(page).toHaveURL('/projects/vkPPU');
+    await expect(page.getByRole('heading', { name: 'Vulkan Retro PPU' })).toBeVisible();
 });
 
 test('projects page lists every project by category', async ({ page }) => {
@@ -42,7 +42,6 @@ test('project cards link to their demo pages', async ({ page }) => {
 });
 
 for (const [id, url] of [
-    ['vkPPU', 'https://github.com/zach-youssef/vk_ppu'],
     ['foundationDbFs', 'https://github.com/zach-youssef/foundationdb-fs'],
     ['broadAR', 'https://buck.co/work/meta-x-murakami-at-the-broad'],
     ['metaAvatars', 'https://www.theverge.com/2024/9/25/24254331/meta-metaverse-avatars-glow-up-connect-2024'],

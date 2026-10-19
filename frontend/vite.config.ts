@@ -174,6 +174,7 @@ const BACKEND_PATHS = [
 	"/seamCarver",
 	"/assets/projectThumbnail",
 	"/assets/raytracer",
+	"/assets/ppu",
 ];
 
 // BACKEND_URL picks the backend, e.g. a local one on another port or the live site;

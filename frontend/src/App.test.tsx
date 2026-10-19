@@ -46,4 +46,11 @@ describe('App routing', () => {
         expect(await screen.findByText('Next Move')).toBeEnabled();
         expect(screen.queryByRole('heading', { name: 'University Projects' })).not.toBeInTheDocument();
     });
+
+    it('shows the PPU in the page rather than sending visitors to GitHub', () => {
+        renderAt('/projects/vkPPU');
+
+        expect(screen.getByRole('heading', { name: 'Vulkan Retro PPU' })).toBeInTheDocument();
+        expect(window.location.pathname).toBe('/projects/vkPPU');
+    });
 });
