@@ -1,0 +1,286 @@
+#!/usr/bin/env bash
+# Installs a site bundle on the server. It reads the bundle's zip, as ./bundle writes it, from
+# stdin, so the whole deploy is one ssh command (see ./ship), which a deploy key can be limited to
+# with restrict,command="~/server-deploy" in ~/.ssh/authorized_keys.
+#
+#   ./ship <bundle.zip>      runs, on the server: ~/server-deploy < bundle.zip
+#
+# The bundle is unpacked and checked in ~/.deploy/staging before anything in the home directory
+# changes, so a truncated or malformed upload leaves the running site as it was. Its files then
+# replace those in the home directory one by one (by rename, so a running server or script keeps
+# reading the version it opened). The bundle's MANIFEST lists every file it ships; the files that
+# the previous deploy's manifest, kept in ~/.deploy/MANIFEST, listed and this one doesn't are
+# deleted, as nothing ships them any more. Then this one's manifest is kept, and server-restart
+# from the bundle restarts the server. Once the upload is in, a dropped ssh session no longer
+# stops the deploy; its messages are also in ~/.deploy/log, which holds the last deploy's.
+#
+# Deletion never touches paths that no deploy ships but the server uses: resources/ (the backend's
+# config and Sokoban levels), assets/seamcarver/output/ (seam carver results) and logs (*.log). A
+# bundle that ships any of them, or writes outside the home directory (symlinks resolved), is
+# refused, as is one without server-deploy and server-restart, which deploys need.
+#
+# Deploys take a lock with flock (util-linux), so they run one at a time; without flock they
+# refuse to run, unless SERVER_DEPLOY_NO_LOCK=1, which only the tests set.
+#
+# Editing notes:
+# - It must run under macOS /bin/bash 3.2, which the tests use.
+# - Under set -e, a failing last command of an a && b list can end the script; write best-effort
+#   steps as { ...; } 2> /dev/null || true.
+# - Background children inherit the lock's fd 9, so commands that may outlive the deploy (the
+#   server that server-restart starts) run with 9>&-.
+set -euo pipefail
+
+# Read the whole script before running it: the deploy replaces this file.
+main() {
+    local root=${HOME}
+    local state=${root}/.deploy
+    local staging=${state}/staging
+    local upload=${state}/upload.zip
+    local new_manifest=${state}/MANIFEST.new
+    local obsolete=${state}/obsolete
+    local blockers=${state}/blockers
+    LOG=${state}/log
+
+    mkdir -p "${state}"
+
+    # One deploy at a time. The lock is held on fd 9 until this script exits.
+    if [ "${SERVER_DEPLOY_NO_LOCK:-}" = 1 ]; then
+        :
+    elif ! command -v flock > /dev/null; then
+        fail "flock isn't installed, so deploys can't take their lock; install util-linux"
+    else
+        exec 9> "${state}/lock"
+        flock -n 9 || fail "another deploy is running"
+    fi
+    { : > "${LOG}"; } 2> /dev/null || true
+
+    # Unpack the upload into a fresh staging directory, and check it, before changing anything
+    local temporary=("${staging}" "${upload}" "${new_manifest}" "${obsolete}" "${obsolete}.entries"
+        "${blockers}")
+    rm -rf "${temporary[@]}"
+    # Expanded now, as main's variables are gone by the time the script exits
+    trap "rm -rf $(printf '%q ' "${temporary[@]}")" EXIT
+    cat > "${upload}"
+    # The upload is in: from here on, a dropped ssh session mustn't stop the deploy halfway
+    trap '' HUP PIPE
+    mkdir "${staging}"
+    unzip -qq -n "${upload}" -d "${staging}" < /dev/null ||
+        fail "unzipping the upload failed (truncated or malformed zip); nothing was changed"
+    rm "${upload}"
+
+    [ -f "${staging}/MANIFEST" ] || fail "the bundle has no MANIFEST; nothing was changed"
+    LC_ALL=C sort -u "${staging}/MANIFEST" > "${new_manifest}"
+    rm "${staging}/MANIFEST"
+
+    # The manifest must list exactly the bundle's files, each one a path the deploy may own
+    local path
+    while IFS= read -r path; do
+        check_deployable "${path}" || fail "the bundle ships ${path}; nothing was changed"
+    done < "${new_manifest}"
+    if [ -n "$(cd "${staging}" && find . ! -type f ! -type d)" ]; then
+        fail "the bundle holds something other than files and directories; nothing was changed"
+    fi
+    if ! (cd "${staging}" && find . -type f | sed 's|^\./||' | LC_ALL=C sort |
+            cmp -s - "${new_manifest}"); then
+        fail "the bundle's MANIFEST doesn't list exactly its files; nothing was changed"
+    fi
+    local required
+    for required in server-deploy server-restart; do
+        grep -qxF "${required}" "${new_manifest}" ||
+            fail "the bundle doesn't ship ${required}, which deploys need; nothing was changed"
+    done
+
+    # What the previous deploy shipped and this one doesn't, which is deleted below
+    if [ -f "${state}/MANIFEST" ]; then
+        LC_ALL=C sort -u "${state}/MANIFEST" | LC_ALL=C comm -23 - "${new_manifest}" > "${obsolete}"
+    else
+        : > "${obsolete}"
+    fi
+
+    # Every file must land where the deploy may write, with the server's symlinks resolved. A path
+    # in the way (a file where the bundle has a directory, or a directory where it has a file) is
+    # deleted first if it's an old deploy's, which this deploy would delete anyway, and otherwise
+    # refused.
+    local blocker
+    : > "${blockers}"
+    while IFS= read -r path; do
+        blocker=$(find_blocker "${root}" "${path}")
+        if [ -n "${blocker}" ]; then
+            if ! owned_and_obsolete "${root}" "${blocker}" "${obsolete}"; then
+                fail "${blocker} on the server is in the way of ${path}, and isn't an old deploy's; nothing was changed"
+            fi
+            printf '%s\n' "${blocker}" >> "${blockers}"
+        fi
+        if ! check_deployable_resolved "${root}" "${path}" "${blocker}"; then
+            fail "${path} would land outside what deploys own on the server; nothing was changed"
+        fi
+    done < "${new_manifest}"
+    while IFS= read -r blocker; do
+        rm -rf -- "${root:?}/${blocker}" ||
+            fail "couldn't delete ${blocker}, which is in the way; the deploy stopped before installing"
+        say "Deleted ${blocker}, which was in the way"
+    done < <(LC_ALL=C sort -u "${blockers}")
+
+    # Install the new files over the old ones
+    while IFS= read -r path; do
+        dest=${root}/${path}
+        mkdir -p "$(dirname -- "${dest}")"
+        mv -f "${staging}/${path}" "${dest}"
+    done < "${new_manifest}"
+
+    # Delete what the previous deploy shipped and this one doesn't. A file that can't be deleted
+    # doesn't stop the deploy, which fails once the server has restarted.
+    local delete_failed=0
+    if [ -f "${state}/MANIFEST" ]; then
+        while IFS= read -r path; do
+            if [ ! -f "${root}/${path}" ] && [ ! -L "${root}/${path}" ]; then
+                continue
+            fi
+            if ! check_deployable "${path}" || ! check_deployable_resolved "${root}" "${path}"; then
+                say "Not deleting ${path}: deploys don't own it"
+                continue
+            fi
+            if rm -f "${root}/${path}"; then
+                say "Deleted ${path}"
+                remove_empty_parents "${root}" "${path}"
+            else
+                say "Couldn't delete ${path}"
+                delete_failed=1
+            fi
+        done < "${obsolete}"
+    else
+        say "No previous manifest in ${state}; deleting nothing"
+    fi
+    mv -f "${new_manifest}" "${state}/MANIFEST"
+
+    # Without the lock: the server it starts outlives this script and would hold it forever
+    local status=0
+    "${root}/server-restart" 9>&- || status=$?
+    if [ "${status}" -ne 0 ]; then
+        say "server-restart failed with exit status ${status}"
+        exit "${status}"
+    fi
+    if [ "${delete_failed}" -ne 0 ]; then
+        fail "the deploy is installed and the server restarted, but some old files are left"
+    fi
+}
+
+# Prints a message, to the log too, as the ssh session may be gone
+say() {
+    { [ -z "${LOG:-}" ] || printf '%s\n' "$*" >> "${LOG}"; } 2> /dev/null || true
+    printf '%s\n' "$*" >&2 2> /dev/null || true
+}
+
+fail() {
+    say "server-deploy: $*"
+    exit 1
+}
+
+# Whether a manifest path is one a deploy may ship, and so delete: a relative path inside the home
+# directory, outside what the server keeps for itself
+check_deployable() {
+    local path=$1
+    case "${path}" in
+        ''|/*|.|..|./*|../*|*/.|*/..|*/./*|*/../*|*//*|*/) return 1;;
+        .deploy|.deploy/*) return 1;;
+        resources|resources/*) return 1;;
+        assets/seamcarver/output|assets/seamcarver/output/*) return 1;;
+        *.log) return 1;;
+    esac
+    return 0
+}
+
+# Whether a path is still one a deploy may own once the server's symlinks are resolved: its
+# deepest existing directory, resolved, must be inside the home directory, and the path relative
+# to the home directory must pass check_deployable. A path that is itself a symlink counts as the
+# link, which is what installing replaces and deletion removes. Something that isn't a directory
+# where the path needs one refuses, unless it is the third argument, a path about to be deleted.
+check_deployable_resolved() {
+    local root=$1 path=$2 ignore=${3:-}
+    local dir rest real_root real_dir relative
+    dir=$(dirname -- "${path}")
+    rest=$(basename -- "${path}")
+    while [ "${dir}" != . ]; do
+        if [ "${dir}" != "${ignore}" ]; then
+            [ -d "${root}/${dir}" ] && break
+            if [ -e "${root}/${dir}" ] || [ -L "${root}/${dir}" ]; then
+                return 1
+            fi
+        fi
+        rest=$(basename -- "${dir}")/${rest}
+        dir=$(dirname -- "${dir}")
+    done
+    real_root=$(cd -P "${root}" && pwd -P)
+    real_dir=$(cd -P "${root}/${dir}" && pwd -P) || return 1
+    case "${real_dir}" in
+        "${real_root}") relative=${rest};;
+        "${real_root}"/*) relative=${real_dir#"${real_root}"/}/${rest};;
+        *) return 1;;
+    esac
+    check_deployable "${relative}"
+}
+
+# Prints what on the server is in the way of installing a path, if anything: the first of its
+# parents that exists but isn't a directory (a file, or a symlink to a file or to nothing), or a
+# directory at the path itself
+find_blocker() {
+    local root=$1 path=$2
+    local prefix='' rest=$2
+    while [ "${rest}" != "${rest#*/}" ]; do
+        prefix=${prefix:+${prefix}/}${rest%%/*}
+        rest=${rest#*/}
+        if { [ -e "${root}/${prefix}" ] || [ -L "${root}/${prefix}" ]; } &&
+                [ ! -d "${root}/${prefix}" ]; then
+            printf '%s\n' "${prefix}"
+            return
+        fi
+    done
+    if [ -d "${root}/${path}" ]; then
+        printf '%s\n' "${path}"
+    fi
+}
+
+# Whether a path in the way belongs to an old deploy and is about to be deleted: a file (or
+# symlink) the obsolete list holds, or a directory that held old deploy files, holding nothing
+# but such files and such directories, with the server's symlinks resolved. For a symlink to a
+# directory, deleting it removes only the link.
+owned_and_obsolete() {
+    local root=$1 path=$2 obsolete=$3
+    local entries=${obsolete}.entries entry
+    check_deployable "${path}" && check_deployable_resolved "${root}" "${path}" || return 1
+    if [ ! -d "${root}/${path}" ]; then
+        grep -qxF -- "${path}" "${obsolete}"
+        return
+    fi
+    holds_obsolete "${path}" "${obsolete}" || return 1
+    (cd "${root}/${path}" && find . -mindepth 1 -print0) > "${entries}" || return 1
+    while IFS= read -r -d '' entry; do
+        entry=${path}/${entry#./}
+        # No manifest line holds a line break, and grep would read one as two patterns
+        case "${entry}" in *$'\n'*) return 1;; esac
+        check_deployable "${entry}" && check_deployable_resolved "${root}" "${entry}" || return 1
+        if [ -d "${root}/${entry}" ] && [ ! -L "${root}/${entry}" ]; then
+            holds_obsolete "${entry}" "${obsolete}" || return 1
+        else
+            grep -qxF -- "${entry}" "${obsolete}" || return 1
+        fi
+    done < "${entries}"
+}
+
+# Whether a directory held an old deploy's files: some path in the obsolete list is under it
+holds_obsolete() {
+    # From the environment, as awk -v would interpret backslashes
+    PREFIX="$1/" awk 'index($0, ENVIRON["PREFIX"]) == 1 { found = 1; exit } END { exit !found }' "$2"
+}
+
+# Removes the directories a deleted file leaves empty, up to but not including the home directory
+remove_empty_parents() {
+    local root=$1 dir
+    dir=$(dirname -- "$2")
+    while [ "${dir}" != . ] && rmdir "${root}/${dir}" 2> /dev/null; do
+        dir=$(dirname -- "${dir}")
+    done
+}
+
+main "$@"
+exit
