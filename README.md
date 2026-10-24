@@ -38,7 +38,7 @@ The end-to-end tests point the preview server at the test backend, so they never
 
 ## CI
 
-GitHub Actions (`.github/workflows/ci.yml`) builds and tests every commit a push brings, each in its own job on `ubuntu-24.04`: on `master` the commits the push added, on any other branch every commit that `master` doesn't have; in either case the newest 20 at most. A newer push to a working branch cancels the checks still running for its older one, while every push to `master` is checked in full. Each job runs `tests/deploy-test.sh` (with its lock tests, as the runner has `flock`), the frontend tests, `./build-ppu`, `./build-zgal`, the backend tests and the end-to-end tests, and posts a `CI / test` commit status on its commit, so a branch shows which of its commits pass.
+GitHub Actions (`.github/workflows/ci.yml`) builds and tests every commit a push brings, each in its own job on `ubuntu-24.04`: on `master` the commits the push added, on any other branch every commit that `master` doesn't have; in either case the newest 20 at most. A newer push to a working branch cancels the checks still running for its older one, while every push to `master` is checked in full. Each job runs `tests/deploy-test.sh` (with its lock tests, as the runner has `flock`), the frontend tests, `./build-ppu`, `./build-zgal`, the backend tests and the end-to-end tests, and its commit gets a `CI / test` commit status, so a branch shows which of its commits pass.
 
 - The public submodules are checked out over https. SeamCarving is private, so it's checked out with a read-only deploy key on [SeamCarving](https://github.com/zach-youssef/SeamCarving), whose private half is the repository secret `SEAMCARVING_DEPLOY_KEY`.
 - Without a GPU, `./build-zgal` draws its screenshot on Mesa's software Vulkan driver (lavapipe), so it can differ from one drawn on a Mac. Each job uploads it as the `zgal-screenshot-<sha>` artifact.
@@ -51,6 +51,7 @@ Notes for editing the workflow:
 - `git -c url.<https>.insteadOf=<ssh> submodule update --recursive` passes the rewrite on to nested submodules (through `GIT_CONFIG_PARAMETERS`), so it needs no global rewrite, which would also send the private SeamCarving over https.
 - `gradle/actions/setup-gradle` stays on v5, the last MIT major: v6 accepts the Terms of Use of a closed-source caching component.
 - The SeamCarving checkout, which holds the deploy key, runs before any npm, Gradle or build step, so no third-party script runs before the key is used and removed.
+- Only jobs that run no code from the commits, npm, Gradle or third-party actions hold a token that can post statuses, as a job's steps share one user and file system (a build could plant a `gh` that a later step runs with the token). The test jobs get `contents: read` and no `GH_TOKEN`, and no checkout persists its credentials. The `pending` job marks every commit pending; the `statuses` job, which needs all the others, posts each commit's status from the conclusion of its job (named `Test <sha>`) in the run's jobs API, linked to that job: anything but success or failure (cancelled, timed out, skipped or unreadable) is an `error`, so none stays pending. Neither of the two checks anything out.
 
 ## Deployment
 

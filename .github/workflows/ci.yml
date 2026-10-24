@@ -1,5 +1,10 @@
-# Builds and tests every commit a push brings: each one in its own job, which posts a commit
-# status on it, so a branch shows which of its commits pass. See "CI" in README.md.
+# Builds and tests every commit a push brings, each one in its own job, and posts a commit status
+# on each, so a branch shows which of its commits pass. See "CI" in README.md.
+#
+# Only the jobs that run no code from the repository's commits, npm, Gradle or third-party actions
+# can post statuses: the test jobs build and test with a read-only token, while the pending job
+# marks the commits pending first and the statuses job posts each commit's outcome afterwards, from
+# this run's jobs. Neither checks anything out.
 name: CI
 
 on:
@@ -58,35 +63,55 @@ jobs:
           echo "Checking $(wc -l <<< "${shas}") commit(s) of ${range}"
           echo "shas=$(jq -cnR '[inputs]' <<< "${shas}")" >> "${GITHUB_OUTPUT}"
 
+  pending:
+    name: Mark pending
+    needs: commits
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      statuses: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SHAS: ${{ needs.commits.outputs.shas }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      # Each call is tried three times, and a failure doesn't stop the other commits' statuses
+      - name: Mark the commits pending
+        run: |
+          failed=0
+          api() { for try in 1 2 3; do gh api "$@" && return; sleep 5; done; return 1; }
+          for sha in $(jq -r '.[]' <<< "${SHAS}"); do
+              if [[ ! ${sha} =~ ^[0-9a-f]{40}$ ]]; then
+                  echo "::error::Not a commit SHA: '${sha}'"
+                  failed=1
+                  continue
+              fi
+              api "repos/${GITHUB_REPOSITORY}/statuses/${sha}" --silent -f state=pending \
+                  -f context="CI / test" -f target_url="${RUN_URL}" \
+                  -f description="Building and testing" || failed=1
+          done
+          exit "${failed}"
+
   test:
     name: Test ${{ matrix.sha }}
     needs: commits
+    # An empty matrix fails the workflow; the commits job always lists at least the tip
+    if: needs.commits.outputs.shas != '[]'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    # Read-only: this job runs the commits' code, npm and Gradle, so it gets no token that can
+    # post statuses (the statuses job posts them)
     permissions:
       contents: read
-      statuses: write
     strategy:
       fail-fast: false
       matrix:
         sha: ${{ fromJSON(needs.commits.outputs.shas) }}
-    env:
-      STATUS_URL: repos/${{ github.repository }}/statuses/${{ matrix.sha }}
-      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
     steps:
-      - name: Mark the commit pending
-        # The token only where it's used, out of reach of the npm and Gradle steps
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: >-
-          gh api "${STATUS_URL}" --silent -f state=pending -f context="CI / test"
-          -f target_url="${RUN_URL}" -f description="Building and testing"
-
       - uses: actions/checkout@v7
         with:
           ref: ${{ matrix.sha }}
-          # Keeps the job's token, which can post statuses, out of git's config, where the npm and
-          # Gradle steps could read it
+          # Keeps the job's token out of git's config, where the npm and Gradle steps could read it
           persist-credentials: false
       - name: Check out the public submodules
         # Their URLs are ssh, which needs a key; over https they need none. Passed with -c, the
@@ -208,16 +233,56 @@ jobs:
             e2e/test-results/
           if-no-files-found: ignore
 
-      - name: Post the commit's status
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          JOB_STATUS: ${{ job.status }}
+  # Posts each commit's `CI / test` status from the conclusion of its job ("Test <sha>") in this
+  # run: success and failure as they are, anything else (cancelled, timed out, skipped, never run,
+  # or unreadable) as an error, so no commit stays pending. Each call is tried three times, and a
+  # failure doesn't stop the other commits' statuses.
+  statuses:
+    name: Post statuses
+    needs: [commits, pending, test]
+    if: always() && needs.commits.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      statuses: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SHAS: ${{ needs.commits.outputs.shas }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Post the commits' statuses
         run: |
-          case ${JOB_STATUS} in
-              success) state=success description=Passed ;;
-              failure) state=failure description=Failed ;;
-              *) state=error description="Cancelled or timed out" ;;
-          esac
-          gh api "${STATUS_URL}" --silent -f state="${state}" -f context="CI / test" \
-              -f target_url="${RUN_URL}" -f description="${description}"
+          failed=0 listed=1
+          api() { for try in 1 2 3; do gh api "$@" && return; sleep 5; done; return 1; }
+          # The latest attempt of each of the run's jobs
+          if jobs=$(api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs?filter=latest&per_page=100" \
+              --jq '.jobs[] | {name, conclusion, html_url}'); then
+              jobs=$(jq -cs . <<< "${jobs}")
+          else
+              echo "::error::Couldn't list the run's jobs"
+              jobs='[]' listed=0 failed=1
+          fi
+          for sha in $(jq -r '.[]' <<< "${SHAS}"); do
+              if [[ ! ${sha} =~ ^[0-9a-f]{40}$ ]]; then
+                  echo "::error::Not a commit SHA: '${sha}'"
+                  failed=1
+                  continue
+              fi
+              job=$(jq -c --arg name "Test ${sha}" 'map(select(.name == $name)) | last // {}' <<< "${jobs}")
+              conclusion=$(jq -r '.conclusion // "missing"' <<< "${job}")
+              [[ ${listed} == 1 ]] || conclusion=unreadable
+              url=$(jq -r --arg run "${RUN_URL}" '.html_url // $run' <<< "${job}")
+              case ${conclusion} in
+                  success) state=success description=Passed ;;
+                  failure) state=failure description=Failed ;;
+                  cancelled | timed_out) state=error description="Cancelled or timed out" ;;
+                  unreadable) state=error description="Couldn't read its job's outcome" ;;
+                  *) state=error description="Not run (${conclusion})" ;;
+              esac
+              echo "${sha}: ${conclusion} -> ${state}"
+              api "repos/${GITHUB_REPOSITORY}/statuses/${sha}" --silent -f state="${state}" \
+                  -f context="CI / test" -f target_url="${url}" \
+                  -f description="${description}" || failed=1
+          done
+          exit "${failed}"
