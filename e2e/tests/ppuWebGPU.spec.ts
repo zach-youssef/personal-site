@@ -1,11 +1,9 @@
 import { test, expect } from './fixtures';
 import { collectErrors, colorCount } from './pageChecks';
 import { GAMES, gameFrame } from './ppuGames';
+import { WEBGPU_LAUNCH_OPTIONS } from './webgpu';
 
-// Headless Chromium only has a WebGPU adapter with --enable-unsafe-webgpu, and it's SwiftShader, whose
-// canvases the games can't draw into, unless --enable-gpu gives it the real GPU. Launch options
-// apply to the whole file, as they need their own browser.
-test.use({ launchOptions: { args: ['--enable-unsafe-webgpu', '--enable-gpu'] } });
+test.use({ launchOptions: WEBGPU_LAUNCH_OPTIONS });
 
 test('runs both games in the page', async ({ page }) => {
     const errors = collectErrors(page);

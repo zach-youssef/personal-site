@@ -2,6 +2,10 @@ import { test, expect } from './fixtures';
 import { Locator, Page } from '@playwright/test';
 import { collectErrors, colorCount } from './pageChecks';
 
+// Without a GPU, as on CI runners, Chromium draws WebGL on SwiftShader, which renders the castle at
+// about 5 frames a second, so the page takes about 20 s to measure its frame rate over 100 frames
+test.slow();
+
 // The canvas is cleared to black before the scene loads, while the textured, lit castle has
 // thousands of colors
 async function expectDrawn(page: Page, canvas: Locator): Promise<void> {
@@ -16,7 +20,7 @@ test('webgl demo draws the scene in the page', async ({ page }) => {
     // The canvas is part of the page rather than an embedded one
     await expect(page.locator('iframe')).toHaveCount(0);
     await expectDrawn(page, canvas);
-    await expect(page.getByText(/^Frame rate: \d+\.\d$/)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/^Frame rate: \d+\.\d$/)).toBeVisible({ timeout: 45_000 });
     await expect(page.getByRole('alert')).toHaveCount(0);
     expect(errors).toEqual([]);
 });

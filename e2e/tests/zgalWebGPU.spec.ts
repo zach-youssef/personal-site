@@ -1,9 +1,8 @@
 import { test, expect } from './fixtures';
 import { collectErrors, colorCount } from './pageChecks';
+import { WEBGPU_LAUNCH_OPTIONS } from './webgpu';
 
-// As for the PPU's games (see ppuWebGPU.spec.ts), headless Chromium needs the real GPU to run the
-// example
-test.use({ launchOptions: { args: ['--enable-unsafe-webgpu', '--enable-gpu'] } });
+test.use({ launchOptions: WEBGPU_LAUNCH_OPTIONS });
 
 test('runs the particles example in the page', async ({ page }) => {
     const errors = collectErrors(page);
