@@ -9,7 +9,9 @@ export default defineConfig({
     fullyParallel: true,
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 1 : 0,
-    reporter: process.env.CI ? 'list' : [['list'], ['html', { open: 'never' }]],
+    // On CI, a dot per test and the failures in full; the HTML report and the failures' traces
+    // are uploaded as artifacts
+    reporter: process.env.CI ? [['dot'], ['html', { open: 'never' }]] : [['list'], ['html', { open: 'never' }]],
     globalSetup: './tests/globalSetup.ts',
     use: {
         baseURL: `http://localhost:${FRONTEND_PORT}`,

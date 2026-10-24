@@ -41,6 +41,8 @@ export default defineConfig(({ mode }) => {
       globals: true,
       setupFiles: ["src/setupTests.ts"],
       include: ["src/**/*.test.{ts,tsx}"],
+      // On CI, a dot per test and the failures in full
+      reporters: process.env.CI ? ["dot"] : ["default"],
     },
   };
 });
