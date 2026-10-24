@@ -2,7 +2,7 @@
 # Builds ZGAL's particles example for the web (WebGPU) and copies it into the backend's assets,
 # which it serves as /assets/zgal/particles/particles.zgal.html for the ZGAL page's frame, beside
 # the example's source, which the page shows. Also builds ZGAL's documentation, which the backend
-# serves at /zgal/docs/. The output is ignored by git; ./deploy runs this and ships it with the
+# serves at /zgal/docs/. The output is ignored by git; ./bundle runs this and ships it with the
 # other backend assets.
 #
 #   ./build-zgal [zgal checkout]    defaults to the external/zgal submodule

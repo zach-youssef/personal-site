@@ -1,8 +1,5 @@
 .vscode/
 
-# Paths for deploy to delete from the server; see README
-.server_tombstones
-
 # The PPU's games for the web, which ./build-ppu builds from external/vk_ppu
 graphql-server/assets/ppu/
 

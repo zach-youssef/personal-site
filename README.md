@@ -13,7 +13,7 @@ cd frontend && npm test
 cd e2e && npm install && npx playwright install chromium && npm test
 ```
 
-The Vulkan Retro PPU's page (`/projects/vkPPU`) runs its games in the browser on WebGPU. They are built from the [vk_ppu](https://github.com/zach-youssef/vk_ppu) submodule (`external/vk_ppu`, with its own `vulkan_test` submodule) by `./build-ppu` into `graphql-server/assets/ppu`, which git ignores and the backend serves as `/assets/ppu/<game>/`. Run it before the end-to-end tests or a local backend, and again after updating the submodule; `./deploy` runs it itself. Building needs what the PPU's `make web` needs: Racket 8 and Node 24 with npm.
+The Vulkan Retro PPU's page (`/projects/vkPPU`) runs its games in the browser on WebGPU. They are built from the [vk_ppu](https://github.com/zach-youssef/vk_ppu) submodule (`external/vk_ppu`, with its own `vulkan_test` submodule) by `./build-ppu` into `graphql-server/assets/ppu`, which git ignores and the backend serves as `/assets/ppu/<game>/`. Run it before the end-to-end tests or a local backend, and again after updating the submodule; `./bundle` (and so `./deploy`) runs it itself. Building needs what the PPU's `make web` needs: Racket 8 and Node 24 with npm.
 
 ZGAL's page (`/projects/zgal`) likewise runs its particles example beside the program's source. `./build-zgal` builds it from the [vulkan_testing](https://github.com/zach-youssef/vulkan_testing) submodule (`external/zgal`) into `graphql-server/assets/zgal`, served as `/assets/zgal/particles/`, with the source and a screenshot for browsers without WebGPU. That screenshot is drawn under Node on the GPU and compressed with `cwebp` (`brew install webp`). It also builds ZGAL's Scribble documentation into `graphql-server/assets/zgal/docs`, which the backend serves at `/zgal/docs/` (and redirects `/zgal/docs` there, since the page links its stylesheets relative to itself); the ZGAL page links to it.
 
@@ -38,11 +38,26 @@ The end-to-end tests point the preview server at the test backend, so they never
 
 ## Deployment
 
-`./deploy` builds the frontend, the PPU's games, ZGAL's particles example and the backend, uploads them to the server and runs `server-restart` there.
+`./deploy` builds the site and deploys it to the server. It runs the two steps a deploy has, which can also run apart (e.g. building once and shipping the result later):
 
-The upload is unzipped over the server's home directory, which only adds and overwrites files, so anything a change makes obsolete (an old frontend bundle, a renamed asset, a file nothing reads any more) stays on the server until it's deleted. To delete such paths, add them to `.server_tombstones` in the repository root, one per line and relative to the server's home directory, e.g. `assets/index-DiuH75ZM.js`; a directory is deleted with everything in it. After the restart, `./deploy` deletes them on the server and then deletes the list. It refuses paths outside the home directory, skips any that the deploy itself ships, and keeps the list if the deletion fails. The list is ignored by git, since it only matters until the next deploy.
+```
+./bundle <out-dir>          # build into <out-dir>/site-bundle.zip, with a copy of its MANIFEST
+./ship <bundle.zip>         # deploy that bundle
+```
 
-The server also holds files that no deploy ships but that are still in use, so don't list them: `resources/` (the backend's config and Sokoban levels), `assets/seamcarver/output/` (seam carver results), and the backend's logs `callTrace.log` and `server.log`.
+`./bundle` builds the frontend, the PPU's games, ZGAL's particles example and the backend, and zips them with `server-restart`, `server-deploy` and `Caddyfile`, laid out as they go in the server's home directory. Of `graphql-server/assets` only the files git tracks ship, besides the PPU's and ZGAL's builds, so untracked local files don't. The zip's `MANIFEST` lists every file in it.
+
+`./ship` sends the zip over ssh to `server-deploy` on the server, on its stdin, as the only command it runs, so it also works with a deploy key limited to `restrict,command="~/server-deploy"` in `~/.ssh/authorized_keys`. `server-deploy` unpacks the zip into `~/.deploy/staging` and checks it before changing anything, so a broken upload leaves the site as it was. It then moves the files into place, deletes the files the previous deploy's manifest (kept in `~/.deploy/MANIFEST`) listed and this one doesn't, keeps the new manifest and runs `server-restart`. A file it can't delete is reported and the deploy carries on, failing at the end. Once the upload is in, a dropped ssh session doesn't stop it; `~/.deploy/log` holds the last deploy's messages. Deploys run one at a time under a lock taken with `flock`, which the server needs (util-linux). Renaming or removing a file needs nothing more than the change itself: the next deploy deletes the old one from the server. That includes a path changing between file and directory: an old deploy's file or directory in the way is deleted before the install, while anything else in the way refuses the bundle. `tests/deploy-test.sh` tests `server-deploy` against temporary directories.
+
+The server also holds files that no deploy ships but that are still in use: `resources/` (the backend's config and Sokoban levels), `assets/seamcarver/output/` (seam carver results), and the backend's logs (`callTrace.log`, `server.log`). `server-deploy` never deletes them, nor anything outside the home directory, and refuses a bundle that ships any of them or would write outside the home directory, with the server's symlinks resolved. It also refuses a bundle without `server-deploy` and `server-restart`, which deploys need. Anything else no manifest lists is left alone too, such as files earlier deploys left behind before deploys kept a manifest; those are deleted by hand.
+
+`./ship` needs `server-deploy` on the server, which every deploy updates. To put it there the first time, run once from the repository root:
+
+```
+ssh ec2-user@zyoussef.com 'cat > server-deploy && chmod 755 server-deploy' < server-deploy
+```
+
+The first deploy after that keeps a manifest and deletes nothing; later ones delete by it.
 
 On the server, [Caddy](https://caddyserver.com) serves the site over https on ports 80 and 443, with a Let's Encrypt certificate it obtains and renews itself, and forwards requests to the Ktor server on `127.0.0.1:8080`. Its config is `Caddyfile`, which `server-restart` installs on every deploy. Caddy is set up once per server with:
 

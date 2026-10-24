@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# Builds the site and assembles everything the server runs into one zip, ready for ./ship:
+#
+#   ./bundle <out-dir>      writes <out-dir>/site-bundle.zip, and a copy of its MANIFEST
+#
+# The zip unpacks over the server's home directory: the frontend's build/ (its assets/ at the
+# top), the backend's jar and assets/ (with the PPU's games and ZGAL's particles example, which
+# this builds), server-restart, server-deploy and the Caddyfile. Its MANIFEST lists every file
+# in it, one per line; server-deploy deletes what the previous deploy's manifest listed and this
+# one doesn't. Of the backend's assets only the files git tracks ship, besides the two builds, so
+# a bundle doesn't depend on local leftovers like seam carver inputs.
+set -euo pipefail
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+SERVER_VERSION=0.0.1-SNAPSHOT
+
+if [ $# -ne 1 ]; then
+    echo "usage: $0 <out-dir>" >&2
+    exit 2
+fi
+mkdir -p "$1"
+OUT_DIR=$(cd "$1" && pwd)
+
+STAGE=$(mktemp -d)
+trap 'rm -rf "${STAGE}"' EXIT
+
+# Frontend, with its assets at the top, where the backend serves /assets from
+(cd "${SCRIPT_DIR}/frontend" && npm run build)
+cp -R "${SCRIPT_DIR}/frontend/build" "${STAGE}/"
+mv "${STAGE}/build/assets" "${STAGE}/assets"
+
+# The PPU's games and ZGAL's particles example, built into the backend's assets
+"${SCRIPT_DIR}/build-ppu"
+"${SCRIPT_DIR}/build-zgal"
+
+# Backend, and its assets: the tracked ones and the two builds
+(cd "${SCRIPT_DIR}/graphql-server" && ./gradlew build)
+cp "${SCRIPT_DIR}/graphql-server/build/libs/graphql-server-${SERVER_VERSION}-standalone.jar" "${STAGE}/"
+git -C "${SCRIPT_DIR}/graphql-server" ls-files -z -- assets |
+    (cd "${SCRIPT_DIR}/graphql-server" && tar --null -T - -cf -) | tar -xf - -C "${STAGE}"
+cp -R "${SCRIPT_DIR}/graphql-server/assets/ppu" "${SCRIPT_DIR}/graphql-server/assets/zgal" \
+    "${STAGE}/assets/"
+
+# The server's scripts and the https proxy's config
+cp "${SCRIPT_DIR}/server-deploy" "${SCRIPT_DIR}/server-restart" "${SCRIPT_DIR}/Caddyfile" "${STAGE}/"
+
+# The manifest, one path per line, so no path may hold a line break
+if [ -n "$(cd "${STAGE}" && find . -name "$(printf '*\n*')")" ]; then
+    echo "A bundled file's name has a line break, which the manifest can't list" >&2
+    exit 1
+fi
+(cd "${STAGE}" && find . -type f | sed 's|^\./||' | LC_ALL=C sort) > "${OUT_DIR}/MANIFEST"
+cp "${OUT_DIR}/MANIFEST" "${STAGE}/MANIFEST"
+
+# zip adds to an existing archive, so start a new one
+rm -f "${OUT_DIR}/site-bundle.zip"
+(cd "${STAGE}" && zip -qr -X "${OUT_DIR}/site-bundle.zip" .)
+echo "Wrote ${OUT_DIR}/site-bundle.zip ($(wc -l < "${OUT_DIR}/MANIFEST" | tr -d ' ') files)"

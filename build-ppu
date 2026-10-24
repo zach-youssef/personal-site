@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds the Vulkan Retro PPU's games for the web (WebGPU) and copies them into the backend's
 # assets, which it serves as /assets/ppu/<game>/<game>.zgal.html for the project page's frames.
-# The output is ignored by git; ./deploy runs this and ships it with the other backend assets.
+# The output is ignored by git; ./bundle runs this and ships it with the other backend assets.
 #
 #   ./build-ppu [ppu checkout]     defaults to the external/vk_ppu submodule
 #

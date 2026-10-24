@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Deploys a bundle from ./bundle to the server: sends the zip over ssh to server-deploy, which
+# installs it, deletes what the previous deploy shipped and this one doesn't, and restarts the
+# server.
+#
+#   ./ship <bundle.zip>
+#
+# The zip goes on the command's stdin, and the command is the only one it runs, so the same call
+# works for a deploy key limited to restrict,command="~/server-deploy" (which ignores the command
+# sent) and for a normal login. server-deploy has to be on the server already; see "Deployment" in
+# README.md for the one-time bootstrap.
+set -euo pipefail
+
+EC2_USER=ec2-user
+DOMAIN=zyoussef.com
+
+if [ $# -ne 1 ] || [ ! -f "$1" ]; then
+    echo "usage: $0 <bundle.zip>" >&2
+    exit 2
+fi
+
+ssh "${EC2_USER}@${DOMAIN}" ./server-deploy < "$1"
