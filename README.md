@@ -36,6 +36,15 @@ cd frontend && BACKEND_URL=http://zyoussef.com npm start
 
 The end-to-end tests point the preview server at the test backend, so they never touch the live site.
 
+## CI
+
+GitHub Actions (`.github/workflows/ci.yml`) builds and tests every commit a push brings, each in its own job on `ubuntu-24.04`: on `master` the commits the push added, on any other branch every commit that `master` doesn't have; in either case the newest 20 at most. A newer push to a working branch cancels the checks still running for its older one, while every push to `master` is checked in full. Each job runs `tests/deploy-test.sh` (with its lock tests, as the runner has `flock`), the frontend tests, `./build-ppu`, `./build-zgal`, the backend tests and the end-to-end tests, and posts a `CI / test` commit status on its commit, so a branch shows which of its commits pass.
+
+- The public submodules are checked out over https. SeamCarving is private, so it's checked out with a read-only deploy key on [SeamCarving](https://github.com/zach-youssef/SeamCarving), whose private half is the repository secret `SEAMCARVING_DEPLOY_KEY`.
+- Without a GPU, `./build-zgal` draws its screenshot on Mesa's software Vulkan driver (lavapipe), so it can differ from one drawn on a Mac. Each job uploads it as the `zgal-screenshot-<sha>` artifact.
+- The WebGPU specs run Chromium's WebGPU on SwiftShader rather than a GPU, so CI and a Mac run them the same way (see `e2e/tests/webgpu.ts`).
+- Tests print a dot each and their failures in full when `CI` is set. On a failure, the job uploads the Playwright report with the failures' traces (`e2e-report-<sha>`) and the backend's test report (`backend-test-report-<sha>`); `gh run download <run id>` fetches them.
+
 ## Deployment
 
 `./deploy` builds the site and deploys it to the server. It runs the two steps a deploy has, which can also run apart (e.g. building once and shipping the result later):

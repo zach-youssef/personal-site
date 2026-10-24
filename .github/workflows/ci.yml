@@ -1,0 +1,223 @@
+# Builds and tests every commit a push brings: each one in its own job, which posts a commit
+# status on it, so a branch shows which of its commits pass. See "CI" in README.md.
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+# A newer push to a working branch supersedes its running checks. Every run on the default branch
+# finishes: each has its own group, since a group holds only one pending run and drops the others.
+concurrency:
+  group: ci-${{ github.ref }}${{ github.ref_name == github.event.repository.default_branch && format('-{0}', github.run_id) || '' }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    # Unlike the default bash -e, this sets pipefail
+    shell: bash
+
+jobs:
+  commits:
+    name: List commits
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      shas: ${{ steps.list.outputs.shas }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: list
+        env:
+          DEFAULT: ${{ github.event.repository.default_branch }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          # A push can bring more commits than are worth a job each; the newest are checked
+          LIMIT: 20
+        run: |
+          # On the default branch, the commits the push added. Elsewhere, every commit on the
+          # branch that the default branch doesn't have, as a force push may have rewritten any.
+          if [[ ${GITHUB_REF} == refs/heads/${DEFAULT} ]]; then
+              if [[ ${BEFORE} =~ ^0+$ ]] || ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+                  range=${AFTER}^!
+              else
+                  range=${BEFORE}..${AFTER}
+              fi
+          else
+              range=origin/${DEFAULT}..${AFTER}
+          fi
+          shas=$(git rev-list --reverse "${range}" | tail -n "${LIMIT}")
+          # A branch at the default branch (or a manual run there) still checks its tip
+          shas=${shas:-${AFTER}}
+          echo "Checking $(wc -l <<< "${shas}") commit(s) of ${range}"
+          echo "shas=$(jq -cnR '[inputs]' <<< "${shas}")" >> "${GITHUB_OUTPUT}"
+
+  test:
+    name: Test ${{ matrix.sha }}
+    needs: commits
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      statuses: write
+    strategy:
+      fail-fast: false
+      matrix:
+        sha: ${{ fromJSON(needs.commits.outputs.shas) }}
+    env:
+      STATUS_URL: repos/${{ github.repository }}/statuses/${{ matrix.sha }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Mark the commit pending
+        # The token only where it's used, out of reach of the npm and Gradle steps
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh api "${STATUS_URL}" --silent -f state=pending -f context="CI / test"
+          -f target_url="${RUN_URL}" -f description="Building and testing"
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ matrix.sha }}
+          # Keeps the job's token, which can post statuses, out of git's config, where the npm and
+          # Gradle steps could read it
+          persist-credentials: false
+      - name: Check out the public submodules
+        # Their URLs are ssh, which needs a key; over https they need none. Passed with -c, the
+        # rewrite reaches the nested submodule (vk_ppu's vulkan_test) but not SeamCarving's
+        # checkout below, which is private and needs its deploy key.
+        run: >-
+          git -c url."https://github.com/".insteadOf=git@github.com:
+          submodule update --init --recursive external/vk_ppu external/zgal
+
+      - name: Check out SeamCarving
+        # Before anything installs or runs third-party code (npm, Gradle), which could otherwise
+        # read the key or rig the environment this step runs in
+        env:
+          SEAMCARVING_DEPLOY_KEY: ${{ secrets.SEAMCARVING_DEPLOY_KEY }}
+        run: |
+          if [[ -z ${SEAMCARVING_DEPLOY_KEY} ]]; then
+              echo "::error::The SEAMCARVING_DEPLOY_KEY secret isn't set; see CI in README.md"
+              exit 1
+          fi
+          ssh_dir=${RUNNER_TEMP}/ssh
+          mkdir -m 700 "${ssh_dir}"
+          trap 'rm -rf "${ssh_dir}"' EXIT
+          printf '%s\n' "${SEAMCARVING_DEPLOY_KEY}" > "${ssh_dir}/key"
+          chmod 600 "${ssh_dir}/key"
+          # GitHub's published host key, rather than whatever answers
+          echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' > "${ssh_dir}/known_hosts"
+          GIT_SSH_COMMAND="ssh -i ${ssh_dir}/key -o IdentitiesOnly=yes -o UserKnownHostsFile=${ssh_dir}/known_hosts -o StrictHostKeyChecking=yes" \
+              git submodule update --init graphql-server/src/java/SeamCarving
+
+      - name: Deploy tests
+        # The runner has flock, as the server does, so the lock tests must run rather than skip.
+        # The full log only on a failure.
+        run: |
+          log=${RUNNER_TEMP}/deploy-test.log
+          if ! tests/deploy-test.sh > "${log}" 2>&1; then
+              cat "${log}"
+              exit 1
+          fi
+          if grep -q 'lock tests skipped' "${log}"; then
+              cat "${log}"
+              echo "::error::The deploy lock tests were skipped"
+              exit 1
+          fi
+          echo "$(grep -c '^--- ' "${log}") deploy tests passed, lock tests included"
+
+      - uses: Bogdanp/setup-racket@v1.15
+        with:
+          version: '8.18'
+          distribution: full
+          variant: CS
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            e2e/package-lock.json
+            external/zgal/web/package-lock.json
+            external/vk_ppu/external/vulkan_test/web/package-lock.json
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      # v5, the last MIT major: v6 accepts the Terms of Use of a closed-source caching component
+      - uses: gradle/actions/setup-gradle@v5
+        with:
+          # Gradle's job summary only when a build failed
+          add-job-summary: on-failure
+      - name: Install lavapipe and cwebp
+        # Mesa's software Vulkan driver gives Dawn an adapter for build-zgal's screenshot
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -qq --no-install-recommends mesa-vulkan-drivers webp > /dev/null
+
+      - name: Frontend tests
+        working-directory: frontend
+        env:
+          CI: 1
+        run: npm ci --no-audit --no-fund && npm test
+      - name: Build the PPU's games
+        run: ./build-ppu
+      - name: Build ZGAL's particles example
+        run: ./build-zgal
+      - name: Upload ZGAL's screenshot
+        # Drawn on lavapipe here rather than on the Mac's GPU, so it can differ from the live one
+        uses: actions/upload-artifact@v7
+        with:
+          name: zgal-screenshot-${{ matrix.sha }}
+          path: graphql-server/assets/zgal/particles/screenshot.webp
+          # Only for comparing with the live one now and then
+          retention-days: 7
+
+      - name: Backend tests
+        working-directory: graphql-server
+        run: ./gradlew test --console=plain
+      - name: Upload the backend's test report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-test-report-${{ matrix.sha }}
+          path: graphql-server/build/reports/tests/
+          if-no-files-found: ignore
+
+      - name: End-to-end tests
+        working-directory: e2e
+        env:
+          CI: 1
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps --only-shell chromium > /dev/null
+          npm test
+      - name: Upload the end-to-end report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-report-${{ matrix.sha }}
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          if-no-files-found: ignore
+
+      - name: Post the commit's status
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          case ${JOB_STATUS} in
+              success) state=success description=Passed ;;
+              failure) state=failure description=Failed ;;
+              *) state=error description="Cancelled or timed out" ;;
+          esac
+          gh api "${STATUS_URL}" --silent -f state="${state}" -f context="CI / test" \
+              -f target_url="${RUN_URL}" -f description="${description}"
