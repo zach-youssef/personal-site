@@ -45,6 +45,13 @@ GitHub Actions (`.github/workflows/ci.yml`) builds and tests every commit a push
 - The WebGPU specs run Chromium's WebGPU on SwiftShader rather than a GPU, so CI and a Mac run them the same way (see `e2e/tests/webgpu.ts`).
 - Tests print a dot each and their failures in full when `CI` is set. On a failure, the job uploads the Playwright report with the failures' traces (`e2e-report-<sha>`) and the backend's test report (`backend-test-report-<sha>`); `gh run download <run id>` fetches them.
 
+Notes for editing the workflow:
+
+- Status functions (`cancelled()`, `failure()`) are only allowed in `if:`. In `env:` they make the whole workflow fail to parse, as a 0 s "workflow file issue" run with no message; use `job.status` there.
+- `git -c url.<https>.insteadOf=<ssh> submodule update --recursive` passes the rewrite on to nested submodules (through `GIT_CONFIG_PARAMETERS`), so it needs no global rewrite, which would also send the private SeamCarving over https.
+- `gradle/actions/setup-gradle` stays on v5, the last MIT major: v6 accepts the Terms of Use of a closed-source caching component.
+- The SeamCarving checkout, which holds the deploy key, runs before any npm, Gradle or build step, so no third-party script runs before the key is used and removed.
+
 ## Deployment
 
 `./deploy` builds the site and deploys it to the server. It runs the two steps a deploy has, which can also run apart (e.g. building once and shipping the result later):
