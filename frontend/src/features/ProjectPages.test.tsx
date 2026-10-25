@@ -276,7 +276,13 @@ describe('ZgalPage', () => {
             frame.dispatchEvent(new Event('load'));
         });
 
-        expect(programDocument.head.querySelector('style')?.textContent).toContain('canvas#zgal { width: 100% !important; height: 100% !important;');
+        // Over the runner's inline size, centring offset and pixelated rendering
+        const fit = programDocument.head.querySelector('style')?.textContent;
+        expect(fit).toMatch(/^canvas#zgal \{/);
+        for (const declaration of ['left: 0 !important', 'top: 0 !important', 'width: 100% !important',
+            'height: 100% !important', 'object-fit: contain', 'image-rendering: auto !important']) {
+            expect(fit).toContain(declaration);
+        }
     });
 
     it('shows a frame from the example when the browser has no WebGPU', () => {

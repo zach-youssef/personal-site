@@ -6,14 +6,17 @@ export function hasWebGPU(): boolean {
 	return typeof navigator !== 'undefined' && 'gpu' in navigator;
 }
 
-// How the program's canvas fills the frame. The page runner shows it at the largest whole multiple
-// of the program's size that fits, which keeps pixel art square but crops a canvas larger than the
-// frame; 'fit' scales it to the frame instead.
+// How the program's canvas fills the frame. With 'whole-multiples' the page runner (where it is
+// ZGAL's, which positions the canvas absolutely) centres it at the largest whole multiple of the
+// program's size that fits (at least 1) and pixelated, which keeps pixel art square but crops a
+// canvas larger than the frame; 'fit' scales it to the frame instead.
 export type Scaling = 'whole-multiples' | 'fit';
 
-// Overrides the runner's inline canvas size; the runner maps the cursor through the canvas's
-// on-screen rectangle, so input still lines up
-const FIT_STYLE = 'canvas#zgal { width: 100% !important; height: 100% !important; object-fit: contain; }';
+// Overrides the runner's inline canvas size, offset (centring a canvas larger than the frame gives a
+// negative one) and pixelated rendering; the runner maps the cursor through the canvas's on-screen
+// rectangle, so input still lines up while the frame has the program's aspect ratio
+const FIT_STYLE = 'canvas#zgal { left: 0 !important; top: 0 !important; width: 100% !important; '
+	+ 'height: 100% !important; object-fit: contain; image-rendering: auto !important; }';
 
 interface Props {
 	// The program's generated page, <name>.zgal.html

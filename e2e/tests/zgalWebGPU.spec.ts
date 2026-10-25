@@ -16,11 +16,14 @@ test('runs the particles example in the page', async ({ page }) => {
     await expect.poll(() => colorCount(page, program.locator('canvas')), { timeout: 15_000 }).toBeGreaterThan(100);
     await expect(program.locator('#zgal-message')).toHaveCount(0);
     await expect(program.locator('html')).toHaveAttribute('data-zgal', 'running');
-    // Scaled to the frame rather than cropped by it
+    // Scaled to the frame rather than cropped by it, and smoothly rather than pixelated
     const frameBox = (await frame.boundingBox())!;
     const canvasBox = (await program.locator('canvas').boundingBox())!;
+    expect(canvasBox.x).toBeCloseTo(frameBox.x, 0);
+    expect(canvasBox.y).toBeCloseTo(frameBox.y, 0);
     expect(canvasBox.width).toBeCloseTo(frameBox.width, 0);
     expect(canvasBox.height).toBeCloseTo(frameBox.height, 0);
+    await expect(program.locator('canvas')).toHaveCSS('image-rendering', 'auto');
     await expect(page.getByRole('alert')).toHaveCount(0);
     expect(errors).toEqual([]);
 });
