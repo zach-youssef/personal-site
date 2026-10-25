@@ -7,7 +7,8 @@ import { resolve } from 'node:path';
 import RaytracerPage from './raytracer/RaytracerPage';
 import WebGLDemoPage from './webgl/WebGLDemoPage';
 import PpuPage, { GITHUB_URL } from './ppu/PpuPage';
-import ZgalPage, { GITHUB_URL as ZGAL_GITHUB_URL } from './zgal/ZgalPage';
+import ZgalPage, { GITHUB_URL as ZGAL_GITHUB_URL, SampleView } from './zgal/ZgalPage';
+import { SAMPLES } from './zgal/samples';
 import { CameraMode, WebGLDemo } from './webgl/WebGLDemo';
 import { sceneAssets } from './webgl/sceneAssets';
 import { mockGraphQL } from '../testUtils/mockGraphQL';
@@ -302,6 +303,53 @@ describe('ZgalPage', () => {
         render(<ZgalPage />);
 
         expect(await screen.findByRole('alert')).toHaveTextContent("The program's source couldn't be loaded.");
+    });
+
+    // Another sample, as a selector would pass in
+    const PARTICLES = SAMPLES[0];
+    const SCENE = { ...PARTICLES, id: 'scene', title: 'Scene', directory: 'scene', source: 'scene.zgal' };
+
+    it("starts another sample afresh after the last one's source and frame failed", async () => {
+        setWebGPU(true);
+        vi.stubGlobal('fetch', vi.fn(async (url: string) => (url.endsWith('particles.zgal')
+            ? { ok: false, status: 404 } as Response
+            : { ok: true, text: async () => SOURCE } as Response)));
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        const { rerender } = render(<SampleView sample={PARTICLES} webGPU />);
+        const frame = screen.getByTitle('Particles');
+        const programDocument = document.implementation.createHTMLDocument();
+        Object.defineProperty(frame, 'contentDocument', { value: programDocument });
+        act(() => {
+            frame.dispatchEvent(new Event('load'));
+        });
+        programDocument.documentElement.dataset.zgal = 'failed';
+        await vi.waitFor(() => expect(screen.getAllByRole('alert')).toHaveLength(2));
+
+        rerender(<SampleView sample={SCENE} webGPU />);
+
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(screen.getByLabelText('scene.zgal').textContent).toBe('Loading…');
+        expect(screen.getByTitle('Scene')).toHaveAttribute('src', '/assets/zgal/scene/scene.zgal.html');
+        await vi.waitFor(() => expect(screen.getByLabelText('scene.zgal').textContent).toBe(SOURCE));
+    });
+
+    it("doesn't list the last sample's source when it arrives after another sample's", async () => {
+        let serveParticles: (text: string) => void = () => {};
+        vi.stubGlobal('fetch', vi.fn((url: string) => (url.endsWith('particles.zgal')
+            ? new Promise<Response>(resolve => {
+                serveParticles = text => resolve({ ok: true, text: async () => text } as Response);
+            })
+            : Promise.resolve({ ok: true, text: async () => SOURCE } as Response))));
+        const { rerender } = render(<SampleView sample={PARTICLES} webGPU={false} />);
+
+        rerender(<SampleView sample={SCENE} webGPU={false} />);
+        await vi.waitFor(() => expect(screen.getByLabelText('scene.zgal').textContent).toBe(SOURCE));
+        await act(async () => {
+            serveParticles(';; particles\n');
+            await new Promise(resolve => setTimeout(resolve, 0));
+        });
+
+        expect(screen.getByLabelText('scene.zgal').textContent).toBe(SOURCE);
     });
 
     it('says so when the example fails to run', async () => {
