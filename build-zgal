@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Builds ZGAL's particles example for the web (WebGPU) and copies it into the backend's assets,
-# which it serves as /assets/zgal/particles/particles.zgal.html for the ZGAL page's frame, beside
-# the example's source, which the page shows. Also builds ZGAL's documentation, which the backend
-# serves at /zgal/docs/. The output is ignored by git; ./bundle runs this and ships it with the
-# other backend assets.
+# Builds ZGAL's examples that run in a browser (particles and scene) for the web (WebGPU) and copies
+# each into the backend's assets, which it serves as /assets/zgal/<name>/<name>.zgal.html for the
+# ZGAL page's frame, beside the example's source, which the page shows, and a screenshot. Also
+# builds ZGAL's documentation, which the backend serves at /zgal/docs/. The output is ignored by
+# git; ./bundle runs this and ships it with the other backend assets.
 #
 #   ./build-zgal [zgal checkout]    defaults to the external/zgal submodule
 #
 # Building needs what ZGAL's `make web` needs: Racket 8 (ZGAL's compiler), Node 24 and npm. The
-# screenshot for browsers without WebGPU is drawn under Node on Dawn, so it needs a GPU too, and
-# cwebp (brew install webp) compresses it.
+# screenshots for browsers without WebGPU are drawn under Node on Dawn, so they need a GPU too, and
+# cwebp (brew install webp) compresses them.
 set -euo pipefail
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -24,19 +24,42 @@ fi
 make -C "${ZGAL_DIR}" web docs
 
 rm -rf "${OUT_DIR}"
-built=${ZGAL_DIR}/build/web/particles
-mkdir -p "${OUT_DIR}/particles"
-# The page, its scripts and the runtime. The TypeScript sources and the node_modules link only
-# matter for building and running under Node.
-cp "${built}/particles.zgal.html" "${built}"/*.js "${OUT_DIR}/particles/"
-cp -R "${built}/zgal" "${OUT_DIR}/particles/"
-# The program itself, which the page shows beside it
-cp "${ZGAL_DIR}/examples/particles/particles.zgal" "${OUT_DIR}/particles/"
-# What it draws, for browsers without WebGPU: frame 240, headless under Node
 capture=$(mktemp -d)
 trap 'rm -rf "${capture}"' EXIT
-node "${built}/particles.zgal.main.js" --frames 240 --size 1024x640 --capture "${capture}/screenshot.png"
-cwebp -quiet -q 85 "${capture}/screenshot.png" -o "${OUT_DIR}/particles/screenshot.webp"
+
+# Copies the program <name>, which `make web` built into build/web/<name>, to ${OUT_DIR}/<name>
+# with its source, and draws its screenshot: the last of the frames it runs headless under Node,
+# with the given arguments (--frames N --size WxH).
+#   copy_program <name> <capture arguments>...
+copy_program() {
+    local name=$1
+    shift
+    local built=${ZGAL_DIR}/build/web/${name} out=${OUT_DIR}/${name}
+    mkdir -p "${out}"
+    # The page, its scripts, the runtime, and whatever the program loads: its assets (models,
+    # images) and WebAssembly. The TypeScript sources, the node_modules link and package.json only
+    # matter for building and running under Node.
+    cp "${built}/${name}.zgal.html" "${built}"/*.js "${out}/"
+    cp -R "${built}/zgal" "${out}/"
+    if [ -d "${built}/assets" ]; then
+        cp -R "${built}/assets" "${out}/"
+    fi
+    for wasm in "${built}"/*.wasm; do
+        if [ -e "${wasm}" ]; then
+            cp "${wasm}" "${out}/"
+        fi
+    done
+    # The program itself, which the page shows beside it
+    cp "${ZGAL_DIR}/examples/${name}/${name}.zgal" "${out}/"
+    # What it draws, for browsers without WebGPU
+    node "${built}/${name}.zgal.main.js" "$@" --capture "${capture}/${name}.png"
+    cwebp -quiet -q 85 "${capture}/${name}.png" -o "${out}/screenshot.webp"
+}
+
+copy_program particles --frames 240 --size 1024x640
+# The scene's script turns shadows off and resizes the view for a while during the headless run, but
+# its last frame is back at full size with shadows
+copy_program scene --frames 240 --size 1280x720
 
 # The documentation: its page, zgal.html, which the backend serves for /zgal/docs/, with its
 # stylesheets and scripts, and zgal.txt, the same as plain text

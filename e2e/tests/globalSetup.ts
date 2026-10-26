@@ -6,7 +6,7 @@ const OUTPUT_DIR = resolve(__dirname, '../../graphql-server/assets/seamcarver/ou
 
 const listOutputs = () => existsSync(OUTPUT_DIR) ? readdirSync(OUTPUT_DIR) : [];
 
-// The PPU's games and ZGAL's particles example, which the backend serves for their pages, and the
+// The PPU's games and ZGAL's examples, which the backend serves for their pages, and the
 // scripts that build them
 const BUILT_ASSETS = [
     [resolve(__dirname, '../../graphql-server/assets/ppu'), './build-ppu'],
