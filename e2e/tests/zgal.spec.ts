@@ -1,20 +1,33 @@
 import { test, expect } from './fixtures';
 
-const PROGRAM_DIR = '/assets/zgal/particles';
+// The examples ./build-zgal copies, each with what it loads besides its page and scripts, and a form
+// its source contains
+const PROGRAMS = [
+    { name: 'particles', assets: [], source: '(graph ParticlesGraph' },
+    { name: 'scene', assets: ['assets/scene.gltf', 'assets/scene.bin'], source: '(graph SceneGraph' },
+];
 
-test('the backend serves the particles example as modules, with its source and screenshot', async ({ request }) => {
-    const page = await request.get(`${PROGRAM_DIR}/particles.zgal.html`);
-    expect(page.ok()).toBe(true);
-    expect(page.headers()['content-type']).toContain('text/html');
-    // Browsers only run module scripts served as JavaScript
-    for (const script of ['particles.zgal.main.js', 'particles.zgal.js', 'zgal/index.js', 'zgal/main-browser.js']) {
-        const response = await request.get(`${PROGRAM_DIR}/${script}`);
-        expect(response.ok(), script).toBe(true);
-        expect(response.headers()['content-type'], script).toMatch(/javascript/);
-    }
-    expect(await (await request.get(`${PROGRAM_DIR}/particles.zgal`)).text()).toContain('(graph ParticlesGraph');
-    expect((await request.get(`${PROGRAM_DIR}/screenshot.webp`)).headers()['content-type']).toBe('image/webp');
-});
+for (const { name, assets, source } of PROGRAMS) {
+    test(`the backend serves the ${name} example as modules, with its assets, source and screenshot`, async ({ request }) => {
+        const dir = `/assets/zgal/${name}`;
+        const page = await request.get(`${dir}/${name}.zgal.html`);
+        expect(page.ok()).toBe(true);
+        expect(page.headers()['content-type']).toContain('text/html');
+        // Browsers only run module scripts served as JavaScript
+        for (const script of [`${name}.zgal.main.js`, `${name}.zgal.js`, 'zgal/index.js', 'zgal/main-browser.js']) {
+            const response = await request.get(`${dir}/${script}`);
+            expect(response.ok(), script).toBe(true);
+            expect(response.headers()['content-type'], script).toMatch(/javascript/);
+        }
+        for (const asset of assets) {
+            const response = await request.get(`${dir}/${asset}`);
+            expect(response.ok(), asset).toBe(true);
+            expect((await response.body()).length, asset).toBeGreaterThan(0);
+        }
+        expect(await (await request.get(`${dir}/${name}.zgal`)).text()).toContain(source);
+        expect((await request.get(`${dir}/screenshot.webp`)).headers()['content-type']).toBe('image/webp');
+    });
+}
 
 test('shows the program\'s source', async ({ page }) => {
     await page.goto('/projects/zgal');

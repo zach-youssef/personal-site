@@ -4,7 +4,7 @@
 #   ./bundle <out-dir>      writes <out-dir>/site-bundle.zip, and a copy of its MANIFEST
 #
 # The zip unpacks over the server's home directory: the frontend's build/ (its assets/ at the
-# top), the backend's jar and assets/ (with the PPU's games and ZGAL's particles example, which
+# top), the backend's jar and assets/ (with the PPU's games and ZGAL's examples, which
 # this builds), server-restart, server-deploy and the Caddyfile. Its MANIFEST lists every file
 # in it, one per line; server-deploy deletes what the previous deploy's manifest listed and this
 # one doesn't. Of the backend's assets only the files git tracks ship, besides the two builds, so
@@ -29,7 +29,7 @@ trap 'rm -rf "${STAGE}"' EXIT
 cp -R "${SCRIPT_DIR}/frontend/build" "${STAGE}/"
 mv "${STAGE}/build/assets" "${STAGE}/assets"
 
-# The PPU's games and ZGAL's particles example, built into the backend's assets
+# The PPU's games and ZGAL's examples, built into the backend's assets
 "${SCRIPT_DIR}/build-ppu"
 "${SCRIPT_DIR}/build-zgal"
 

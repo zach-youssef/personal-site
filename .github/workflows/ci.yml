@@ -193,14 +193,14 @@ jobs:
         run: npm ci --no-audit --no-fund && npm test
       - name: Build the PPU's games
         run: ./build-ppu
-      - name: Build ZGAL's particles example
+      - name: Build ZGAL's examples
         run: ./build-zgal
-      - name: Upload ZGAL's screenshot
+      - name: Upload ZGAL's screenshots
         # Drawn on lavapipe here rather than on the Mac's GPU, so it can differ from the live one
         uses: actions/upload-artifact@v7
         with:
-          name: zgal-screenshot-${{ matrix.sha }}
-          path: graphql-server/assets/zgal/particles/screenshot.webp
+          name: zgal-screenshots-${{ matrix.sha }}
+          path: graphql-server/assets/zgal/*/screenshot.webp
           # Only for comparing with the live one now and then
           retention-days: 7
 

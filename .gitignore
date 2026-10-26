@@ -3,5 +3,5 @@
 # The PPU's games for the web, which ./build-ppu builds from external/vk_ppu
 graphql-server/assets/ppu/
 
-# ZGAL's particles example for the web, which ./build-zgal builds from external/zgal
+# ZGAL's examples for the web, which ./build-zgal builds from external/zgal
 graphql-server/assets/zgal/
