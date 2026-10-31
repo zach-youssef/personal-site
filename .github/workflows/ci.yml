@@ -1,5 +1,6 @@
 # Builds and tests every commit a push brings, each one in its own job, and posts a commit status
-# on each, so a branch shows which of its commits pass. See "CI" in README.md.
+# on each, so a branch shows which of its commits pass. Then the deploy job (deploy.yml) deploys
+# master's tip, or dry-runs a branch's. See "CI" and "Continuous deployment" in README.md.
 #
 # Only the jobs that run no code from the repository's commits, npm, Gradle or third-party actions
 # can post statuses: the test jobs build and test with a read-only token, while the pending job
@@ -182,6 +183,20 @@ jobs:
             e2e/playwright-report/
             e2e/test-results/
           if-no-files-found: ignore
+
+  # Once every commit passes, builds the tip's bundle and deploys it: on the default branch to the
+  # server, elsewhere as a dry run. See deploy.yml.
+  deploy:
+    name: Deploy
+    needs: test
+    permissions:
+      contents: read
+      # The dry run reads the last deployed manifest from the repository's artifacts
+      actions: read
+    uses: ./.github/workflows/deploy.yml
+    with:
+      ship: ${{ github.ref_name == github.event.repository.default_branch }}
+    secrets: inherit
 
   # Posts each commit's `CI / test` status from the conclusion of its job ("Test <sha>") in this
   # run: success and failure as they are, anything else (cancelled, timed out, skipped, never run,

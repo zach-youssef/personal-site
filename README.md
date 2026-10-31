@@ -53,15 +53,15 @@ Notes for editing the workflow:
 - `git -c url.<https>.insteadOf=<ssh> submodule update --recursive` passes the rewrite on to nested submodules (through `GIT_CONFIG_PARAMETERS`), so it needs no global rewrite, which would also send the private SeamCarving over https.
 - `gradle/actions/setup-gradle` stays on v5, the last MIT major: v6 accepts the Terms of Use of a closed-source caching component.
 - The SeamCarving checkout (in `setup-build`), which holds the deploy key, runs before any npm, Gradle or build step, so no third-party script runs before the key is used and removed.
-- Only jobs that run no code from the commits, npm, Gradle or third-party actions hold a token that can post statuses, as a job's steps share one user and file system (a build could plant a `gh` that a later step runs with the token). The test jobs get `contents: read` and no `GH_TOKEN`, and no checkout persists its credentials. The `pending` job marks every commit pending; the `statuses` job, which needs all the others, posts each commit's status from the conclusion of its job (named `Test <sha>`) in the run's jobs API, linked to that job: anything but success or failure (cancelled, timed out, skipped or unreadable) is an `error`, so none stays pending. Neither of the two checks anything out.
+- Only jobs that run no code from the commits, npm, Gradle or third-party actions hold a token that can post statuses, as a job's steps share one user and file system (a build could plant a `gh` that a later step runs with the token). The test jobs get `contents: read` and no `GH_TOKEN`, and no checkout persists its credentials. The `pending` job marks every commit pending; the `statuses` job, which needs those and the test jobs, posts each commit's status from the conclusion of its job (named `Test <sha>`) in the run's jobs API, linked to that job: anything but success or failure (cancelled, timed out, skipped or unreadable) is an `error`, so none stays pending. Neither of the two checks anything out.
 
 ## Deployment
 
-`./deploy` builds the site and deploys it to the server. It runs the two steps a deploy has, which can also run apart (e.g. building once and shipping the result later):
+Pushing to `master` deploys the site, once CI passes (see "Continuous deployment" below). `./deploy` does the same from a local checkout, as a manual fallback: it builds the site and deploys it to the server. It runs the two steps a deploy has, which can also run apart (e.g. building once and shipping the result later):
 
 ```
-./bundle <out-dir>          # build into <out-dir>/site-bundle.zip, with a copy of its MANIFEST
-./ship <bundle.zip>         # deploy that bundle
+./bundle [--skip-tests] <out-dir>   # build into <out-dir>/site-bundle.zip, with a copy of its MANIFEST
+./ship <bundle.zip>                 # deploy that bundle
 ```
 
 `./bundle` builds the frontend, the PPU's games, ZGAL's particles example and the backend, and zips them with `server-restart`, `server-deploy` and `Caddyfile`, laid out as they go in the server's home directory. Of `graphql-server/assets` only the files git tracks ship, besides the PPU's and ZGAL's builds, so untracked local files don't. The zip's `MANIFEST` lists every file in it.
@@ -83,3 +83,16 @@ On the server, [Caddy](https://caddyserver.com) serves the site over https on po
 ```
 ssh ec2-user@zyoussef.com 'bash -s' < server-setup-caddy
 ```
+
+### Continuous deployment
+
+CI's `deploy` job calls `.github/workflows/deploy.yml` once every commit CI checked for a push has passed its tests, for the push's tip. That is every commit the push brings, unless it brings more than 20: then only the newest 20 were tested.
+
+- **Bundle** checks out the tip, sets up the build as the test jobs do, runs `./bundle --skip-tests` (the backend's tests just passed in the test job) and uploads the zip and its `MANIFEST` as the `site-bundle-<sha>` artifact (kept 7 days). It is the only job that runs the commit's code, npm and Gradle, with a read-only token.
+- **Check master's tip**, on `master` only, ends the deploy there if `master` has moved on since the push: CI runs on `master` in parallel, so an older one can finish last, and the newer commit's run deploys. It runs before Ship joins the deploy queue, where a stale run would otherwise replace the newer one waiting.
+- **Ship**, on `master` only, runs in the `production` environment, which only `master` may deploy from and which holds the deploy key (`SSH_KEY`) and the server's pinned host key (`KNOWN_HOSTS`). Deploys run one at a time and none is cancelled halfway (concurrency group `production`): a newer one waits, and if several wait only the newest is kept. Once it holds the queue it checks the tip again, for a commit pushed in the meantime, then sends the bundle to `server-deploy` as `./ship` does; the server limits that key to `restrict,command="~/server-deploy"`, so it can't run anything else. It keeps the manifest it shipped as the `deployed-manifest` artifact (kept 90 days), then checks the live site for about two minutes: the index must name the bundle's `assets/index-*.js`, `/graphql` must answer `{ levels }` with data (it answers errors with 200 too, and has no `__typename`) and `/assets/ppu/smb3/smb3.zgal.html` must answer 200. The site answers `HEAD` with 404, so the checks use `GET`.
+- **Dry run**, on any other branch, lists the bundle, checks that its `MANIFEST` lists exactly its files, and compares the manifest with the newest `deployed-manifest` from a `master` run: the files a deploy would add and delete, also in the run's summary. Without one (before CI's first deploy, or 90 days after the last), compare the bundle's `MANIFEST` with the server's `~/.deploy/MANIFEST` by hand.
+
+A deploy that fails leaves the run red, and a broken upload leaves the site as it was (see above). To redeploy, rerun the `Deploy / Ship` job (within the bundle artifact's 7 days), or run CI on `master` by hand (`gh workflow run ci.yml --ref master`). Run CI on `master` by hand the same way in the one case where `master`'s tip isn't deployed: a stale run that passed the tip check joins the queue in the seconds before a newer push's run does, replaces it there, and then sees the newer tip and ships nothing. (Rerunning that stale run's `Ship` skips again; rerun the tip's run or use `gh workflow run`.) When CI can't deploy, `./deploy` still does, from a checkout of `master` and with a normal login to the server; it doesn't update `deployed-manifest`, so the next dry run's comparison is with CI's last deploy.
+
+The one-time setup, done by hand: the `production` environment with a deployment branch policy for `master` only; an ed25519 key whose public half is in the server's `~/.ssh/authorized_keys` as `restrict,command="~/server-deploy" ssh-ed25519 ... deploy@github-actions` and whose private half is the environment secret `SSH_KEY`; and `KNOWN_HOSTS`, the output of `ssh-keyscan -t ed25519 zyoussef.com` once its fingerprint is checked against a trusted connection's.

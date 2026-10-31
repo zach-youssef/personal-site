@@ -1,0 +1,267 @@
+# Builds the site's bundle once and deploys it. CI calls it once every commit a push brings has
+# passed: on master it ships the bundle to the server from the production environment and checks
+# the live site; on any other branch it is a dry run, which lists the bundle and what deploying it
+# would add and delete. See "Continuous deployment" in README.md.
+#
+# As in CI, the job that runs the commit's code, npm and Gradle (bundle) gets a read-only token
+# and no other secret than SeamCarving's deploy key. The jobs that hold a token that can read the
+# repository's artifacts or the server's deploy key run no code from the commit: they only unzip
+# and send the bundle, which runs on the server.
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      ship:
+        description: Ship the bundle to the server (master), rather than a dry run
+        type: boolean
+        required: true
+    # The caller passes its secrets with `secrets: inherit`: the bundle job uses the repository's
+    # SEAMCARVING_DEPLOY_KEY, and the ship job the production environment's SSH_KEY and
+    # KNOWN_HOSTS, which only a job in that environment can read.
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    # Unlike the default bash -e, this sets pipefail
+    shell: bash
+
+env:
+  # The server, as ./ship has it
+  SERVER: ec2-user@zyoussef.com
+  SITE: https://zyoussef.com
+  BUNDLE: site-bundle-${{ github.sha }}
+
+jobs:
+  bundle:
+    name: Bundle
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    outputs:
+      index-js: ${{ steps.index.outputs.path }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Keeps the job's token out of git's config, where the npm and Gradle steps could read it
+          persist-credentials: false
+      - name: Set up the build
+        uses: ./.github/actions/setup-build
+        with:
+          seamcarving-deploy-key: ${{ secrets.SEAMCARVING_DEPLOY_KEY }}
+      - name: Install the frontend's packages
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund
+      - name: Bundle
+        # The backend's tests passed in CI's test job for this commit
+        run: ./bundle --skip-tests "${RUNNER_TEMP}/bundle"
+      - name: Find the frontend's entry script
+        # The live index must name it once the bundle is deployed
+        id: index
+        run: |
+          mapfile -t found < <(grep -xE 'assets/index-[^/]+\.js' "${RUNNER_TEMP}/bundle/MANIFEST")
+          if [[ ${#found[@]} -ne 1 ]]; then
+              echo "::error::Expected one assets/index-*.js in the bundle, found ${#found[@]}: ${found[*]}"
+              exit 1
+          fi
+          echo "path=${found[0]}" >> "${GITHUB_OUTPUT}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.BUNDLE }}
+          path: |
+            ${{ runner.temp }}/bundle/site-bundle.zip
+            ${{ runner.temp }}/bundle/MANIFEST
+          if-no-files-found: error
+          # Already a zip
+          compression-level: 0
+          retention-days: 7
+
+  # Lists the bundle and compares its manifest with the last one CI deployed (the newest
+  # deployed-manifest artifact): what deploying it would add, and what it would delete.
+  dry-run:
+    name: Dry run
+    if: ${{ !inputs.ship }}
+    needs: bundle
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ env.BUNDLE }}
+          path: ${{ runner.temp }}/bundle
+      - name: List the bundle and compare its manifest with the deployed one
+        run: |
+          cd "${RUNNER_TEMP}/bundle"
+          unzip -l site-bundle.zip
+          # The zip must hold what its manifest lists, besides the manifest, as server-deploy checks
+          if ! unzip -Z1 site-bundle.zip | grep -vx -e '.*/' -e MANIFEST | LC_ALL=C sort |
+                  cmp -s - MANIFEST; then
+              echo "::error::The bundle's MANIFEST doesn't list exactly its files"
+              exit 1
+          fi
+          # Only master's runs ship, so only theirs count, whatever a branch's run uploads
+          id=$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=deployed-manifest&per_page=100" \
+              --jq '[.artifacts[] | select((.expired | not) and .workflow_run.head_branch == "master")]
+                  | sort_by(.created_at) | last | .id // empty')
+          summary=${GITHUB_STEP_SUMMARY}
+          echo "### Dry run of ${GITHUB_SHA}" >> "${summary}"
+          echo "The bundle has $(wc -l < MANIFEST) files." | tee -a "${summary}"
+          if [[ -z ${id} ]]; then
+              echo "No deployed-manifest artifact: CI hasn't deployed yet, or its last one expired. Compare MANIFEST with the server's ~/.deploy/MANIFEST by hand." |
+                  tee -a "${summary}"
+              exit 0
+          fi
+          # The API serves the artifact zipped
+          mkdir deployed
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${id}/zip" > deployed.zip
+          unzip -q deployed.zip -d deployed
+          LC_ALL=C sort -u deployed/MANIFEST > deployed.sorted
+          LC_ALL=C comm -13 deployed.sorted MANIFEST > added
+          LC_ALL=C comm -23 deployed.sorted MANIFEST > deleted
+          {
+              echo "Compared with the manifest CI deployed last (artifact ${id})."
+              echo "Would add $(wc -l < added) and delete $(wc -l < deleted) files:"
+              echo '```'
+              sed 's/^/+ /' added
+              sed 's/^/- /' deleted
+              echo '```'
+          } | tee -a "${summary}"
+
+  # Whether the commit is still master's tip. CI runs on master in parallel, so an older one can
+  # finish later; it mustn't ship, as the newer commit's run deploys. This runs before ship joins
+  # the production queue, where a late, stale run would replace the newer one waiting there.
+  gate:
+    name: Check master's tip
+    if: ${{ inputs.ship }}
+    needs: bundle
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      current: ${{ steps.tip.outputs.current }}
+    steps:
+      - name: Check that the commit is master's tip
+        id: tip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tip=$(gh api "repos/${GITHUB_REPOSITORY}/branches/${GITHUB_REF_NAME}" --jq .commit.sha)
+          if [[ ${tip} == "${GITHUB_SHA}" ]]; then
+              echo "current=true" >> "${GITHUB_OUTPUT}"
+          else
+              echo "::notice::Not shipping ${GITHUB_SHA}: ${GITHUB_REF_NAME} has moved on to ${tip}, whose run deploys it"
+              echo "current=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+  # One deploy at a time, and none cancelled halfway: a newer one waits for this one, and if
+  # several wait, only the newest is kept. The tip is checked again once this holds the queue, for
+  # a commit pushed since the gate.
+  ship:
+    name: Ship
+    if: ${{ inputs.ship && needs.gate.outputs.current == 'true' }}
+    needs: [bundle, gate]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: ${{ env.SITE }}
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    steps:
+      - name: Check that the commit is master's tip
+        id: tip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tip=$(gh api "repos/${GITHUB_REPOSITORY}/branches/${GITHUB_REF_NAME}" --jq .commit.sha)
+          if [[ ${tip} == "${GITHUB_SHA}" ]]; then
+              echo "current=true" >> "${GITHUB_OUTPUT}"
+          else
+              echo "::notice::Not shipping ${GITHUB_SHA}: ${GITHUB_REF_NAME} has moved on to ${tip}, whose run deploys it"
+              echo "current=false" >> "${GITHUB_OUTPUT}"
+          fi
+      - if: steps.tip.outputs.current == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ env.BUNDLE }}
+          path: ${{ runner.temp }}/bundle
+      - name: Ship
+        # As ./ship does, with the deploy key, which the server limits to running server-deploy,
+        # and the server's pinned host key
+        if: steps.tip.outputs.current == 'true'
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
+        run: |
+          if [[ -z ${SSH_KEY} || -z ${KNOWN_HOSTS} ]]; then
+              echo "::error::The production environment's SSH_KEY or KNOWN_HOSTS secret isn't set; see Continuous deployment in README.md"
+              exit 1
+          fi
+          ssh_dir=${RUNNER_TEMP}/ssh
+          mkdir -m 700 "${ssh_dir}"
+          trap 'rm -rf "${ssh_dir}"' EXIT
+          printf '%s\n' "${SSH_KEY}" > "${ssh_dir}/key"
+          chmod 600 "${ssh_dir}/key"
+          printf '%s\n' "${KNOWN_HOSTS}" > "${ssh_dir}/known_hosts"
+          ssh -i "${ssh_dir}/key" -o IdentitiesOnly=yes -o BatchMode=yes \
+              -o UserKnownHostsFile="${ssh_dir}/known_hosts" -o StrictHostKeyChecking=yes \
+              -o ConnectTimeout=30 -o ServerAliveInterval=15 \
+              "${SERVER}" ./server-deploy < "${RUNNER_TEMP}/bundle/site-bundle.zip"
+      - name: Keep the deployed manifest
+        # For the dry runs to compare with
+        if: steps.tip.outputs.current == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: deployed-manifest
+          path: ${{ runner.temp }}/bundle/MANIFEST
+          if-no-files-found: error
+          # A rerun of this job redeploys, and replaces the run's earlier one
+          overwrite: true
+          retention-days: 90
+      - name: Check the live site
+        # The server takes a while to start: retried for about two minutes, each try taking at most 15 s. GET
+        # only: the site answers HEAD with 404.
+        if: steps.tip.outputs.current == 'true'
+        env:
+          INDEX_JS: ${{ needs.bundle.outputs.index-js }}
+        run: |
+          check() {
+              local index graphql game
+              index=$(curl -sS --max-time 5 "${SITE}/") || index=
+              graphql=$(curl -sS --max-time 5 -X POST -H 'Content-Type: application/json' \
+                  --data '{"query":"{ levels }"}' "${SITE}/graphql") || graphql=
+              game=$(curl -sS --max-time 5 -o /dev/null -w '%{http_code}' \
+                  "${SITE}/assets/ppu/smb3/smb3.zgal.html") || game=
+              failures=()
+              grep -qF "/${INDEX_JS}" <<< "${index}" || failures+=("the index doesn't name /${INDEX_JS}")
+              # The Sokoban levels, read from the server's resources/. KGraphQL has no
+              # __typename, and answers errors with 200 too, so the data is what counts.
+              grep -qF '{"data":{"levels":[' <<< "${graphql}" || failures+=("/graphql didn't answer: ${graphql:0:200}")
+              [[ ${game} == 200 ]] || failures+=("/assets/ppu/smb3/smb3.zgal.html answered ${game:-nothing}")
+              [[ ${#failures[@]} -eq 0 ]]
+          }
+          attempt=0
+          while (( SECONDS < 120 )); do
+              attempt=$((attempt + 1))
+              if check; then
+                  echo "The live site serves ${INDEX_JS}, /graphql answers and the PPU's smb3 page is there"
+                  exit 0
+              fi
+              echo "Attempt ${attempt}: ${failures[*]}"
+              sleep 5
+          done
+          for failure in "${failures[@]}"; do
+              echo "::error::${failure}"
+          done
+          exit 1

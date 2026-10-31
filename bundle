@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Builds the site and assembles everything the server runs into one zip, ready for ./ship:
 #
-#   ./bundle <out-dir>      writes <out-dir>/site-bundle.zip, and a copy of its MANIFEST
+#   ./bundle [--skip-tests] <out-dir>
+#
+# writes <out-dir>/site-bundle.zip, and a copy of its MANIFEST. --skip-tests skips the backend's
+# tests, which the Gradle build otherwise runs, for callers that have just run them (CI's deploy).
 #
 # The zip unpacks over the server's home directory: the frontend's build/ (its assets/ at the
 # top), the backend's jar and assets/ (with the PPU's games and ZGAL's particles example, which
@@ -14,8 +17,13 @@ set -euo pipefail
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 SERVER_VERSION=0.0.1-SNAPSHOT
 
+GRADLE_ARGS=(build)
+if [ "${1:-}" = --skip-tests ]; then
+    GRADLE_ARGS+=(-x test)
+    shift
+fi
 if [ $# -ne 1 ]; then
-    echo "usage: $0 <out-dir>" >&2
+    echo "usage: $0 [--skip-tests] <out-dir>" >&2
     exit 2
 fi
 mkdir -p "$1"
@@ -34,7 +42,7 @@ mv "${STAGE}/build/assets" "${STAGE}/assets"
 "${SCRIPT_DIR}/build-zgal"
 
 # Backend, and its assets: the tracked ones and the two builds
-(cd "${SCRIPT_DIR}/graphql-server" && ./gradlew build)
+(cd "${SCRIPT_DIR}/graphql-server" && ./gradlew "${GRADLE_ARGS[@]}")
 cp "${SCRIPT_DIR}/graphql-server/build/libs/graphql-server-${SERVER_VERSION}-standalone.jar" "${STAGE}/"
 git -C "${SCRIPT_DIR}/graphql-server" ls-files -z -- assets |
     (cd "${SCRIPT_DIR}/graphql-server" && tar --null -T - -cf -) | tar -xf - -C "${STAGE}"
