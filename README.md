@@ -47,10 +47,12 @@ GitHub Actions (`.github/workflows/ci.yml`) builds and tests every commit a push
 
 Notes for editing the workflow:
 
+- The submodule checkouts and the toolchains (Racket, Node, Java, Gradle, lavapipe, cwebp) are set up by the local action `.github/actions/setup-build`, which every job that builds the site uses. A job must check out the repository before it can use it.
+- `actionlint` (`brew install actionlint shellcheck`) checks the workflows and their scripts locally; its only expected findings are the unused `try` loop variables.
 - Status functions (`cancelled()`, `failure()`) are only allowed in `if:`. In `env:` they make the whole workflow fail to parse, as a 0 s "workflow file issue" run with no message; use `job.status` there.
 - `git -c url.<https>.insteadOf=<ssh> submodule update --recursive` passes the rewrite on to nested submodules (through `GIT_CONFIG_PARAMETERS`), so it needs no global rewrite, which would also send the private SeamCarving over https.
 - `gradle/actions/setup-gradle` stays on v5, the last MIT major: v6 accepts the Terms of Use of a closed-source caching component.
-- The SeamCarving checkout, which holds the deploy key, runs before any npm, Gradle or build step, so no third-party script runs before the key is used and removed.
+- The SeamCarving checkout (in `setup-build`), which holds the deploy key, runs before any npm, Gradle or build step, so no third-party script runs before the key is used and removed.
 - Only jobs that run no code from the commits, npm, Gradle or third-party actions hold a token that can post statuses, as a job's steps share one user and file system (a build could plant a `gh` that a later step runs with the token). The test jobs get `contents: read` and no `GH_TOKEN`, and no checkout persists its credentials. The `pending` job marks every commit pending; the `statuses` job, which needs all the others, posts each commit's status from the conclusion of its job (named `Test <sha>`) in the run's jobs API, linked to that job: anything but success or failure (cancelled, timed out, skipped or unreadable) is an `error`, so none stays pending. Neither of the two checks anything out.
 
 ## Deployment

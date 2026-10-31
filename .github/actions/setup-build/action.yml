@@ -1,0 +1,71 @@
+# Readies a checkout of the repository for building the site: checks out its submodules and
+# installs the toolchains and packages the builds need. CI's test jobs and the deploy's bundle job
+# share it. See "CI" in README.md.
+name: Set up the build
+description: Checks out the submodules and installs Racket, Node, Java, Gradle, lavapipe and cwebp
+inputs:
+  seamcarving-deploy-key:
+    description: The private half of SeamCarving's read-only deploy key (secret SEAMCARVING_DEPLOY_KEY)
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Check out the public submodules
+      # Their URLs are ssh, which needs a key; over https they need none. Passed with -c, the
+      # rewrite reaches the nested submodule (vk_ppu's vulkan_test) but not SeamCarving's
+      # checkout below, which is private and needs its deploy key.
+      shell: bash
+      run: >-
+        git -c url."https://github.com/".insteadOf=git@github.com:
+        submodule update --init --recursive external/vk_ppu external/zgal
+
+    - name: Check out SeamCarving
+      # Before anything installs or runs third-party code (npm, Gradle), which could otherwise
+      # read the key or rig the environment this step runs in
+      shell: bash
+      env:
+        SEAMCARVING_DEPLOY_KEY: ${{ inputs.seamcarving-deploy-key }}
+      run: |
+        if [[ -z ${SEAMCARVING_DEPLOY_KEY} ]]; then
+            echo "::error::The SEAMCARVING_DEPLOY_KEY secret isn't set; see CI in README.md"
+            exit 1
+        fi
+        ssh_dir=${RUNNER_TEMP}/ssh
+        mkdir -m 700 "${ssh_dir}"
+        trap 'rm -rf "${ssh_dir}"' EXIT
+        printf '%s\n' "${SEAMCARVING_DEPLOY_KEY}" > "${ssh_dir}/key"
+        chmod 600 "${ssh_dir}/key"
+        # GitHub's published host key, rather than whatever answers
+        echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' > "${ssh_dir}/known_hosts"
+        GIT_SSH_COMMAND="ssh -i ${ssh_dir}/key -o IdentitiesOnly=yes -o UserKnownHostsFile=${ssh_dir}/known_hosts -o StrictHostKeyChecking=yes" \
+            git submodule update --init graphql-server/src/java/SeamCarving
+
+    - uses: Bogdanp/setup-racket@v1.15
+      with:
+        version: '8.18'
+        distribution: full
+        variant: CS
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 24
+        cache: npm
+        cache-dependency-path: |
+          frontend/package-lock.json
+          e2e/package-lock.json
+          external/zgal/web/package-lock.json
+          external/vk_ppu/external/vulkan_test/web/package-lock.json
+    - uses: actions/setup-java@v6
+      with:
+        distribution: temurin
+        java-version: 21
+    # v5, the last MIT major: v6 accepts the Terms of Use of a closed-source caching component
+    - uses: gradle/actions/setup-gradle@v5
+      with:
+        # Gradle's job summary only when a build failed
+        add-job-summary: on-failure
+    - name: Install lavapipe and cwebp
+      # Mesa's software Vulkan driver gives Dawn an adapter for build-zgal's screenshot
+      shell: bash
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -qq --no-install-recommends mesa-vulkan-drivers webp > /dev/null
