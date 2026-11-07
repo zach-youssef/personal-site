@@ -116,6 +116,49 @@ class ApplicationTest {
     }
 
     @Test
+    fun `ZGAL programs are served as UTF-8 text, so browsers show them`() = withApp {
+        // A program of its own beside ./build-zgal's, which may not have been built
+        val program = File.createTempFile("program", ".zgal", File("assets")).apply { deleteOnExit() }
+        try {
+            val source = "(define greeting \"héllo\") ; ✓\n"
+            program.writeText(source)
+
+            val call = handleRequest(HttpMethod.Get, "/assets/${program.name}")
+            assertEquals(HttpStatusCode.OK, call.response.status())
+            assertEquals("text/plain; charset=utf-8", call.response.headers[HttpHeaders.ContentType])
+            assertEquals(source, call.response.content)
+            // Still a file, which may be cached for a day and revalidated
+            assertEquals("max-age=86400", call.response.headers[HttpHeaders.CacheControl])
+            val again = handleRequest(HttpMethod.Get, "/assets/${program.name}") {
+                addHeader(HttpHeaders.IfModifiedSince, assertNotNull(call.response.headers[HttpHeaders.LastModified]))
+            }
+            assertEquals(HttpStatusCode.NotModified, again.response.status())
+        } finally {
+            program.delete()
+        }
+    }
+
+    @Test
+    fun `the app's page stays HTML at a path ending in zgal`() = withApp {
+        // The frontend's build, which ./bundle puts here; without it, the test stands in a page
+        val index = File("build/index.html")
+        val stubbed = !index.exists()
+        if (stubbed) {
+            index.parentFile.mkdirs()
+            index.writeText("<title>Zach</title>")
+        }
+        try {
+            val call = handleRequest(HttpMethod.Get, "/projects/zgal/particles.zgal")
+            assertEquals(HttpStatusCode.OK, call.response.status())
+            assertTrue(ContentType.parse(assertNotNull(call.response.headers[HttpHeaders.ContentType])).match(ContentType.Text.Html))
+        } finally {
+            if (stubbed) {
+                index.delete()
+            }
+        }
+    }
+
+    @Test
     fun `GraphQL responses carry no caching headers`() = withApp {
         assertNull(postGraphQL("{ levels }").response.headers[HttpHeaders.CacheControl])
     }

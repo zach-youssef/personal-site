@@ -11,6 +11,7 @@ import io.ktor.http.content.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
+import io.ktor.util.*
 import java.io.File
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
@@ -26,6 +27,26 @@ internal fun cachingOptions(content: OutgoingContent): CachingOptions? = when {
     else -> CachingOptions(CacheControl.MaxAge(maxAgeSeconds = 24 * 60 * 60))
 }
 
+// ZGAL programs (.zgal) are text, but Ktor doesn't know the extension and would send them as
+// application/octet-stream, which browsers download rather than show
+private val ZGAL_SOURCE_TYPE = ContentType.Text.Plain.withParameter("charset", "utf-8")
+
+// A file's content as another type. static() wraps the files it sends in a type of its own, which
+// is internal to Ktor, so this wraps that in turn and passes everything but the type through,
+// including the properties (Last-Modified) that caching reads.
+private class RetypedContent(
+    private val original: OutgoingContent.ReadChannelContent,
+    override val contentType: ContentType,
+) : OutgoingContent.ReadChannelContent() {
+    override val contentLength get() = original.contentLength
+    override val status get() = original.status
+    override val headers get() = original.headers
+    override fun readFrom() = original.readFrom()
+    override fun readFrom(range: LongRange) = original.readFrom(range)
+    override fun <T : Any> getProperty(key: AttributeKey<T>) = original.getProperty(key)
+    override fun <T : Any> setProperty(key: AttributeKey<T>, value: T?) = original.setProperty(key, value)
+}
+
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
@@ -34,6 +55,14 @@ fun Application.module(testing: Boolean = false) {
     install(ConditionalHeaders)
     install(CachingHeaders) {
         options(::cachingOptions)
+    }
+    // Static files are sent with the type Ktor guesses from their extension. Only what it couldn't
+    // type is retyped, so the app's page, which the backend serves for any other path, stays HTML.
+    sendPipeline.intercept(ApplicationSendPipeline.Before) { content ->
+        if (content is OutgoingContent.ReadChannelContent && call.request.path().endsWith(".zgal")
+            && content.contentType?.match(ContentType.Application.OctetStream) == true) {
+            proceedWith(RetypedContent(content, ZGAL_SOURCE_TYPE))
+        }
     }
 
     routing {
