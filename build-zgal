@@ -2,8 +2,9 @@
 # Builds ZGAL's examples that run in a browser (particles and scene) for the web (WebGPU) and copies
 # each into the backend's assets, which it serves as /assets/zgal/<name>/<name>.zgal.html for the
 # ZGAL page's frame, beside the example's source, which the page shows, and a screenshot. Also
-# builds ZGAL's documentation, which the backend serves at /zgal/docs/. The output is ignored by
-# git; ./bundle runs this and ships it with the other backend assets.
+# builds ZGAL's documentation, which the backend serves at /zgal/docs/, and writes source.json, which
+# names the commit the sources were copied from. The output is ignored by git; ./bundle runs this and
+# ships it with the other backend assets.
 #
 #   ./build-zgal [zgal checkout]    defaults to the external/zgal submodule
 #
@@ -20,6 +21,13 @@ if [ ! -f "${ZGAL_DIR}/zgal.mk" ]; then
     echo "No ZGAL checkout at ${ZGAL_DIR}; run: git submodule update --init --recursive" >&2
     exit 1
 fi
+# source.json names the commit the sources come from, so the checkout must be a git repository of
+# its own (not a directory inside another one); checked before the long build
+if [ "$(git -C "${ZGAL_DIR}" rev-parse --show-toplevel 2> /dev/null)" != "$(cd "${ZGAL_DIR}" && pwd -P)" ]; then
+    echo "${ZGAL_DIR} isn't a git checkout, which source.json needs to name the sources' commit" >&2
+    exit 1
+fi
+commit=$(git -C "${ZGAL_DIR}" rev-parse HEAD)
 
 make -C "${ZGAL_DIR}" web docs
 
@@ -64,3 +72,27 @@ copy_program scene --frames 240 --size 1280x720
 # The documentation: its page, zgal.html, which the backend serves for /zgal/docs/, with its
 # stylesheets and scripts, and zgal.txt, the same as plain text
 cp -R "${ZGAL_DIR}/build/docs" "${OUT_DIR}/docs"
+
+# Which commit the copied sources come from, for the page to link to them on GitHub there:
+#   {"repository": <the submodule's GitHub URL>, "commit": <the checkout's HEAD>, "dirty": <bool>}
+# GitHub may not have those sources at that commit, so dirty is true, when the checkout:
+# - has changes, untracked files included (whatever the user's status.showUntrackedFiles);
+# - isn't the external/zgal submodule (./build-zgal <another checkout>);
+# - isn't at the commit the site pins the submodule to (a bumped pin without a submodule update, or
+#   a commit made in the submodule);
+# - is at a commit no remote branch it knows of has (unpushed, or not fetched since it was pushed).
+# The status is taken after the copies, so a change made while building counts.
+# The URL's ssh forms (git@github.com:… and ssh://git@github.com/…) become https; others pass
+# through.
+repository=$(git -C "${SCRIPT_DIR}" config --file .gitmodules submodule.external/zgal.url \
+    | sed -e 's#^git@github\.com:#https://github.com/#' -e 's#^ssh://git@github\.com/#https://github.com/#' \
+        -e 's#/$##' -e 's#\.git$##')
+dirty=false
+if [ -n "$(git -C "${ZGAL_DIR}" status --porcelain --untracked-files=normal)" ] \
+    || [ "$(cd "${ZGAL_DIR}" && pwd -P)" != "$(cd "${SCRIPT_DIR}/external/zgal" && pwd -P)" ] \
+    || [ "${commit}" != "$(git -C "${SCRIPT_DIR}" rev-parse HEAD:external/zgal)" ] \
+    || [ -z "$(git -C "${ZGAL_DIR}" branch --remotes --contains "${commit}")" ]; then
+    dirty=true
+fi
+printf '{"repository": "%s", "commit": "%s", "dirty": %s}\n' "${repository}" "${commit}" "${dirty}" \
+    > "${OUT_DIR}/source.json"
