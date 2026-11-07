@@ -61,21 +61,54 @@ test('redirects the documentation\'s bare URL to its directory', async ({ reques
     expect(response.headers()['location']).toBe('/zgal/docs/');
 });
 
-test('says so when the example can\'t get a WebGPU adapter', async ({ page }) => {
-    // Without the switch, headless Chromium has WebGPU but no adapter
-    await page.goto('/projects/zgal');
+// Each example the page offers, at the URL that selects it (particles is the default), and the width
+// of its screenshot
+const SAMPLES = [
+    { title: 'Particles', path: '/projects/zgal', screenshotWidth: 1024 },
+    { title: 'Scene', path: '/projects/zgal?sample=scene', screenshotWidth: 1280 },
+];
 
-    await expect(page.getByRole('alert').filter({ hasText: 'Particles couldn\'t run in this browser.' })).toBeVisible({ timeout: 15_000 });
+test('switches examples from the selector, and records the choice in the URL', async ({ page }) => {
+    await page.goto('/projects/zgal');
+    const selector = page.getByRole('group', { name: 'Example' });
+    await expect(selector.getByRole('button', { name: 'Particles' })).toHaveAttribute('aria-pressed', 'true');
+    // Clickable, and in the theme's colours
+    await expect(selector.getByRole('button', { name: 'Scene' })).toHaveCSS('cursor', 'pointer');
+
+    await selector.getByRole('button', { name: 'Scene' }).click();
+
+    await expect(page).toHaveURL(/\/projects\/zgal\?sample=scene$/);
+    await expect(selector.getByRole('button', { name: 'Scene' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(selector.getByRole('button', { name: 'Scene' })).toHaveClass(/btn-primary/);
+    await expect(page.locator('iframe[title="Scene"]')).toHaveAttribute('src', '/assets/zgal/scene/scene.zgal.html');
+    await expect(page.locator('iframe[title="Particles"]')).toHaveCount(0);
+    await expect(page.getByLabel('scene.zgal')).toContainText('(graph SceneGraph');
+    // No focus ring left on the clicked button (it's only for keyboard focus)
+    await expect(selector.getByRole('button', { name: 'Scene' })).toHaveCSS('box-shadow', 'none');
+
+    // A deep link opens the page on its example
+    await page.reload();
+    await expect(selector.getByRole('button', { name: 'Scene' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('iframe[title="Scene"]')).toHaveCount(1);
 });
 
-test('shows a screenshot in browsers without WebGPU', async ({ page }) => {
-    await page.addInitScript(() => {
-        delete (Navigator.prototype as { gpu?: unknown }).gpu;
+for (const { title, path, screenshotWidth } of SAMPLES) {
+    test(`says so when the ${title.toLowerCase()} example can't get a WebGPU adapter`, async ({ page }) => {
+        // Without the switch, headless Chromium has WebGPU but no adapter
+        await page.goto(path);
+
+        await expect(page.getByRole('alert').filter({ hasText: `${title} couldn't run in this browser.` })).toBeVisible({ timeout: 15_000 });
     });
-    await page.goto('/projects/zgal');
 
-    await expect(page.getByRole('alert')).toContainText('This program needs a browser that supports WebGPU');
-    await expect(page.locator('iframe')).toHaveCount(0);
-    const screenshot = page.getByAltText('Particles');
-    await expect.poll(() => screenshot.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBe(1024);
-});
+    test(`shows a screenshot of the ${title.toLowerCase()} example in browsers without WebGPU`, async ({ page }) => {
+        await page.addInitScript(() => {
+            delete (Navigator.prototype as { gpu?: unknown }).gpu;
+        });
+        await page.goto(path);
+
+        await expect(page.getByRole('alert')).toContainText('This program needs a browser that supports WebGPU');
+        await expect(page.locator('iframe')).toHaveCount(0);
+        const screenshot = page.getByAltText(title);
+        await expect.poll(() => screenshot.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBe(screenshotWidth);
+    });
+}
