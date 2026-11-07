@@ -18,12 +18,14 @@ export interface ZgalSample {
 	width: number,
 	height: number,
 	scaling: Scaling,
-	// What the program does, for the page's introduction
+	// What the program does, shown above it when it's selected
 	blurb: string,
 	// The program's own controls, as its main lists them: [key, action]
 	controls: [string, string][],
 }
 
+// The samples the page offers, in the selector's order; the first, particles, is the one it shows
+// unless the URL picks another
 export const SAMPLES: ZgalSample[] = [
 	{
 		id: 'particles',
@@ -34,14 +36,34 @@ export const SAMPLES: ZgalSample[] = [
 		width: 1280,
 		height: 800,
 		scaling: 'fit',
-		blurb: 'Below, the web build of its particle example runs beside the program it was compiled from: ' +
-			'a compute pass pulls a hundred thousand particles towards an attractor, and a graphics pass ' +
-			'draws them with additive blending.',
+		blurb: 'A compute pass pulls a hundred thousand particles towards an attractor, and a graphics ' +
+			'pass draws them with additive blending.',
 		controls: [
 			['Left mouse', 'attract the particles to the cursor'],
 			['Space', 'pause or resume'],
 			['R', 'reset the particles'],
 			['1, 2, 3', 'frames in flight'],
+		],
+	},
+	{
+		id: 'scene',
+		title: 'Scene',
+		kind: 'program',
+		directory: 'scene',
+		source: 'scene.zgal',
+		width: 1280,
+		height: 720,
+		scaling: 'fit',
+		blurb: 'A lit 3D scene loaded from a glTF file, drawn like a usual forward renderer: a shadow ' +
+			'map from the sun, PBR shading into an HDR image, and a tonemap to the screen. The render ' +
+			'graph orders the three passes and places their barriers from what each one uses.',
+		controls: [
+			['Drag', 'orbit the camera'],
+			['Scroll', 'zoom'],
+			['L', "toggle the light's animation"],
+			['S', 'toggle shadows'],
+			['+ / -', 'exposure'],
+			['Esc', 'stops the program'],
 		],
 	},
 ];

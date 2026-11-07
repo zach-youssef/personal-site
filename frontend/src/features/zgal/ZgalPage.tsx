@@ -1,5 +1,6 @@
-import React from 'react';
-import { Alert, Button, ButtonToolbar, Col, Container, Row } from 'react-bootstrap';
+import React, { useState } from 'react';
+import { Alert, Button, ButtonGroup, ButtonToolbar, Col, Container, Row } from 'react-bootstrap';
+import { useHistory, useLocation } from 'react-router-dom';
 import ZgalFrame, { hasWebGPU } from './ZgalFrame';
 import ProgramSource from './ProgramSource';
 import { programPage, programSource, SAMPLES, screenshot, ZgalSample } from './samples';
@@ -7,9 +8,19 @@ import { programPage, programSource, SAMPLES, screenshot, ZgalSample } from './s
 export const GITHUB_URL = 'https://github.com/zach-youssef/vulkan_testing';
 // ZGAL's documentation, which ./build-zgal builds and the backend serves
 export const DOCS_URL = '/zgal/docs/';
+// The query parameter that names the selected sample, so a link can open the page on it
+const SAMPLE_PARAM = 'sample';
+
+// The sample a page URL's query selects: the first (particles) when it names none or one the page
+// doesn't have
+function selectedSample(search: string): ZgalSample {
+	const id = new URLSearchParams(search).get(SAMPLE_PARAM);
+	return SAMPLES.find(sample => sample.id === id) ?? SAMPLES[0];
+}
 
 // Runs a sample beside its source, or shows a frame it drew when the browser has no WebGPU
-export function SampleView({ sample, webGPU }: { sample: ZgalSample, webGPU: boolean }) {
+// run: changing it restarts the program in a new frame, e.g. after its Esc stopped it
+export function SampleView({ sample, webGPU, run = 0 }: { sample: ZgalSample, webGPU: boolean, run?: number }) {
 	const frameStyle: React.CSSProperties = {
 		display: 'block',
 		width: '100%',
@@ -24,7 +35,7 @@ export function SampleView({ sample, webGPU }: { sample: ZgalSample, webGPU: boo
 			<Col lg={6} className="mb-4">
 				<h4>{sample.title}</h4>
 				{webGPU
-					? <ZgalFrame src={programPage(sample)} title={sample.title} style={frameStyle} scaling={sample.scaling} />
+					? <ZgalFrame key={run} src={programPage(sample)} title={sample.title} style={frameStyle} scaling={sample.scaling} />
 					: <img src={screenshot(sample)} alt={sample.title} style={frameStyle} />}
 				{/* The frame takes the program's controls once clicked */}
 				<dl className="row mt-3 mb-0">
@@ -46,7 +57,23 @@ export function SampleView({ sample, webGPU }: { sample: ZgalSample, webGPU: boo
 
 function ZgalPage() {
 	const webGPU = hasWebGPU();
-	const sample = SAMPLES[0];
+	const location = useLocation();
+	const history = useHistory();
+	const sample = selectedSample(location.search);
+	// Choosing the selected sample again restarts it
+	const [run, setRun] = useState(0);
+
+	const select = (choice: ZgalSample) => {
+		if (choice.id === sample.id) {
+			setRun(run + 1);
+			return;
+		}
+		// Replaced rather than pushed: switching samples isn't a page to go back to
+		const search = new URLSearchParams(location.search);
+		search.set(SAMPLE_PARAM, choice.id);
+		history.replace({ ...location, search: `?${search}` });
+	};
+
 	return (
 		<Container>
 			<h2>ZGAL</h2>
@@ -57,7 +84,11 @@ function ZgalPage() {
 				WGSL and TypeScript for WebGPU. The render graph places barriers and semaphores and spreads
 				work across the GPU's queues, so programs never write them.
 			</p>
-			<p>{sample.blurb}</p>
+			<p>
+				{webGPU
+					? "Below, the web build of one of its examples runs beside the program it was compiled from. Choose an example to switch to it, or the one that's running to restart it."
+					: 'Below, a frame from one of its examples is shown beside the program it was compiled from. Choose an example to switch to it.'}
+			</p>
 			<ButtonToolbar className="mb-4">
 				<Button variant="primary" href={GITHUB_URL} className="mr-2 mb-2">View on GitHub</Button>
 				<Button variant="outline-primary" href={DOCS_URL} className="mb-2">Read the documentation</Button>
@@ -67,7 +98,24 @@ function ZgalPage() {
 					This program needs a browser that supports WebGPU, so below is a frame from it.
 				</Alert>
 			)}
-			<SampleView sample={sample} webGPU={webGPU} />
+			<ButtonToolbar>
+				<ButtonGroup aria-label="Example">
+					{SAMPLES.map(choice => (
+						<Button
+							key={choice.id}
+							variant={choice.id === sample.id ? 'primary' : 'secondary'}
+							aria-pressed={choice.id === sample.id}
+							// Its description: choosing the running example restarts it
+							title={webGPU && choice.id === sample.id ? 'Restart' : undefined}
+							onClick={() => select(choice)}
+						>
+							{choice.title}
+						</Button>
+					))}
+				</ButtonGroup>
+			</ButtonToolbar>
+			<p>{sample.blurb}</p>
+			<SampleView sample={sample} webGPU={webGPU} run={run} />
 		</Container>
 	);
 }

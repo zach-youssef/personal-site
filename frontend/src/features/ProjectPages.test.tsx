@@ -1,6 +1,7 @@
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
+import { MemoryRouter, Route, RouteComponentProps } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -233,11 +234,49 @@ describe('PpuPage', () => {
 
 describe('ZgalPage', () => {
     const SOURCE = ';; GPU particles\n(graph ParticlesGraph)\n';
+    const PARTICLES = SAMPLES.find(sample => sample.id === 'particles')!;
+    const SCENE = SAMPLES.find(sample => sample.id === 'scene')!;
 
     function serveSource(response: Partial<Response>) {
         const fetchMock = vi.fn(async () => response as Response);
         vi.stubGlobal('fetch', fetchMock);
         return fetchMock;
+    }
+
+    // Renders the page at /projects/zgal with the given query, and keeps the router's location
+    function renderPage(search = '') {
+        const current: { location?: RouteComponentProps['location'] } = {};
+        const result = render(
+            <MemoryRouter initialEntries={[`/projects/zgal${search}`]}>
+                <ZgalPage />
+                <Route render={({ location }) => {
+                    current.location = location;
+                    return null;
+                }} />
+            </MemoryRouter>,
+        );
+        return { ...result, current };
+    }
+
+    function selector() {
+        return within(screen.getByRole('group', { name: 'Example' }));
+    }
+
+    function selected(): string[] {
+        return selector().getAllByRole('button')
+            .filter(button => button.getAttribute('aria-pressed') === 'true')
+            .map(button => button.textContent!);
+    }
+
+    // jsdom doesn't load the program's page, so the frame gets a document standing in for it
+    function loadFrame(title: string): Document {
+        const frame = screen.getByTitle(title);
+        const programDocument = document.implementation.createHTMLDocument();
+        Object.defineProperty(frame, 'contentDocument', { value: programDocument });
+        act(() => {
+            frame.dispatchEvent(new Event('load'));
+        });
+        return programDocument;
     }
 
     afterEach(() => {
@@ -248,66 +287,167 @@ describe('ZgalPage', () => {
 
     it('links to the project on GitHub', () => {
         serveSource({ ok: true, text: async () => SOURCE });
-        render(<ZgalPage />);
+        renderPage();
 
         expect(screen.getByRole('heading', { name: 'ZGAL', level: 2 })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: 'View on GitHub' })).toHaveAttribute('href', ZGAL_GITHUB_URL);
     });
 
-    it('runs the particles example beside its source', async () => {
-        setWebGPU(true);
-        const fetchMock = serveSource({ ok: true, text: async () => SOURCE });
-        render(<ZgalPage />);
-
-        expect(screen.getByTitle('Particles')).toHaveAttribute('src', '/assets/zgal/particles/particles.zgal.html');
-        expect(fetchMock).toHaveBeenCalledWith('/assets/zgal/particles/particles.zgal');
-        await vi.waitFor(() => expect(screen.getByLabelText('particles.zgal').textContent).toBe(SOURCE));
-        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    });
-
-    it('scales the example to its frame', () => {
+    it('offers particles and scene, and selects particles by default', () => {
         setWebGPU(true);
         serveSource({ ok: true, text: async () => SOURCE });
-        render(<ZgalPage />);
-        const frame = screen.getByTitle('Particles');
-        const programDocument = document.implementation.createHTMLDocument();
-        Object.defineProperty(frame, 'contentDocument', { value: programDocument });
+        renderPage();
 
-        act(() => {
-            frame.dispatchEvent(new Event('load'));
+        expect(selector().getAllByRole('button').map(button => button.textContent)).toEqual(['Particles', 'Scene']);
+        expect(selected()).toEqual(['Particles']);
+        // The theme's colours: primary for the selected sample, secondary for the others
+        expect(selector().getByRole('button', { name: 'Particles' })).toHaveClass('btn-primary');
+        expect(selector().getByRole('button', { name: 'Scene' })).toHaveClass('btn-secondary');
+        expect(screen.getByTitle('Particles')).toBeInTheDocument();
+        expect(screen.queryByTitle('Scene')).not.toBeInTheDocument();
+        expect(screen.getByText(PARTICLES.blurb)).toBeInTheDocument();
+    });
+
+    it.each([['?sample=missing'], ['?sample='], ['?sample=Scene'], ['?other=scene']])(
+        'selects particles when the URL names no sample it has (%s)', search => {
+            setWebGPU(true);
+            serveSource({ ok: true, text: async () => SOURCE });
+            renderPage(search);
+
+            expect(selected()).toEqual(['Particles']);
+            expect(screen.getByTitle('Particles')).toHaveAttribute('src', '/assets/zgal/particles/particles.zgal.html');
         });
 
-        // Over the runner's inline size, centring offset and pixelated rendering
-        const fit = programDocument.head.querySelector('style')?.textContent;
-        expect(fit).toMatch(/^canvas#zgal \{/);
-        for (const declaration of ['left: 0 !important', 'top: 0 !important', 'width: 100% !important',
-            'height: 100% !important', 'object-fit: contain', 'image-rendering: auto !important']) {
-            expect(fit).toContain(declaration);
-        }
+    it('opens on the sample a link names', async () => {
+        setWebGPU(true);
+        const fetchMock = serveSource({ ok: true, text: async () => SOURCE });
+        renderPage('?sample=scene');
+
+        expect(selected()).toEqual(['Scene']);
+        expect(screen.getByTitle('Scene')).toHaveAttribute('src', '/assets/zgal/scene/scene.zgal.html');
+        expect(screen.queryByTitle('Particles')).not.toBeInTheDocument();
+        expect(fetchMock).toHaveBeenCalledWith('/assets/zgal/scene/scene.zgal');
+        expect(fetchMock).not.toHaveBeenCalledWith('/assets/zgal/particles/particles.zgal');
+        expect(screen.getByText(SCENE.blurb)).toBeInTheDocument();
+        await vi.waitFor(() => expect(screen.getByLabelText('scene.zgal').textContent).toBe(SOURCE));
     });
 
-    it('shows a frame from the example when the browser has no WebGPU', () => {
+    it('switches samples from the selector and records the choice in the URL', async () => {
+        setWebGPU(true);
+        serveSource({ ok: true, text: async () => SOURCE });
+        const { current } = renderPage('?from=home');
+
+        await userEvent.click(selector().getByRole('button', { name: 'Scene' }));
+        expect(current.location!.search).toBe('?from=home&sample=scene');
+        expect(selected()).toEqual(['Scene']);
+        expect(screen.getByTitle('Scene')).toHaveAttribute('src', '/assets/zgal/scene/scene.zgal.html');
+        expect(selector().getByRole('button', { name: 'Scene' })).toHaveClass('btn-primary');
+        expect(selector().getByRole('button', { name: 'Particles' })).toHaveClass('btn-secondary');
+
+        await userEvent.click(selector().getByRole('button', { name: 'Particles' }));
+        expect(current.location!.search).toBe('?from=home&sample=particles');
+        expect(screen.getByTitle('Particles')).toBeInTheDocument();
+        expect(screen.queryByTitle('Scene')).not.toBeInTheDocument();
+    });
+
+    it('restarts the selected sample when it is chosen again', async () => {
+        setWebGPU(true);
+        const fetchMock = serveSource({ ok: true, text: async () => SOURCE });
+        const { current } = renderPage('?sample=scene');
+        const first = screen.getByTitle('Scene');
+        await vi.waitFor(() => expect(screen.getByLabelText('scene.zgal').textContent).toBe(SOURCE));
+
+        // The running sample's button says choosing it restarts; the others don't
+        expect(selector().getByRole('button', { name: 'Scene' })).toHaveAttribute('title', 'Restart');
+        expect(selector().getByRole('button', { name: 'Particles' })).not.toHaveAttribute('title');
+        await userEvent.click(selector().getByRole('button', { name: 'Scene' }));
+
+        // A new frame, which loads the program again; the source stays as it was
+        expect(screen.getByTitle('Scene')).not.toBe(first);
+        expect(screen.getByTitle('Scene')).toHaveAttribute('src', '/assets/zgal/scene/scene.zgal.html');
+        expect(current.location!.search).toBe('?sample=scene');
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not offer a restart without WebGPU', () => {
         setWebGPU(false);
         serveSource({ ok: true, text: async () => SOURCE });
-        const { container } = render(<ZgalPage />);
+        renderPage('?sample=scene');
 
-        expect(screen.getByRole('alert')).toHaveTextContent('This program needs a browser that supports WebGPU');
-        expect(container.querySelector('iframe')).toBeNull();
-        expect(screen.getByAltText('Particles')).toHaveAttribute('src', '/assets/zgal/particles/screenshot.webp');
+        expect(screen.queryByText(/restart/i)).toBeNull();
+        expect(selector().getByRole('button', { name: 'Scene' })).not.toHaveAttribute('title');
+    });
+
+    it("lists each sample's controls from its main", () => {
+        serveSource({ ok: true, text: async () => SOURCE });
+        renderPage('?sample=scene');
+
+        const terms = [...document.querySelectorAll('dt')].map(term => term.textContent);
+        const actions = [...document.querySelectorAll('dd')].map(action => action.textContent);
+        expect(terms).toEqual(['Drag', 'Scroll', 'L', 'S', '+ / -', 'Esc']);
+        expect(actions[terms.indexOf('Esc')]).toBe('stops the program');
+    });
+
+    describe.each(SAMPLES.map(sample => [sample.id, sample] as const))('the %s sample', (id, sample) => {
+        it('runs in a frame of its generated page beside its source', async () => {
+            setWebGPU(true);
+            const fetchMock = serveSource({ ok: true, text: async () => SOURCE });
+            renderPage(`?sample=${id}`);
+
+            expect(screen.getByTitle(sample.title)).toHaveAttribute('src', `/assets/zgal/${id}/${id}.zgal.html`);
+            expect(fetchMock).toHaveBeenCalledWith(`/assets/zgal/${id}/${id}.zgal`);
+            await vi.waitFor(() => expect(screen.getByLabelText(`${id}.zgal`).textContent).toBe(SOURCE));
+            expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        });
+
+        it("keeps its window's aspect ratio and scales to its frame", () => {
+            setWebGPU(true);
+            serveSource({ ok: true, text: async () => SOURCE });
+            renderPage(`?sample=${id}`);
+
+            expect(screen.getByTitle(sample.title).style.aspectRatio).toBe(`${sample.width} / ${sample.height}`);
+            // Over the runner's inline size, centring offset and pixelated rendering
+            const fit = loadFrame(sample.title).head.querySelector('style')?.textContent;
+            expect(fit).toMatch(/^canvas#zgal \{/);
+            for (const declaration of ['left: 0 !important', 'top: 0 !important', 'width: 100% !important',
+                'height: 100% !important', 'object-fit: contain', 'image-rendering: auto !important']) {
+                expect(fit).toContain(declaration);
+            }
+        });
+
+        it('shows a frame from it when the browser has no WebGPU', () => {
+            setWebGPU(false);
+            serveSource({ ok: true, text: async () => SOURCE });
+            const { container } = renderPage(`?sample=${id}`);
+
+            expect(screen.getByRole('alert')).toHaveTextContent('This program needs a browser that supports WebGPU');
+            expect(container.querySelector('iframe')).toBeNull();
+            expect(screen.getByAltText(sample.title)).toHaveAttribute('src', `/assets/zgal/${id}/screenshot.webp`);
+        });
+
+        it('says so when it fails to run', async () => {
+            setWebGPU(true);
+            serveSource({ ok: true, text: async () => SOURCE });
+            renderPage(`?sample=${id}`);
+            const programDocument = loadFrame(sample.title);
+
+            programDocument.documentElement.dataset.zgal = 'running';
+            await new Promise(resolve => setTimeout(resolve, 0));
+            expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+            programDocument.documentElement.dataset.zgal = 'failed';
+
+            expect(await screen.findByRole('alert')).toHaveTextContent(`${sample.title} couldn't run in this browser.`);
+        });
     });
 
     it('says so when the source fails to load', async () => {
         setWebGPU(true);
         serveSource({ ok: false, status: 404 });
         vi.spyOn(console, 'error').mockImplementation(() => {});
-        render(<ZgalPage />);
+        renderPage();
 
         expect(await screen.findByRole('alert')).toHaveTextContent("The program's source couldn't be loaded.");
     });
-
-    // Another sample, as a selector would pass in
-    const PARTICLES = SAMPLES[0];
-    const SCENE = { ...PARTICLES, id: 'scene', title: 'Scene', directory: 'scene', source: 'scene.zgal' };
 
     it("starts another sample afresh after the last one's source and frame failed", async () => {
         setWebGPU(true);
@@ -315,17 +455,12 @@ describe('ZgalPage', () => {
             ? { ok: false, status: 404 } as Response
             : { ok: true, text: async () => SOURCE } as Response)));
         vi.spyOn(console, 'error').mockImplementation(() => {});
-        const { rerender } = render(<SampleView sample={PARTICLES} webGPU />);
-        const frame = screen.getByTitle('Particles');
-        const programDocument = document.implementation.createHTMLDocument();
-        Object.defineProperty(frame, 'contentDocument', { value: programDocument });
-        act(() => {
-            frame.dispatchEvent(new Event('load'));
-        });
-        programDocument.documentElement.dataset.zgal = 'failed';
+        renderPage();
+        loadFrame('Particles').documentElement.dataset.zgal = 'failed';
         await vi.waitFor(() => expect(screen.getAllByRole('alert')).toHaveLength(2));
 
-        rerender(<SampleView sample={SCENE} webGPU />);
+        // Clicked synchronously, to see the listing before the scene's source arrives
+        act(() => selector().getByRole('button', { name: 'Scene' }).click());
 
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
         expect(screen.getByLabelText('scene.zgal').textContent).toBe('Loading…');
@@ -350,21 +485,5 @@ describe('ZgalPage', () => {
         });
 
         expect(screen.getByLabelText('scene.zgal').textContent).toBe(SOURCE);
-    });
-
-    it('says so when the example fails to run', async () => {
-        setWebGPU(true);
-        serveSource({ ok: true, text: async () => SOURCE });
-        render(<ZgalPage />);
-        const frame = screen.getByTitle('Particles');
-        const programDocument = document.implementation.createHTMLDocument();
-        Object.defineProperty(frame, 'contentDocument', { value: programDocument });
-
-        act(() => {
-            frame.dispatchEvent(new Event('load'));
-        });
-        programDocument.documentElement.dataset.zgal = 'failed';
-
-        expect(await screen.findByRole('alert')).toHaveTextContent("Particles couldn't run in this browser.");
     });
 });
