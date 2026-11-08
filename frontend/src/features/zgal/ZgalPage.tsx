@@ -3,6 +3,7 @@ import { Alert, Button, ButtonGroup, ButtonToolbar, Col, Container, Row } from '
 import { useHistory, useLocation } from 'react-router-dom';
 import ZgalFrame, { hasWebGPU } from './ZgalFrame';
 import ProgramSource from './ProgramSource';
+import SourceLink, { ManifestState, useSourceManifest } from './SourceLink';
 import { programPage, programSource, SAMPLES, screenshot, ZgalSample } from './samples';
 
 export const GITHUB_URL = 'https://github.com/zach-youssef/vulkan_testing';
@@ -19,8 +20,10 @@ function selectedSample(search: string): ZgalSample {
 }
 
 // Runs a sample beside its source, or shows a frame it drew when the browser has no WebGPU
+// manifest: which commit the copied sources come from, which links the listing to GitHub there
 // run: changing it restarts the program in a new frame, e.g. after its Esc stopped it
-export function SampleView({ sample, webGPU, run = 0 }: { sample: ZgalSample, webGPU: boolean, run?: number }) {
+export function SampleView({ sample, webGPU, manifest, run = 0 }:
+	{ sample: ZgalSample, webGPU: boolean, manifest: ManifestState, run?: number }) {
 	const frameStyle: React.CSSProperties = {
 		display: 'block',
 		width: '100%',
@@ -49,6 +52,7 @@ export function SampleView({ sample, webGPU, run = 0 }: { sample: ZgalSample, we
 			</Col>
 			<Col lg={6} className="mb-4">
 				<h4>{sample.source}</h4>
+				<SourceLink manifest={manifest} sample={sample} />
 				<ProgramSource url={programSource(sample)} name={sample.source} />
 			</Col>
 		</Row>
@@ -60,6 +64,8 @@ function ZgalPage() {
 	const location = useLocation();
 	const history = useHistory();
 	const sample = selectedSample(location.search);
+	// Loaded once for every sample, not again on switching
+	const manifest = useSourceManifest();
 	// Choosing the selected sample again restarts it
 	const [run, setRun] = useState(0);
 
@@ -115,7 +121,7 @@ function ZgalPage() {
 				</ButtonGroup>
 			</ButtonToolbar>
 			<p>{sample.blurb}</p>
-			<SampleView sample={sample} webGPU={webGPU} run={run} />
+			<SampleView sample={sample} webGPU={webGPU} manifest={manifest} run={run} />
 		</Container>
 	);
 }

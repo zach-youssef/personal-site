@@ -16,7 +16,7 @@ function ProgramSource({ url, name }: Props) {
 
 	useEffect(() => {
 		let mounted = true;
-		fetch(url)
+		fetch(url, { cache: 'no-cache' })
 			.then(response => {
 				if (!response.ok) {
 					throw new Error(`${url}: ${response.status}`);

@@ -32,7 +32,7 @@ for (const { name, assets, source } of PROGRAMS) {
 test('shows the program\'s source', async ({ page }) => {
     await page.goto('/projects/zgal');
 
-    await expect(page.getByRole('link', { name: 'View on GitHub' })).toHaveAttribute('href', 'https://github.com/zach-youssef/vulkan_testing');
+    await expect(page.getByRole('link', { name: 'View on GitHub', exact: true })).toHaveAttribute('href', 'https://github.com/zach-youssef/vulkan_testing');
     await expect(page.getByLabel('particles.zgal')).toContainText('(compute-material ParticleSim');
 });
 

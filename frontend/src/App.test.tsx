@@ -57,7 +57,7 @@ describe('App routing', () => {
     });
 
     it('routes to the ZGAL page', () => {
-        vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, text: async () => '' }) as Response));
+        vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, text: async () => '', json: async () => ({ repository: 'https://github.com/o/r', commit: 'a'.repeat(40), dirty: true }) }) as Response));
         renderAt('/projects/zgal');
 
         expect(screen.getByRole('heading', { name: 'ZGAL', level: 2 })).toBeInTheDocument();

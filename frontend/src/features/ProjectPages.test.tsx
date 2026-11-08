@@ -10,6 +10,7 @@ import WebGLDemoPage from './webgl/WebGLDemoPage';
 import PpuPage, { GITHUB_URL } from './ppu/PpuPage';
 import ZgalPage, { GITHUB_URL as ZGAL_GITHUB_URL, SampleView } from './zgal/ZgalPage';
 import { SAMPLES } from './zgal/samples';
+import { MANIFEST_URL, SourceManifest } from './zgal/SourceLink';
 import { CameraMode, WebGLDemo } from './webgl/WebGLDemo';
 import { sceneAssets } from './webgl/sceneAssets';
 import { mockGraphQL } from '../testUtils/mockGraphQL';
@@ -237,11 +238,19 @@ describe('ZgalPage', () => {
     const PARTICLES = SAMPLES.find(sample => sample.id === 'particles')!;
     const SCENE = SAMPLES.find(sample => sample.id === 'scene')!;
 
-    function serveSource(response: Partial<Response>) {
-        const fetchMock = vi.fn(async () => response as Response);
+    const COMMIT = '13ffa592b47374862b93d7f5d4c4a9565b64c0af';
+    const MANIFEST: SourceManifest = { repository: 'https://github.com/zach-youssef/vulkan_testing', commit: COMMIT, dirty: false };
+    const serveManifest = (manifest: unknown): Partial<Response> => ({ ok: true, json: async () => manifest });
+
+    // Serves every program's source as the given response, and source.json as the other
+    function serveSource(response: Partial<Response>, manifest: Partial<Response> = serveManifest(MANIFEST)) {
+        const fetchMock = vi.fn(async (url: string) => (url === MANIFEST_URL ? manifest : response) as Response);
         vi.stubGlobal('fetch', fetchMock);
         return fetchMock;
     }
+
+    const fetchesOf = (fetchMock: ReturnType<typeof serveSource>, url: string) =>
+        fetchMock.mock.calls.filter(([fetched]) => fetched === url).length;
 
     // Renders the page at /projects/zgal with the given query, and keeps the router's location
     function renderPage(search = '') {
@@ -326,8 +335,10 @@ describe('ZgalPage', () => {
         expect(selected()).toEqual(['Scene']);
         expect(screen.getByTitle('Scene')).toHaveAttribute('src', '/assets/zgal/scene/scene.zgal.html');
         expect(screen.queryByTitle('Particles')).not.toBeInTheDocument();
-        expect(fetchMock).toHaveBeenCalledWith('/assets/zgal/scene/scene.zgal');
-        expect(fetchMock).not.toHaveBeenCalledWith('/assets/zgal/particles/particles.zgal');
+        expect(fetchMock).toHaveBeenCalledWith('/assets/zgal/scene/scene.zgal', { cache: 'no-cache' });
+        expect(fetchMock).not.toHaveBeenCalledWith('/assets/zgal/particles/particles.zgal', expect.anything());
+        // Revalidated, so the listing and the link can't come from different deploys
+        expect(fetchMock).toHaveBeenCalledWith(MANIFEST_URL, { cache: 'no-cache' });
         expect(screen.getByText(SCENE.blurb)).toBeInTheDocument();
         await vi.waitFor(() => expect(screen.getByLabelText('scene.zgal').textContent).toBe(SOURCE));
     });
@@ -366,7 +377,8 @@ describe('ZgalPage', () => {
         expect(screen.getByTitle('Scene')).not.toBe(first);
         expect(screen.getByTitle('Scene')).toHaveAttribute('src', '/assets/zgal/scene/scene.zgal.html');
         expect(current.location!.search).toBe('?sample=scene');
-        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(fetchesOf(fetchMock, '/assets/zgal/scene/scene.zgal')).toBe(1);
+        expect(fetchesOf(fetchMock, MANIFEST_URL)).toBe(1);
     });
 
     it('does not offer a restart without WebGPU', () => {
@@ -395,7 +407,7 @@ describe('ZgalPage', () => {
             renderPage(`?sample=${id}`);
 
             expect(screen.getByTitle(sample.title)).toHaveAttribute('src', `/assets/zgal/${id}/${id}.zgal.html`);
-            expect(fetchMock).toHaveBeenCalledWith(`/assets/zgal/${id}/${id}.zgal`);
+            expect(fetchMock).toHaveBeenCalledWith(`/assets/zgal/${id}/${id}.zgal`, { cache: 'no-cache' });
             await vi.waitFor(() => expect(screen.getByLabelText(`${id}.zgal`).textContent).toBe(SOURCE));
             expect(screen.queryByRole('alert')).not.toBeInTheDocument();
         });
@@ -440,6 +452,55 @@ describe('ZgalPage', () => {
         });
     });
 
+    it("links each sample's listing to its source on GitHub at the commit it was copied from", async () => {
+        setWebGPU(true);
+        const fetchMock = serveSource({ ok: true, text: async () => SOURCE });
+        renderPage();
+
+        const link = await screen.findByRole('link', { name: 'View on GitHub at 13ffa59' });
+        expect(link).toHaveAttribute('href',
+            `https://github.com/zach-youssef/vulkan_testing/blob/${COMMIT}/examples/particles/particles.zgal`);
+        expect(link).toHaveAttribute('title', COMMIT);
+        // The listing still comes from the backend's copy, not GitHub
+        await vi.waitFor(() => expect(screen.getByLabelText('particles.zgal').textContent).toBe(SOURCE));
+        expect(fetchMock.mock.calls.map(([url]) => url).filter(url => !url.startsWith('/'))).toEqual([]);
+
+        await userEvent.click(selector().getByRole('button', { name: 'Scene' }));
+
+        expect(screen.getByRole('link', { name: 'View on GitHub at 13ffa59' })).toHaveAttribute('href',
+            `https://github.com/zach-youssef/vulkan_testing/blob/${COMMIT}/examples/scene/scene.zgal`);
+        // Loaded once for the page, not again for each sample
+        expect(fetchesOf(fetchMock, MANIFEST_URL)).toBe(1);
+    });
+
+    it('says the sources are a local build, without a link, when GitHub may not have their commit', async () => {
+        serveSource({ ok: true, text: async () => SOURCE }, serveManifest({ ...MANIFEST, dirty: true }));
+        renderPage();
+
+        expect(await screen.findByText('local build')).toHaveClass('text-muted');
+        expect(screen.queryByRole('link', { name: /View on GitHub at/ })).not.toBeInTheDocument();
+        await vi.waitFor(() => expect(screen.getByLabelText('particles.zgal').textContent).toBe(SOURCE));
+    });
+
+    it.each([
+        ['is missing', { ok: false, status: 404 }],
+        ['is not JSON', { ok: true, json: async () => { throw new SyntaxError('Unexpected token'); } }],
+        ['has no commit', serveManifest({ repository: MANIFEST.repository, dirty: false })],
+        ['names something else than a commit', serveManifest({ ...MANIFEST, commit: '../../evil' })],
+        ['names a repository that is not a web URL', serveManifest({ ...MANIFEST, repository: 'javascript:alert(1)' })],
+    ] as [string, Partial<Response>][])('lists the source without a link when the manifest %s', async (_, manifest) => {
+        setWebGPU(true);
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        serveSource({ ok: true, text: async () => SOURCE }, manifest);
+        renderPage();
+
+        await vi.waitFor(() => expect(screen.getByLabelText('particles.zgal').textContent).toBe(SOURCE));
+        await vi.waitFor(() => expect(error).toHaveBeenCalled());
+        expect(screen.queryByRole('link', { name: /View on GitHub at/ })).not.toBeInTheDocument();
+        expect(screen.queryByText('local build')).not.toBeInTheDocument();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
     it('says so when the source fails to load', async () => {
         setWebGPU(true);
         serveSource({ ok: false, status: 404 });
@@ -475,9 +536,9 @@ describe('ZgalPage', () => {
                 serveParticles = text => resolve({ ok: true, text: async () => text } as Response);
             })
             : Promise.resolve({ ok: true, text: async () => SOURCE } as Response))));
-        const { rerender } = render(<SampleView sample={PARTICLES} webGPU={false} />);
+        const { rerender } = render(<SampleView sample={PARTICLES} webGPU={false} manifest={MANIFEST} />);
 
-        rerender(<SampleView sample={SCENE} webGPU={false} />);
+        rerender(<SampleView sample={SCENE} webGPU={false} manifest={MANIFEST} />);
         await vi.waitFor(() => expect(screen.getByLabelText('scene.zgal').textContent).toBe(SOURCE));
         await act(async () => {
             serveParticles(';; particles\n');
