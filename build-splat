@@ -9,7 +9,7 @@
 #   scene.json       what the page needs: the paths, sizes, the viewer's command line, the source
 #
 # It also puts the lock's fixture (a small stream and its cameras, for the end-to-end tests) in
-# e2e/fixtures/splat/. The output is ignored by git.
+# e2e/fixtures/splat/. The output is ignored by git; ./bundle runs this and ships assets/splat.
 #
 #   ./build-splat [vk_splats checkout]    defaults to the external/vk_splats submodule
 #
