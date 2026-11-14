@@ -237,25 +237,42 @@ jobs:
           INDEX_JS: ${{ needs.bundle.outputs.index-js }}
         run: |
           check() {
-              local index graphql game
+              local index graphql game scene stream version magic expected
               index=$(curl -sS --max-time 5 "${SITE}/") || index=
               graphql=$(curl -sS --max-time 5 -X POST -H 'Content-Type: application/json' \
                   --data '{"query":"{ levels }"}' "${SITE}/graphql") || graphql=
               game=$(curl -sS --max-time 5 -o /dev/null -w '%{http_code}' \
                   "${SITE}/assets/ppu/smb3/smb3.zgal.html") || game=
+              # The splat viewer's scene: its description, and the first 8 bytes of the stream it names
+              # (head closes the download, so curl's write error is expected)
+              scene=$(curl -fsS --max-time 5 "${SITE}/assets/splat/scene.json") || scene=
+              stream=$(jq -er .stream.path <<< "${scene}" 2>/dev/null) || stream=
+              version=$(jq -er .streamVersion <<< "${scene}" 2>/dev/null) || version=
+              magic=
+              if [[ -n ${stream} ]]; then
+                  magic=$( { curl -fsS --max-time 10 "${SITE}${stream}" 2>/dev/null || true; } \
+                      | head -c 8 | od -An -tx1 | tr -d ' \n')
+              fi
               failures=()
               grep -qF "/${INDEX_JS}" <<< "${index}" || failures+=("the index doesn't name /${INDEX_JS}")
               # The Sokoban levels, read from the server's resources/. KGraphQL has no
               # __typename, and answers errors with 200 too, so the data is what counts.
               grep -qF '{"data":{"levels":[' <<< "${graphql}" || failures+=("/graphql didn't answer: ${graphql:0:200}")
               [[ ${game} == 200 ]] || failures+=("/assets/ppu/smb3/smb3.zgal.html answered ${game:-nothing}")
+              if [[ -z ${stream} || -z ${version} ]]; then
+                  failures+=("/assets/splat/scene.json isn't a scene description: ${scene:0:200}")
+              else
+                  # "SPLS", then the stream's version as a little-endian 32-bit integer
+                  expected="53504c53$(printf '%08x' "${version}" | sed -E 's/(..)(..)(..)(..)/\4\3\2\1/')"
+                  [[ ${magic} == "${expected}" ]] || failures+=("${stream} starts with ${magic:-nothing}, not ${expected}")
+              fi
               [[ ${#failures[@]} -eq 0 ]]
           }
           attempt=0
           while (( SECONDS < 120 )); do
               attempt=$((attempt + 1))
               if check; then
-                  echo "The live site serves ${INDEX_JS}, /graphql answers and the PPU's smb3 page is there"
+                  echo "The live site serves ${INDEX_JS}, /graphql answers, and the PPU's smb3 page and the splat scene are there"
                   exit 0
               fi
               echo "Attempt ${attempt}: ${failures[*]}"
