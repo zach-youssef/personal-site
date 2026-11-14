@@ -1,0 +1,244 @@
+#!/usr/bin/env bash
+# Builds vk_splats' scene viewer (splat_view) for the web (WebGPU) and puts it, with the released
+# scene that splat-scene.json locks, into the backend's assets, which it serves under /assets/splat/:
+#
+#   viewer/          splat_view's page, its scripts and the ZGAL runtime; the site imports
+#                    viewer/splat_view.zgal.main.js and mounts it in a canvas
+#   scene/           the scene's stream (scene.stream) and its cameras (cameras.bin)
+#   screenshot.webp  what the viewer draws at the start view, for browsers without WebGPU
+#   scene.json       what the page needs: the paths, sizes, the viewer's command line, the source
+#
+# It also puts the lock's fixture (a small stream and its cameras, for the end-to-end tests) in
+# e2e/fixtures/splat/. The output is ignored by git.
+#
+#   ./build-splat [vk_splats checkout]    defaults to the external/vk_splats submodule
+#
+# The scene's files are a release's assets on vk_splats, downloaded once into
+# ${SPLAT_CACHE_DIR}/<sha256> (by default ${XDG_CACHE_HOME:-~/.cache}/personal-site/splat; CI's
+# setup-build sets it to the directory it caches) and checked against the lock's sha256s and sizes. A stream whose header isn't the lock's (magic, format version, splats, SH degree), or a
+# checkout whose stream format version isn't the lock's, is refused: a viewer refuses a stream of
+# another version, so the lock and the submodule change together (see README.md).
+#
+# Building needs what vk_splats' web build needs: Racket 8 (ZGAL's compiler), Node 24 and npm. The
+# screenshot is drawn under Node on Dawn, so it needs a GPU too (lavapipe in CI), and cwebp (brew
+# install webp) compresses it. jq reads the lock, curl downloads.
+set -euo pipefail
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+SPLAT_DIR=${1:-${SCRIPT_DIR}/external/vk_splats}
+LOCK=${SCRIPT_DIR}/splat-scene.json
+OUT_DIR=${SCRIPT_DIR}/graphql-server/assets/splat
+FIXTURE_DIR=${SCRIPT_DIR}/e2e/fixtures/splat
+CACHE_DIR=${SPLAT_CACHE_DIR:-${XDG_CACHE_HOME:-${HOME}/.cache}/personal-site/splat}
+# Where the backend serves ${OUT_DIR}
+URL_BASE=/assets/splat
+# The headless runs that draw the screenshot, until one reports the whole stream loaded: few frames
+# first, then enough for a fast GPU. A frame takes what has arrived, at most --stream-words; Node
+# reads the file in chunks of its own pace, so a slow GPU (lavapipe in CI: ~0.3 s a frame) has the
+# 26 MB scene in 3 frames, while an M4 (~10 ms a frame) takes about 280. Every frame after loading
+# draws the scene again, which on lavapipe made 480 frames cost over 2 minutes.
+CAPTURE_FRAMES=(32 480)
+# The run's --stream-words: splat_view's most (64 MiB), rather than the page's, so that a slow GPU
+# (lavapipe in CI) takes whatever has arrived in each of its long frames, and draws the scene again
+# in as few of them as it can. The loaded scene, and so the screenshot, is the same either way.
+CAPTURE_STREAM_WORDS=16777216
+
+if [ ! -f "${SPLAT_DIR}/programs/splat_view/splat_view.zgal" ]; then
+    echo "No vk_splats checkout at ${SPLAT_DIR}; run: git submodule update --init --recursive" >&2
+    exit 1
+fi
+# scene.json names the commit the viewer comes from, so the checkout must be a git repository of
+# its own (not a directory inside another one); checked before the long build
+if [ "$(git -C "${SPLAT_DIR}" rev-parse --show-toplevel 2> /dev/null)" != "$(cd "${SPLAT_DIR}" && pwd -P)" ]; then
+    echo "${SPLAT_DIR} isn't a git checkout, which scene.json needs to name the viewer's commit" >&2
+    exit 1
+fi
+commit=$(git -C "${SPLAT_DIR}" rev-parse HEAD)
+
+lock() { jq -er "$1" "${LOCK}"; }
+repository=$(lock .repository)
+release=$(lock .release)
+stream_version=$(lock .streamVersion)
+
+# The checkout's stream format version (lib/splat_stream.zgal's streamVersion), which its viewer
+# accepts; checked before the long build
+checkout_version=$(sed -n 's/^(define streamVersion (uint \([0-9][0-9]*\)))$/\1/p' \
+    "${SPLAT_DIR}/lib/splat_stream.zgal")
+if [ "${checkout_version}" != "${stream_version}" ]; then
+    echo "The viewer at ${SPLAT_DIR} reads stream format version ${checkout_version:-?}, but" \
+        "splat-scene.json locks a scene of version ${stream_version}: release a scene of that" \
+        "version and lock it in the same commit as the submodule bump (README.md)" >&2
+    exit 1
+fi
+
+sha256() {
+    if command -v sha256sum > /dev/null; then
+        sha256sum "$1" | cut -d ' ' -f 1
+    else
+        shasum -a 256 "$1" | cut -d ' ' -f 1
+    fi
+}
+
+# Prints the cached path of the lock's file at <key> (e.g. .scene.stream), downloading it from the
+# release first unless the cache has it. Either way its size and sha256 must be the lock's.
+#   fetch <key>
+# It runs in $(...), where bash ignores set -e, so every step that can fail returns explicitly.
+fetch() {
+    local name sha bytes cached url
+    name=$(lock "$1.name") || return 1
+    sha=$(lock "$1.sha256") || return 1
+    bytes=$(lock "$1.bytes") || return 1
+    if [[ ! ${sha} =~ ^[0-9a-f]{64}$ ]]; then
+        echo "splat-scene.json: $1.sha256 isn't a sha256: ${sha}" >&2
+        return 1
+    fi
+    cached=${CACHE_DIR}/${sha}
+    if [ -f "${cached}" ]; then
+        # A cached file is checked on every run too, in case it was changed since
+        check_file "${cached}" "${name} of ${release} in the cache (${cached})" "${bytes}" "${sha}" \
+            || { rm -f "${cached}"; echo "Removed it from the cache" >&2; return 1; }
+    else
+        url=${repository}/releases/download/${release}/${name}
+        echo "Downloading ${name} of ${release}" >&2
+        # Into a temporary file beside it, renamed only once checked, so the cache only holds whole,
+        # locked files
+        mkdir -p "${CACHE_DIR}" || return 1
+        if ! curl -fsSL --retry 3 -o "${cached}.part" "${url}"; then
+            rm -f "${cached}.part"
+            echo "Couldn't download ${url}" >&2
+            return 1
+        fi
+        check_file "${cached}.part" "${url}" "${bytes}" "${sha}" \
+            || { rm -f "${cached}.part"; return 1; }
+        mv "${cached}.part" "${cached}" || return 1
+    fi
+    echo "${cached}"
+}
+
+# Checks that <file> has the lock's size and sha256, naming it <what> if not.
+#   check_file <file> <what> <bytes> <sha256>
+check_file() {
+    local actual_bytes actual_sha
+    actual_bytes=$(wc -c < "$1" | tr -d ' ') || return 1
+    actual_sha=$(sha256 "$1") || return 1
+    if [ "${actual_bytes}" != "$3" ] || [ "${actual_sha}" != "$4" ]; then
+        echo "$2 is ${actual_bytes} B with sha256 ${actual_sha}, but splat-scene.json locks $3 B" \
+            "with sha256 $4" >&2
+        return 1
+    fi
+}
+
+# Checks that the stream's header is the lock's at <key> (.scene or .fixture): its magic ("SPLS"),
+# format version, splat count and SH degree, the first four little-endian uints.
+#   check_header <stream file> <key>
+check_header() {
+    local words
+    read -r -a words <<< "$(od -An -v -tu4 -N16 "$1")"
+    local expected=(1397510227 "${stream_version}" "$(lock "$2.splats")" "$(lock "$2.shDegree")")
+    if [ "${words[*]}" != "${expected[*]}" ]; then
+        echo "$(lock "$2.stream.name")'s header (magic, version, splats, SH degree) is" \
+            "${words[*]}, but splat-scene.json locks ${expected[*]}" >&2
+        return 1
+    fi
+}
+
+scene_stream=$(fetch .scene.stream)
+scene_cameras=$(fetch .scene.cameras)
+fixture_stream=$(fetch .fixture.stream)
+fixture_cameras=$(fetch .fixture.cameras)
+check_header "${scene_stream}" .scene
+check_header "${fixture_stream}" .fixture
+
+camera=$(lock .view.camera)
+size=$(lock .view.size)
+
+make -C "${SPLAT_DIR}" build/web/splat_view
+built=${SPLAT_DIR}/build/web/splat_view
+
+rm -rf "${OUT_DIR}" "${FIXTURE_DIR}"
+capture=$(mktemp -d)
+trap 'rm -rf "${capture}"' EXIT
+
+# The viewer: the page, its scripts, the runtime, and whatever else it loads (assets, WebAssembly;
+# it has none now). The TypeScript sources, the node_modules link and package.json only matter for
+# building and running under Node.
+mkdir -p "${OUT_DIR}/viewer"
+cp "${built}/splat_view.zgal.html" "${built}"/*.js "${OUT_DIR}/viewer/"
+cp -R "${built}/zgal" "${OUT_DIR}/viewer/"
+if [ -d "${built}/assets" ]; then
+    cp -R "${built}/assets" "${OUT_DIR}/viewer/"
+fi
+for wasm in "${built}"/*.wasm; do
+    if [ -e "${wasm}" ]; then
+        cp "${wasm}" "${OUT_DIR}/viewer/"
+    fi
+done
+
+# The scene, as the release names its files
+mkdir -p "${OUT_DIR}/scene" "${FIXTURE_DIR}"
+cp "${scene_stream}" "${OUT_DIR}/scene/$(lock .scene.stream.name)"
+cp "${scene_cameras}" "${OUT_DIR}/scene/$(lock .scene.cameras.name)"
+cp "${fixture_stream}" "${FIXTURE_DIR}/$(lock .fixture.stream.name)"
+cp "${fixture_cameras}" "${FIXTURE_DIR}/$(lock .fixture.cameras.name)"
+
+# What it draws at the start view, for browsers without WebGPU: the last frame of a headless run
+# under Node with the page's command line (but for --stream-words), which must have loaded the whole
+# scene by then; a run that ends still loading is run again with more frames
+loaded=false
+for frames in "${CAPTURE_FRAMES[@]}"; do
+    node "${built}/splat_view.zgal.main.js" "${scene_stream}" --cameras "${scene_cameras}" \
+        --camera "${camera}" --size "${size}" --stream-words "${CAPTURE_STREAM_WORDS}" \
+        --frames "${frames}" --capture "${capture}/screenshot.png" | tee "${capture}/log"
+    if grep -q '^splat_view: loaded in frame' "${capture}/log"; then
+        loaded=true
+        break
+    fi
+done
+if [ "${loaded}" != true ]; then
+    echo "The screenshot's run didn't load the whole scene in ${frames} frames; raise" \
+        "CAPTURE_FRAMES in $0" >&2
+    exit 1
+fi
+cwebp -quiet -q 80 "${capture}/screenshot.png" -o "${OUT_DIR}/screenshot.webp"
+
+# Which commit the viewer comes from, and whether GitHub may not have it there (dirty), as
+# ./build-zgal decides for its source.json: the checkout has changes (untracked files included),
+# isn't the external/vk_splats submodule, isn't at the commit the site pins, or is at a commit no
+# remote branch it knows of has. Taken after the copies, so a change made while building counts.
+dirty=false
+if [ -n "$(git -C "${SPLAT_DIR}" status --porcelain --untracked-files=normal)" ] \
+    || [ "$(cd "${SPLAT_DIR}" && pwd -P)" != "$(cd "${SCRIPT_DIR}/external/vk_splats" && pwd -P)" ] \
+    || [ "${commit}" != "$(git -C "${SCRIPT_DIR}" rev-parse HEAD:external/vk_splats 2> /dev/null)" ] \
+    || [ -z "$(git -C "${SPLAT_DIR}" branch --remotes --contains "${commit}")" ]; then
+    dirty=true
+fi
+# The submodule's GitHub URL, its ssh forms (git@github.com:… and ssh://git@github.com/…) as https
+source_repository=$(git -C "${SCRIPT_DIR}" config --file .gitmodules submodule.external/vk_splats.url \
+    | sed -e 's#^git@github\.com:#https://github.com/#' -e 's#^ssh://git@github\.com/#https://github.com/#' \
+        -e 's#/$##' -e 's#\.git$##')
+
+# What the page needs, so it hard-codes no scene details: the viewer's main, the screenshot, the
+# scene's files with their sizes (the progress bar's total, whatever the response's headers say),
+# the viewer's command line (root-absolute paths, which ZGAL's mount resolves against the page's
+# origin), the release and the viewer's source
+stream_path=${URL_BASE}/scene/$(lock .scene.stream.name)
+cameras_path=${URL_BASE}/scene/$(lock .scene.cameras.name)
+jq -n --arg base "${URL_BASE}" --arg stream "${stream_path}" --arg cameras "${cameras_path}" \
+    --arg source "${source_repository}" --arg commit "${commit}" --argjson dirty "${dirty}" --slurpfile lock "${LOCK}" '
+    $lock[0] as $l
+    | {
+        viewer: "\($base)/viewer/splat_view.zgal.main.js",
+        screenshot: "\($base)/screenshot.webp",
+        stream: {path: $stream, bytes: $l.scene.stream.bytes, sha256: $l.scene.stream.sha256},
+        cameras: {path: $cameras, bytes: $l.scene.cameras.bytes, sha256: $l.scene.cameras.sha256},
+        bytes: ($l.scene.stream.bytes + $l.scene.cameras.bytes),
+        splats: $l.scene.splats,
+        shDegree: $l.scene.shDegree,
+        streamVersion: $l.streamVersion,
+        size: $l.view.size,
+        args: [$stream, "--cameras", $cameras, "--camera", ($l.view.camera | tostring),
+            "--size", $l.view.size, "--stream-words", ($l.view.streamWords | tostring)],
+        release: {tag: $l.release, url: "\($l.repository)/releases/tag/\($l.release)"},
+        source: {repository: $source, commit: $commit, dirty: $dirty}
+    }' > "${OUT_DIR}/scene.json"
+echo "Built the splat viewer and its scene into ${OUT_DIR}"

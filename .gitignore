@@ -5,3 +5,8 @@ graphql-server/assets/ppu/
 
 # ZGAL's examples for the web, which ./build-zgal builds from external/zgal
 graphql-server/assets/zgal/
+
+# The splat viewer and its scene for the web, which ./build-splat builds from external/vk_splats and
+# the release splat-scene.json locks, and the lock's fixture for the end-to-end tests
+graphql-server/assets/splat/
+e2e/fixtures/splat/

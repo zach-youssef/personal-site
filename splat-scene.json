@@ -1,0 +1,38 @@
+{
+  "repository": "https://github.com/zach-youssef/vk_splats",
+  "release": "scene-cs5330-7k-ms20-v1",
+  "streamVersion": 1,
+  "scene": {
+    "splats": 327505,
+    "shDegree": 3,
+    "stream": {
+      "name": "scene.stream",
+      "bytes": 26200832,
+      "sha256": "39a1f6868c0e8874abded78a047d66b051f5143cf2bfbe5ebbdd172750a9672a"
+    },
+    "cameras": {
+      "name": "cameras.bin",
+      "bytes": 5152,
+      "sha256": "342890c4f80987fe9f695ff493f79e6bb50c9bd9a7238a2699c939ee9a3d4411"
+    }
+  },
+  "fixture": {
+    "splats": 2000,
+    "shDegree": 3,
+    "stream": {
+      "name": "fixture.stream",
+      "bytes": 472432,
+      "sha256": "7abbd882490cef8c84ccafabad0c18878f58c2101ab8519c97684b8bc7857f56"
+    },
+    "cameras": {
+      "name": "fixture-cameras.bin",
+      "bytes": 2800,
+      "sha256": "ba05dafa480cdae1fb3a80d37bf8e22329863e8401ca537aec7e14e272cbd843"
+    }
+  },
+  "view": {
+    "camera": 34,
+    "size": "1280x720",
+    "streamWords": 262144
+  }
+}

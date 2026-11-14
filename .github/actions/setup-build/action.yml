@@ -12,12 +12,12 @@ runs:
   steps:
     - name: Check out the public submodules
       # Their URLs are ssh, which needs a key; over https they need none. Passed with -c, the
-      # rewrite reaches the nested submodule (vk_ppu's vulkan_test) but not SeamCarving's
-      # checkout below, which is private and needs its deploy key.
+      # rewrite reaches the nested submodules (vk_ppu's and vk_splats' vulkan_test) but not
+      # SeamCarving's checkout below, which is private and needs its deploy key.
       shell: bash
       run: >-
         git -c url."https://github.com/".insteadOf=git@github.com:
-        submodule update --init --recursive external/vk_ppu external/zgal
+        submodule update --init --recursive external/vk_ppu external/zgal external/vk_splats
 
     - name: Check out SeamCarving
       # Before anything installs or runs third-party code (npm, Gradle), which could otherwise
@@ -54,6 +54,7 @@ runs:
           e2e/package-lock.json
           external/zgal/web/package-lock.json
           external/vk_ppu/external/vulkan_test/web/package-lock.json
+          external/vk_splats/external/vulkan_test/web/package-lock.json
     - uses: actions/setup-java@v6
       with:
         distribution: temurin
@@ -64,7 +65,8 @@ runs:
         # Gradle's job summary only when a build failed
         add-job-summary: on-failure
     - name: Install lavapipe and cwebp
-      # Mesa's software Vulkan driver gives Dawn an adapter for build-zgal's screenshot
+      # Mesa's software Vulkan driver gives Dawn an adapter for build-zgal's and build-splat's
+      # screenshots
       shell: bash
       run: |
         sudo apt-get update -qq
