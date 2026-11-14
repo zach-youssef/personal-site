@@ -4,15 +4,18 @@ test('home page lists the featured projects from the backend', async ({ page }) 
     await page.goto('/');
 
     await expect(page.getByRole('heading', { level: 2 })).toHaveText(['About Me', 'Featured Projects']);
-    await expect(page.locator('.featured-projects .card-title')).toHaveText(['Vulkan Retro PPU', 'ZGAL']);
+    await expect(page.locator('.featured-projects .card-title')).toHaveText(['Vulkan Retro PPU', 'ZGAL', 'Gaussian Splatting']);
     await expect(page.getByText('Vulkan Compute Pipeline for rendering NES games')).toBeVisible();
     await expect(page.getByText('A language for GPU programs that compiles to Vulkan and WebGPU')).toBeVisible();
+    await expect(page.getByText('A 3D Gaussian splatting trainer and real-time viewer written in ZGAL, running in the browser with WebGPU')).toBeVisible();
 });
 
-for (const [name, id] of [['Vulkan Retro PPU', 'vkPPU'], ['ZGAL', 'zgal']]) {
+for (const [name, id] of [['Vulkan Retro PPU', 'vkPPU'], ['ZGAL', 'zgal'], ['Gaussian Splatting', 'splats']]) {
     test(`featured ${name} links to its project page`, async ({ page }) => {
         await page.goto('/');
-        await page.locator('.card').filter({ hasText: name }).getByRole('link', { name: 'View' }).click();
+        // Match the title exactly: another card's description can mention this name.
+        const title = page.locator('.card-title', { hasText: new RegExp(`^${name}$`) });
+        await page.locator('.card').filter({ has: title }).getByRole('link', { name: 'View' }).click();
 
         await expect(page).toHaveURL(`/projects/${id}`);
         await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
@@ -25,7 +28,7 @@ test('see more ends the featured projects, as wide as their cards, and opens the
         await page.goto('/');
         const seeMore = page.getByRole('link', { name: 'See more' });
         const cards = page.locator('.featured-projects > .card');
-        await expect(cards).toHaveCount(2);
+        await expect(cards).toHaveCount(3);
 
         const button = (await seeMore.boundingBox())!;
         for (const card of await cards.all()) {
@@ -48,11 +51,11 @@ test('projects page lists every project by category', async ({ page }) => {
     await expect(page).toHaveURL('/projects');
     // Side projects first
     await expect(page.getByRole('heading', { level: 2 })).toHaveText(['Side Projects', 'Professional Work', 'University Projects']);
-    for (const name of ['Broad Museum AR Experience', 'Sokoban AI', 'Seam Carver', 'Vulkan Retro PPU', 'ZGAL']) {
+    for (const name of ['Broad Museum AR Experience', 'Sokoban AI', 'Seam Carver', 'Vulkan Retro PPU', 'ZGAL', 'Gaussian Splatting']) {
         await expect(page.getByText(name, { exact: true })).toBeVisible();
     }
-    // 2 professional, 5 university and 2 personal projects
-    await expect(page.getByRole('link', { name: 'View' })).toHaveCount(9);
+    // 2 professional, 5 university and 3 personal projects
+    await expect(page.getByRole('link', { name: 'View' })).toHaveCount(10);
 });
 
 test('project cards link to their demo pages', async ({ page }) => {

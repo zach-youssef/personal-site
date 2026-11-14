@@ -4,6 +4,9 @@ import { render, screen } from '@testing-library/react';
 import Home from './Home';
 import { mockGraphQL, projects } from '../testUtils/mockGraphQL';
 
+// The home page features these, in this order
+const featured = [projects.vkPPU, projects.zgal, projects.splats];
+
 describe('Home', () => {
     afterEach(() => {
         vi.unstubAllGlobals();
@@ -20,21 +23,22 @@ describe('Home', () => {
     });
 
     it('loads and lists the featured projects under their own heading', async () => {
-        const server = mockGraphQL({ projectInfos: () => [projects.vkPPU, projects.zgal] });
+        const server = mockGraphQL({ projectInfos: () => featured });
         render(<Home />);
 
         expect(await screen.findByText('Vulkan Retro PPU')).toBeInTheDocument();
         expect(screen.getByText('ZGAL')).toBeInTheDocument();
+        expect(screen.getByText('Gaussian Splatting')).toBeInTheDocument();
         expect(screen.getAllByRole('heading', { level: 2 }).map(heading => heading.textContent))
             .toEqual(['About Me', 'Featured Projects']);
         expect(screen.getAllByRole('link', { name: 'View' }).map(link => link.getAttribute('href')))
-            .toEqual([`/projects/${projects.vkPPU.id}`, `/projects/${projects.zgal.id}`]);
+            .toEqual(['/projects/vkPPU', '/projects/zgal', '/projects/splats']);
         expect(server.requests()).toHaveLength(1);
         expect(server.requests()[0].query).toMatch(/projectInfos\(featured: true\)/);
     });
 
     it('ends the featured projects with a link to every project', async () => {
-        mockGraphQL({ projectInfos: () => [projects.vkPPU, projects.zgal] });
+        mockGraphQL({ projectInfos: () => featured });
         const { container } = render(<Home />);
 
         const seeMore = await screen.findByRole('link', { name: 'See more' });
@@ -45,11 +49,12 @@ describe('Home', () => {
     });
 
     it('only lazy-loads the images of featured projects after the first', async () => {
-        mockGraphQL({ projectInfos: () => [projects.vkPPU, projects.zgal] });
+        mockGraphQL({ projectInfos: () => featured });
         render(<Home />);
 
         expect(await screen.findByAltText('Vulkan Retro PPU')).not.toHaveAttribute('loading');
         expect(screen.getByAltText('ZGAL')).toHaveAttribute('loading', 'lazy');
+        expect(screen.getByAltText('Gaussian Splatting')).toHaveAttribute('loading', 'lazy');
     });
 
     it('leaves out the featured section when nothing is featured', async () => {

@@ -54,6 +54,12 @@ export const projects = {
         description: 'A language for GPU programs that compiles to Vulkan and WebGPU',
         imagePath: '/assets/projectThumbnail/zgal.webp',
     },
+    splats: {
+        id: 'splats',
+        name: 'Gaussian Splatting',
+        description: 'A 3D Gaussian splatting trainer and real-time viewer written in ZGAL, running in the browser with WebGPU',
+        imagePath: '/assets/projectThumbnail/splats.webp',
+    },
     sokoban: {
         id: 'sokoban',
         name: 'Sokoban AI',

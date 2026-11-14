@@ -41,13 +41,13 @@ class SimpleProjectInfoRepositoryTest {
     }
 
     @Test
-    fun `side projects are the PPU and ZGAL`() {
-        assertEquals(listOf("vkPPU", "zgal"), repository.getAllProjects(category = ProjectCategory.PERSONAL).map { it.id })
+    fun `side projects are the PPU, ZGAL and Gaussian splatting`() {
+        assertEquals(listOf("vkPPU", "zgal", "splats"), repository.getAllProjects(category = ProjectCategory.PERSONAL).map { it.id })
     }
 
     @Test
     fun `featured and category filters combine`() {
-        assertEquals(listOf("vkPPU", "zgal"), repository.getAllProjects(true, ProjectCategory.PERSONAL).map { it.id })
+        assertEquals(listOf("vkPPU", "zgal", "splats"), repository.getAllProjects(true, ProjectCategory.PERSONAL).map { it.id })
         assertEquals(emptyList(), repository.getAllProjects(true, ProjectCategory.UNIVERSITY))
     }
 

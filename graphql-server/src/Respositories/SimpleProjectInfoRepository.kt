@@ -62,6 +62,12 @@ class SimpleProjectInfoRepository : IProjectInfoRepository {
             "A language for GPU programs that compiles to Vulkan and WebGPU",
             "$cdnUrl/zgal.webp"
         ),
+        "splats" to ProjectInfo (
+            "Gaussian Splatting",
+            "splats",
+            "A 3D Gaussian splatting trainer and real-time viewer written in ZGAL, running in the browser with WebGPU",
+            "$cdnUrl/splats.webp"
+        ),
     )
 
     val categories: Map<ProjectCategory, Set<String>> = mapOf(
@@ -73,11 +79,11 @@ class SimpleProjectInfoRepository : IProjectInfoRepository {
             "foundationDbFs"
         ),
         ProjectCategory.PROFESSIONAL to setOf("broadAR", "metaAvatars"),
-        ProjectCategory.PERSONAL to setOf("vkPPU", "zgal")
+        ProjectCategory.PERSONAL to setOf("vkPPU", "zgal", "splats")
     )
 
     // Shown on the home page in projectInfos order
-    val featuredIds: Set<String> = setOf("vkPPU", "zgal")
+    val featuredIds: Set<String> = setOf("vkPPU", "zgal", "splats")
 
     override fun getProject(id: String): ProjectInfo? {
         return projectInfos[id];
