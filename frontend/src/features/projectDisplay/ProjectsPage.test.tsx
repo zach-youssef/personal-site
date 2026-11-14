@@ -33,6 +33,13 @@ describe('ProjectsPage', () => {
         expect(container.querySelector(':scope > :last-child a:last-child')).toBe(back);
     });
 
+    it('routes /projects/splats to the splat viewer', () => {
+        vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
+        renderAt('/projects/splats');
+
+        expect(screen.getByRole('heading', { name: 'Gaussian Splatting' })).toBeInTheDocument();
+    });
+
     it('leaves the link out of the list of projects', () => {
         mockGraphQL({ projectInfos: () => [] });
         renderAt('/projects');

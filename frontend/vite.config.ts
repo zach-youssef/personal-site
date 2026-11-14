@@ -178,6 +178,7 @@ const BACKEND_PATHS = [
 	"/assets/raytracer",
 	"/assets/ppu",
 	"/assets/zgal",
+	"/assets/splat",
 	"/zgal/docs",
 ];
 

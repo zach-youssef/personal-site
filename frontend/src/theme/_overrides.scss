@@ -404,3 +404,50 @@ iframe {
   font-size: .8125rem;
   line-height: 1.5;
 }
+
+// Splat viewer ================================================================
+
+// The viewer's box, its poster and screenshot are framed as the demos' frames are
+.splat-view,
+.splat-frame {
+  border: 1px solid $border-subtle;
+  border-radius: $border-radius-lg;
+}
+
+// Dragging the view looks around
+.splat-view canvas {
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  // The canvas takes focus when clicked, for its keys; the ring is for keyboard focus only
+  &:focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+// The scene's download, along the bottom of the view while it streams in
+.splat-progress {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: .5rem;
+  pointer-events: none;
+
+  .progress {
+    height: .375rem;
+    background-color: rgba($black, .5);
+  }
+}
+
+// A button over the view (start, restart), centred
+.splat-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
