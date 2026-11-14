@@ -146,12 +146,17 @@ jobs:
         run: ./build-ppu
       - name: Build ZGAL's examples
         run: ./build-zgal
-      - name: Upload ZGAL's screenshots
-        # Drawn on lavapipe here rather than on the Mac's GPU, so it can differ from the live one
+      - name: Build the splat viewer
+        # The release's scene comes from the download cache that setup-build restores
+        run: ./build-splat
+      - name: Upload the screenshots
+        # Drawn on lavapipe here rather than on the Mac's GPU, so they can differ from the live ones
         uses: actions/upload-artifact@v7
         with:
-          name: zgal-screenshots-${{ matrix.sha }}
-          path: graphql-server/assets/zgal/*/screenshot.webp
+          name: screenshots-${{ matrix.sha }}
+          path: |
+            graphql-server/assets/zgal/*/screenshot.webp
+            graphql-server/assets/splat/screenshot.webp
           # Only for comparing with the live one now and then
           retention-days: 7
 

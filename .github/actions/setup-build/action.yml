@@ -2,7 +2,7 @@
 # installs the toolchains and packages the builds need. CI's test jobs and the deploy's bundle job
 # share it. See "CI" in README.md.
 name: Set up the build
-description: Checks out the submodules and installs Racket, Node, Java, Gradle, lavapipe and cwebp
+description: Checks out the submodules, restores the splat scene's download cache and installs Racket, Node, Java, Gradle, lavapipe and cwebp
 inputs:
   seamcarving-deploy-key:
     description: The private half of SeamCarving's read-only deploy key (secret SEAMCARVING_DEPLOY_KEY)
@@ -39,6 +39,24 @@ runs:
         echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' > "${ssh_dir}/known_hosts"
         GIT_SSH_COMMAND="ssh -i ${ssh_dir}/key -o IdentitiesOnly=yes -o UserKnownHostsFile=${ssh_dir}/known_hosts -o StrictHostKeyChecking=yes" \
             git submodule update --init graphql-server/src/java/SeamCarving
+
+    - name: Key the splat scene's download cache
+      # By the sha256s of the release assets splat-scene.json locks, so only a new scene downloads
+      # again: build-splat checks every cached file against the lock anyway
+      id: splat-cache-key
+      shell: bash
+      run: |
+        key=$(jq -r '[.. | .sha256? // empty] | sort | join("\n")' splat-scene.json | sha256sum | cut -d ' ' -f 1)
+        echo "key=splat-scene-${key}" >> "${GITHUB_OUTPUT}"
+        # Where build-splat keeps them, named for it explicitly rather than left to its default
+        dir=${HOME}/.cache/personal-site/splat
+        echo "dir=${dir}" >> "${GITHUB_OUTPUT}"
+        echo "SPLAT_CACHE_DIR=${dir}" >> "${GITHUB_ENV}"
+    - name: Restore the splat scene's download cache
+      uses: actions/cache@v6
+      with:
+        path: ${{ steps.splat-cache-key.outputs.dir }}
+        key: ${{ steps.splat-cache-key.outputs.key }}
 
     - uses: Bogdanp/setup-racket@v1.15
       with:
