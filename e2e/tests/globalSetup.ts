@@ -6,11 +6,13 @@ const OUTPUT_DIR = resolve(__dirname, '../../graphql-server/assets/seamcarver/ou
 
 const listOutputs = () => existsSync(OUTPUT_DIR) ? readdirSync(OUTPUT_DIR) : [];
 
-// The PPU's games and ZGAL's examples, which the backend serves for their pages, and the
-// scripts that build them
+// The PPU's games, ZGAL's examples and the splat viewer with its scene, which the backend serves
+// for their pages, the splat specs' fixture scene, and the scripts that build them
 const BUILT_ASSETS = [
     [resolve(__dirname, '../../graphql-server/assets/ppu'), './build-ppu'],
     [resolve(__dirname, '../../graphql-server/assets/zgal'), './build-zgal'],
+    [resolve(__dirname, '../../graphql-server/assets/splat'), './build-splat'],
+    [resolve(__dirname, '../fixtures/splat'), './build-splat'],
 ];
 
 // Remove the carved images the tests produce

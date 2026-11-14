@@ -90,7 +90,7 @@ test('pages only request their own origin', async ({ page, baseURL }) => {
         }
     });
 
-    for (const path of ['/', '/projects', '/projects/sokoban', '/projects/seamCarver', '/projects/raytracer', '/projects/webglDemo', '/projects/zgal']) {
+    for (const path of ['/', '/projects', '/projects/sokoban', '/projects/seamCarver', '/projects/raytracer', '/projects/webglDemo', '/projects/zgal', '/projects/splats']) {
         await page.goto(path);
         await page.waitForLoadState('networkidle');
     }
