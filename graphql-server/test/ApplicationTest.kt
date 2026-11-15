@@ -145,7 +145,7 @@ class ApplicationTest {
         val stubbed = !index.exists()
         if (stubbed) {
             index.parentFile.mkdirs()
-            index.writeText("<title>Zach</title>")
+            index.writeText("<title>Zoey</title>")
         }
         try {
             val call = handleRequest(HttpMethod.Get, "/projects/zgal/particles.zgal")

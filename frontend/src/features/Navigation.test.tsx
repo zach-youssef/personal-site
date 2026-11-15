@@ -7,7 +7,7 @@ describe('Navigation', () => {
     it('links to the site sections', () => {
         render(<Navigation />);
 
-        expect(screen.getByText("Zach's Personal Website").closest('a')).toHaveAttribute('href', '/');
+        expect(screen.getByText("Zoey's Personal Website").closest('a')).toHaveAttribute('href', '/');
         expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
         expect(screen.getByRole('link', { name: 'Projects' })).toHaveAttribute('href', '/projects');
     });
