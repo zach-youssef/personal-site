@@ -139,6 +139,24 @@ class ApplicationTest {
     }
 
     @Test
+    fun `WebAssembly is served as application wasm, which streaming compilation requires`() = withApp {
+        // A module of its own, as ./build-zgal copies a program's *.wasm, which none may have
+        val module = File.createTempFile("module", ".wasm", File("assets")).apply { deleteOnExit() }
+        try {
+            // The smallest module: the magic and version 1
+            val bytes = byteArrayOf(0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00)
+            module.writeBytes(bytes)
+
+            val call = handleRequest(HttpMethod.Get, "/assets/${module.name}")
+            assertEquals(HttpStatusCode.OK, call.response.status())
+            assertEquals("application/wasm", call.response.headers[HttpHeaders.ContentType])
+            assertTrue(bytes.contentEquals(call.response.byteContent))
+        } finally {
+            module.delete()
+        }
+    }
+
+    @Test
     fun `the app's page stays HTML at a path ending in zgal`() = withApp {
         // The frontend's build, which ./bundle puts here; without it, the test stands in a page
         val index = File("build/index.html")

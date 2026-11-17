@@ -58,6 +58,8 @@ fun Application.module(testing: Boolean = false) {
     }
     // Static files are sent with the type Ktor guesses from their extension. Only what it couldn't
     // type is retyped, so the app's page, which the backend serves for any other path, stays HTML.
+    // Ktor types WebAssembly (.wasm) itself as application/wasm, which browsers'
+    // WebAssembly.instantiateStreaming requires.
     sendPipeline.intercept(ApplicationSendPipeline.Before) { content ->
         if (content is OutgoingContent.ReadChannelContent && call.request.path().endsWith(".zgal")
             && content.contentType?.match(ContentType.Application.OctetStream) == true) {
