@@ -61,3 +61,11 @@ $navbar-bg:                 color.adjust($card-bg, $lightness: -7%);
 
 // Alerts: tinted panels whose text is a lighter shade of their colour
 $alert-text-lightness:      18%;
+
+// Source listings' syntax colours, each at least 5:1 on $surface (WCAG AA). Form heads take the
+// violet accent, as $primary's purple is too dark to read as text here (2.47): comments muted
+// (6.50), form heads violet (5.18), keywords pink (5.32), literals teal (7.57)
+$code-comment:              $gray-400;
+$code-head:                 $accent;
+$code-keyword:              #f472b6;
+$code-literal:              #2dd4bf;

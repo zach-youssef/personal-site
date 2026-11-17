@@ -64,3 +64,10 @@ $navbar-bg:                 color.adjust($card-bg, $lightness: -5%);
 
 // Alerts: tinted panels whose text is a darker shade of their colour
 $alert-text-lightness:      -14%;
+
+// Source listings' syntax colours, each at least 4.8:1 on $surface (WCAG AA): comments muted
+// (5.35), form heads pink (4.88), keywords purple (5.42), literals teal (5.20)
+$code-comment:              $text-muted;
+$code-head:                 $pink;
+$code-keyword:              $purple;
+$code-literal:              #0f766e;

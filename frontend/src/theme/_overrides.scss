@@ -405,6 +405,26 @@ iframe {
   line-height: 1.5;
 }
 
+// ZGAL's syntax, as highlightZgal's tokens; brackets, fields and other symbols keep the text colour
+.zgal-comment {
+  color: $code-comment;
+  font-style: italic;
+}
+
+.zgal-head {
+  color: $code-head;
+}
+
+.zgal-keyword {
+  color: $code-keyword;
+}
+
+.zgal-string,
+.zgal-number,
+.zgal-boolean {
+  color: $code-literal;
+}
+
 // Splat viewer ================================================================
 
 // The viewer's box, its poster and screenshot are framed as the demos' frames are
