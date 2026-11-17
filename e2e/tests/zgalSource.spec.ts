@@ -40,6 +40,10 @@ test('source.json names the pinned commit of a clean checkout', async ({ request
     });
 });
 
+// Programs ./build-zgal copies that the page doesn't offer yet: image_filter is built and served for
+// the page to run once it offers it. Every other copied program must be offered.
+const NOT_OFFERED = new Set(['image_filter']);
+
 for (const name of programs) {
     test(`serves ${name}.zgal as text, as it is at the pinned commit`, async ({ request }) => {
         const response = await request.get(`/assets/zgal/${name}/${name}.zgal`);
@@ -47,7 +51,9 @@ for (const name of programs) {
         expect(response.headers()['content-type']).toBe('text/plain; charset=utf-8');
         expect(await response.text()).toBe(sourceAtPin(name));
     });
+}
 
+for (const name of programs.filter(name => !NOT_OFFERED.has(name))) {
     test(`the page lists ${name}.zgal as it is at the pinned commit, and links to it on GitHub there`, async ({ page, baseURL }) => {
         // Requests that leave the site, which the fixtures answer with an empty page
         const external: string[] = [];

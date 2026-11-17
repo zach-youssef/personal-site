@@ -156,6 +156,7 @@ jobs:
           name: screenshots-${{ matrix.sha }}
           path: |
             graphql-server/assets/zgal/*/screenshot.webp
+            graphql-server/assets/zgal/image_filter/blur_edges.png
             graphql-server/assets/splat/screenshot.webp
           # Only for comparing with the live one now and then
           retention-days: 7

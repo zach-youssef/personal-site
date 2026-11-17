@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Builds ZGAL's examples that run in a browser (particles and scene) for the web (WebGPU) and copies
-# each into the backend's assets, which it serves as /assets/zgal/<name>/<name>.zgal.html for the
-# ZGAL page's frame, beside the example's source, which the page shows, and a screenshot. Also
+# Builds ZGAL's examples that run in a browser (particles, scene and image_filter) for the web
+# (WebGPU) and copies each into the backend's assets, which it serves as
+# /assets/zgal/<name>/<name>.zgal.html for the ZGAL page's frame, beside the example's source, which
+# the page shows, and what browsers without WebGPU see instead: a screenshot of particles and scene,
+# and image_filter's default input and its output, filtered at build time. Also
 # builds ZGAL's documentation, which the backend serves at /zgal/docs/, and writes source.json, which
 # names the commit the sources were copied from. The output is ignored by git; ./bundle runs this and
 # ships it with the other backend assets.
@@ -9,8 +11,8 @@
 #   ./build-zgal [zgal checkout]    defaults to the external/zgal submodule
 #
 # Building needs what ZGAL's `make web` needs: Racket 8 (ZGAL's compiler), Node 24 and npm. The
-# screenshots for browsers without WebGPU are drawn under Node on Dawn, so they need a GPU too, and
-# cwebp (brew install webp) compresses them.
+# screenshots and image_filter's output for browsers without WebGPU are drawn under Node on Dawn, so
+# they need a GPU too, and cwebp (brew install webp) compresses them.
 set -euo pipefail
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -36,12 +38,10 @@ capture=$(mktemp -d)
 trap 'rm -rf "${capture}"' EXIT
 
 # Copies the program <name>, which `make web` built into build/web/<name>, to ${OUT_DIR}/<name>
-# with its source, and draws its screenshot: the last of the frames it runs headless under Node,
-# with the given arguments (--frames N --size WxH).
-#   copy_program <name> <capture arguments>...
+# with its source.
+#   copy_program <name>
 copy_program() {
     local name=$1
-    shift
     local built=${ZGAL_DIR}/build/web/${name} out=${OUT_DIR}/${name}
     mkdir -p "${out}"
     # The page, its scripts, the runtime, and whatever the program loads: its assets (models,
@@ -59,15 +59,40 @@ copy_program() {
     done
     # The program itself, which the page shows beside it
     cp "${ZGAL_DIR}/examples/${name}/${name}.zgal" "${out}/"
-    # What it draws, for browsers without WebGPU
-    node "${built}/${name}.zgal.main.js" "$@" --capture "${capture}/${name}.png"
-    cwebp -quiet -q 85 "${capture}/${name}.png" -o "${out}/screenshot.webp"
 }
 
-copy_program particles --frames 240 --size 1024x640
+# Draws the screenshot of the program <name> for browsers without WebGPU: the last of the frames it
+# runs headless under Node, with the given arguments (--frames N --size WxH).
+#   screenshot <name> <capture arguments>...
+screenshot() {
+    local name=$1
+    shift
+    node "${ZGAL_DIR}/build/web/${name}/${name}.zgal.main.js" "$@" --capture "${capture}/${name}.png"
+    cwebp -quiet -q 85 "${capture}/${name}.png" -o "${OUT_DIR}/${name}/screenshot.webp"
+}
+
+copy_program particles
+screenshot particles --frames 240 --size 1024x640
 # The scene's script turns shadows off and resizes the view for a while during the headless run, but
 # its last frame is back at full size with shadows
-copy_program scene --frames 240 --size 1280x720
+copy_program scene
+screenshot scene --frames 240 --size 1280x720
+
+# image_filter has no window, so no screenshot. Its default input is the example's test image, put in
+# its assets/ (where the program's paths resolve: its page's ?arg=input.png, or runHeadless's args),
+# and it's filtered here as the site shows it, --blur 2 --edges (the example's blur_edges test), for
+# browsers without WebGPU and as the reference a browser's run is compared with:
+# - assets/input.png, the input the program reads;
+# - input.webp and blur_edges.webp, both at quality 80, to show;
+# - blur_edges.png, the output losslessly, to compare with (WebP would add its own differences).
+copy_program image_filter
+filter_out=${OUT_DIR}/image_filter
+mkdir -p "${filter_out}/assets"
+cp "${ZGAL_DIR}/examples/image_filter/tests/input.png" "${filter_out}/assets/input.png"
+node "${ZGAL_DIR}/build/web/image_filter/image_filter.zgal.main.js" \
+    "${filter_out}/assets/input.png" "${filter_out}/blur_edges.png" --blur 2 --edges
+cwebp -quiet -q 80 "${filter_out}/assets/input.png" -o "${filter_out}/input.webp"
+cwebp -quiet -q 80 "${filter_out}/blur_edges.png" -o "${filter_out}/blur_edges.webp"
 
 # The documentation: its page, zgal.html, which the backend serves for /zgal/docs/, with its
 # stylesheets and scripts, and zgal.txt, the same as plain text

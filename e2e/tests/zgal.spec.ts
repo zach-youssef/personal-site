@@ -1,14 +1,16 @@
 import { test, expect } from './fixtures';
 
-// The examples ./build-zgal copies, each with what it loads besides its page and scripts, and a form
-// its source contains
+// The examples ./build-zgal copies, each with what it loads besides its page and scripts, a form its
+// source contains, and whether it has a screenshot (image_filter has no window)
 const PROGRAMS = [
-    { name: 'particles', assets: [], source: '(graph ParticlesGraph' },
-    { name: 'scene', assets: ['assets/scene.gltf', 'assets/scene.bin'], source: '(graph SceneGraph' },
+    { name: 'particles', assets: [], source: '(graph ParticlesGraph', screenshot: true },
+    { name: 'scene', assets: ['assets/scene.gltf', 'assets/scene.bin'], source: '(graph SceneGraph', screenshot: true },
+    // Its default input, which its page's ?arg=input.png and runHeadless's args name
+    { name: 'image_filter', assets: ['assets/input.png'], source: '(graph FilterGraph', screenshot: false },
 ];
 
-for (const { name, assets, source } of PROGRAMS) {
-    test(`the backend serves the ${name} example as modules, with its assets, source and screenshot`, async ({ request }) => {
+for (const { name, assets, source, screenshot } of PROGRAMS) {
+    test(`the backend serves the ${name} example as modules, with its assets and source`, async ({ request }) => {
         const dir = `/assets/zgal/${name}`;
         const page = await request.get(`${dir}/${name}.zgal.html`);
         expect(page.ok()).toBe(true);
@@ -25,9 +27,22 @@ for (const { name, assets, source } of PROGRAMS) {
             expect((await response.body()).length, asset).toBeGreaterThan(0);
         }
         expect(await (await request.get(`${dir}/${name}.zgal`)).text()).toContain(source);
-        expect((await request.get(`${dir}/screenshot.webp`)).headers()['content-type']).toBe('image/webp');
+        if (screenshot) {
+            expect((await request.get(`${dir}/screenshot.webp`)).headers()['content-type']).toBe('image/webp');
+        }
     });
 }
+
+test('the backend serves image_filter\'s input and its output filtered at build time, for browsers without WebGPU', async ({ request }) => {
+    const dir = '/assets/zgal/image_filter';
+    // To show, compressed; and the output losslessly, which a browser's run is compared with
+    for (const [file, type] of [['input.webp', 'image/webp'], ['blur_edges.webp', 'image/webp'], ['blur_edges.png', 'image/png']]) {
+        const response = await request.get(`${dir}/${file}`);
+        expect(response.ok(), file).toBe(true);
+        expect(response.headers()['content-type'], file).toBe(type);
+        expect((await response.body()).length, file).toBeGreaterThan(0);
+    }
+});
 
 test('shows the program\'s source', async ({ page }) => {
     await page.goto('/projects/zgal');
