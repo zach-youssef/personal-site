@@ -249,6 +249,31 @@ test('stops downloading the scene when the app routes away from the page', async
     expect(errors).toEqual([]);
 });
 
+// Esc ends the viewer by itself, with the page still open and the canvas still mounted: its end must
+// cancel the download, and the page offers to start it again
+test('stops downloading the scene when Esc stops the viewer', async ({ page }) => {
+    test.setTimeout(60_000);
+    const errors = collectErrors(page);
+    const { scene, sent, server } = await serveFixture(page, HELD);
+    const accepted = viewerMessage(page, `splat_view: ${scene.splats} splats at SH degree`);
+    await page.goto(PAGE);
+    await accepted;
+    await server.held;
+    await expect(progressBar(page)).toBeVisible({ timeout: 30_000 });
+
+    const view = page.locator('.splat-view');
+    const canvas = view.locator('canvas');
+    await canvas.focus();
+    await expect(canvas).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(view).toHaveAttribute('data-zgal', 'stopped', { timeout: 10_000 });
+    await expect(page.getByRole('button', { name: 'Restart the viewer' })).toBeVisible();
+    await expect(progressBar(page)).toHaveCount(0);
+    await expect.poll(() => sent.aborted, { timeout: 10_000 }).toBe(true);
+    expect(sent.bytes).toBeLessThan(scene.stream.bytes);
+    expect(errors).toEqual([]);
+});
+
 test('says so when the stream isn\'t a scene', async ({ page }) => {
     test.setTimeout(60_000);
     // Another magic than "SPLS"
