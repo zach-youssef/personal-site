@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Token, tokenizeZgal } from './highlightZgal';
+import { SAMPLES } from './samples';
 
 // Every example in the pinned ZGAL checkout, which includes every program ./build-zgal copies for
 // the page
@@ -17,7 +18,8 @@ const marked = (source: string) => tokenizeZgal(source)
 
 describe('tokenizeZgal', () => {
 	it('finds the examples the page shows', () => {
-		expect(examples).toEqual(expect.arrayContaining(['particles', 'scene']));
+		expect(examples).toEqual(expect.arrayContaining(SAMPLES.map(sample => sample.directory)));
+		expect(examples).toContain('image_filter');
 	});
 
 	for (const name of examples) {

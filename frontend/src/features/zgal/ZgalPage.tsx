@@ -4,7 +4,8 @@ import { useHistory, useLocation } from 'react-router-dom';
 import ZgalFrame, { hasWebGPU } from './ZgalFrame';
 import ProgramSource from './ProgramSource';
 import SourceLink, { ManifestState, useSourceManifest } from './SourceLink';
-import { programPage, programSource, SAMPLES, screenshot, ZgalSample } from './samples';
+import ImageFilterDemo from './ImageFilterDemo';
+import { programPage, programSource, SAMPLES, screenshot, WindowSample, ZgalSample } from './samples';
 
 export const GITHUB_URL = 'https://github.com/zach-youssef/vulkan_testing';
 // ZGAL's documentation, which ./build-zgal builds and the backend serves
@@ -19,11 +20,9 @@ function selectedSample(search: string): ZgalSample {
 	return SAMPLES.find(sample => sample.id === id) ?? SAMPLES[0];
 }
 
-// Runs a sample beside its source, or shows a frame it drew when the browser has no WebGPU
-// manifest: which commit the copied sources come from, which links the listing to GitHub there
-// run: changing it restarts the program in a new frame, e.g. after its Esc stopped it
-export function SampleView({ sample, webGPU, manifest, run = 0 }:
-	{ sample: ZgalSample, webGPU: boolean, manifest: ManifestState, run?: number }) {
+// A program with a window in a frame of its page, or a frame it drew when the browser has no WebGPU,
+// with its controls; run: changing it restarts the program in a new frame, e.g. after its Esc stopped it
+function WindowView({ sample, webGPU, run }: { sample: WindowSample, webGPU: boolean, run: number }) {
 	const frameStyle: React.CSSProperties = {
 		display: 'block',
 		width: '100%',
@@ -31,24 +30,38 @@ export function SampleView({ sample, webGPU, manifest, run = 0 }:
 		border: 0,
 		background: '#000',
 	};
+	return (
+		<>
+			{webGPU
+				? <ZgalFrame key={run} src={programPage(sample)} title={sample.title} style={frameStyle} scaling={sample.scaling} />
+				: <img src={screenshot(sample)} alt={sample.title} style={frameStyle} />}
+			{/* The frame takes the program's controls once clicked */}
+			<dl className="row mt-3 mb-0">
+				{sample.controls.map(([key, action]) => (
+					<React.Fragment key={key}>
+						<dt className="col-4">{key}</dt>
+						<dd className="col-8 mb-1">{action}</dd>
+					</React.Fragment>
+				))}
+			</dl>
+		</>
+	);
+}
+
+// Runs a sample beside its source, or shows what it drew when the browser has no WebGPU
+// manifest: which commit the copied sources come from, which links the listing to GitHub there
+// run: changing it restarts the program (a new frame, or the filter run again)
+export function SampleView({ sample, webGPU, manifest, run = 0 }:
+	{ sample: ZgalSample, webGPU: boolean, manifest: ManifestState, run?: number }) {
 	// Keyed by the sample, so another sample gets a new frame and listing rather than the last one's
 	// state (a failed alert, or a listing whose fetch is still running)
 	return (
 		<Row key={sample.id}>
 			<Col lg={6} className="mb-4">
 				<h4>{sample.title}</h4>
-				{webGPU
-					? <ZgalFrame key={run} src={programPage(sample)} title={sample.title} style={frameStyle} scaling={sample.scaling} />
-					: <img src={screenshot(sample)} alt={sample.title} style={frameStyle} />}
-				{/* The frame takes the program's controls once clicked */}
-				<dl className="row mt-3 mb-0">
-					{sample.controls.map(([key, action]) => (
-						<React.Fragment key={key}>
-							<dt className="col-4">{key}</dt>
-							<dd className="col-8 mb-1">{action}</dd>
-						</React.Fragment>
-					))}
-				</dl>
+				{sample.kind === 'program'
+					? <WindowView sample={sample} webGPU={webGPU} run={run} />
+					: <ImageFilterDemo sample={sample} webGPU={webGPU} run={run} />}
 			</Col>
 			<Col lg={6} className="mb-4">
 				<h4>{sample.source}</h4>
@@ -101,7 +114,9 @@ function ZgalPage() {
 			</ButtonToolbar>
 			{!webGPU && (
 				<Alert variant="warning">
-					This program needs a browser that supports WebGPU, so below is a frame from it.
+					{sample.kind === 'program'
+						? 'This program needs a browser that supports WebGPU, so below is a frame from it.'
+						: 'This program needs a browser that supports WebGPU, so below is what it made when the site was built.'}
 				</Alert>
 			)}
 			<ButtonToolbar>

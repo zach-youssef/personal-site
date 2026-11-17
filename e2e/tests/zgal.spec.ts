@@ -127,3 +127,32 @@ for (const { title, path, screenshotWidth } of SAMPLES) {
         await expect.poll(() => screenshot.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBe(screenshotWidth);
     });
 }
+
+test.describe('the image filter', () => {
+    test('says so, and shows what it made at build time, when it can\'t get a WebGPU adapter', async ({ page }) => {
+        // Without the switch, headless Chromium has WebGPU but no adapter
+        await page.goto('/projects/zgal?sample=image_filter');
+
+        await expect(page.getByRole('alert').filter({ hasText: "Image filter couldn't run in this browser." })).toBeVisible({ timeout: 15_000 });
+        await expect(page.locator('.image-filter')).toHaveAttribute('data-zgal', 'failed');
+        await expect(page.getByAltText('Image filter output')).toHaveAttribute('src', '/assets/zgal/image_filter/blur_edges.webp');
+    });
+
+    test('shows its input and the output filtered at build time in browsers without WebGPU', async ({ page }) => {
+        await page.addInitScript(() => {
+            delete (Navigator.prototype as { gpu?: unknown }).gpu;
+        });
+        await page.goto('/projects/zgal?sample=image_filter');
+
+        await expect(page.getByRole('alert')).toContainText('This program needs a browser that supports WebGPU');
+        await expect(page.locator('[data-option]')).toHaveCount(0);
+        for (const [alt, width] of [['Image filter input', 128], ['Image filter output', 128]] as const) {
+            const image = page.getByAltText(alt);
+            await expect.poll(() => image.evaluate(element => (element as HTMLImageElement).naturalWidth)).toBe(width);
+        }
+        await expect(page.getByLabel('image_filter.zgal')).toContainText('(graph FilterGraph');
+        // Highlighted as the other listings are
+        await expect(page.getByLabel('image_filter.zgal').locator('.zgal-comment').first()).toBeVisible();
+        await expect(page.getByLabel('image_filter.zgal').locator('.zgal-head').first()).toBeVisible();
+    });
+});

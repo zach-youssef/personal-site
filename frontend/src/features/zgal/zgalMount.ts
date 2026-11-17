@@ -49,3 +49,50 @@ export type ZgalLoader = (mainUrl: string) => Promise<ZgalProgramModule>;
 // Imports the main at run time: the site's bundler mustn't resolve or bundle it, as the backend
 // serves it (under /assets, which the dev and preview servers forward to the backend)
 export const importProgram: ZgalLoader = mainUrl => import(/* @vite-ignore */ mainUrl);
+
+// Every main's runHeadless, which runs the program headless in a page as Node would (ZGAL's
+// documentation, after "Other pages embed programs"; web/zgal/main-browser.ts): its captures are given
+// to a callback rather than written to files. The site runs image_filter, a program without a window,
+// this way.
+
+// A capture the program made, as Node would write it to a PNG file
+export interface HeadlessCapture {
+	// The file Node would write, e.g. the program's <destination> argument
+	path: string,
+	// --capture-frames' frame (from 1), or null for the last frame's capture
+	frame: number | null,
+	size: [number, number],
+	// RGBA8 pixels, rows top to bottom
+	rgba: Uint8Array,
+	// The PNG file (image/png)
+	png: Blob,
+}
+
+export interface HeadlessOptions {
+	// The program's command line, as under Node (e.g. ['photo.jpg', 'out.png', '--blur', '2'])
+	args: readonly string[],
+	// The files the program reads, by the paths args give them: a Blob, or a URL to fetch. Other paths
+	// are fetched from assets/ beside the main.
+	files?: Readonly<Record<string, Blob | string>>,
+	onCapture?(capture: HeadlessCapture): void,
+	onState?(state: ProgramState): void,
+	// The program's messages (errors, usage); by default the runtime logs them
+	onMessage?(text: string): void,
+}
+
+export interface HeadlessRun {
+	// The state it ended in: stopped (it ran its frames, printed its usage or was stopped) or failed
+	// (a bad command line, an error, or WebGPU errors). The same promise each time.
+	readonly done: Promise<'stopped' | 'failed'>,
+	// Stops it and frees its WebGPU device (each run has its own); settles once it has
+	stop(): Promise<void>,
+}
+
+// What the site uses of a windowless program's main module
+export interface ZgalHeadlessModule {
+	runHeadless(options: HeadlessOptions): HeadlessRun,
+}
+
+export type ZgalHeadlessLoader = (mainUrl: string) => Promise<ZgalHeadlessModule>;
+
+export const importHeadless: ZgalHeadlessLoader = mainUrl => import(/* @vite-ignore */ mainUrl);

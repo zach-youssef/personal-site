@@ -317,6 +317,22 @@ label {
   font-weight: 500;
 }
 
+// Sliders are clickable and dragged by their thumb; as with buttons, the focus ring is for keyboard
+// focus only
+.custom-range:not(:disabled) {
+  cursor: pointer;
+}
+
+// A disabled slider fades as a disabled button does, so that it doesn't look like it takes input
+.custom-range:disabled {
+  opacity: $btn-disabled-opacity;
+}
+
+.custom-range:focus:not(:focus-visible) {
+  &::-webkit-slider-thumb { box-shadow: none; }
+  &::-moz-range-thumb { box-shadow: none; }
+}
+
 // Fields placed directly in a form row, without columns, need their own gutter
 .form-row > .form-group {
   padding-right: $form-grid-gutter-width * .5;
@@ -423,6 +439,44 @@ iframe {
 .zgal-number,
 .zgal-boolean {
   color: $code-literal;
+}
+
+// ZGAL's image filter ========================================================
+
+// A filter option's switch, with its value's slider and the value beside it
+.filter-option {
+  margin-bottom: .75rem;
+}
+
+.filter-slider {
+  display: flex;
+  gap: .75rem;
+  align-items: center;
+  margin-top: .25rem;
+
+  output {
+    min-width: 3.5rem;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// The input and output side by side, framed as the demos' frames are
+.filter-picture img {
+  display: block;
+  width: 100%;
+  border: 1px solid $border-subtle;
+  border-radius: $border-radius-lg;
+}
+
+// The last output while the next is being made
+.filter-picture.stale img {
+  opacity: .5;
+}
+
+// A failed run's messages, one per line
+.filter-failure {
+  white-space: pre-wrap;
 }
 
 // Splat viewer ================================================================
