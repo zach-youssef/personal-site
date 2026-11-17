@@ -31,8 +31,8 @@ export interface MountOptions {
 }
 
 export interface MountedProgram {
-	// Stops the program, while it starts too, and frees its WebGPU device, its graphs, the canvas's
-	// configuration and its listeners on the page. The same promise each time.
+	// Stops the program, while it starts too, aborts its asset downloads and frees its WebGPU device,
+	// its graphs, the canvas's configuration and its listeners on the page. The same promise each time.
 	stop(): Promise<void>,
 }
 

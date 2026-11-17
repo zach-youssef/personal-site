@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import ZgalCanvas, { STOP_WAIT_MS } from './ZgalCanvas';
+import ZgalCanvas from './ZgalCanvas';
 import type { MountOptions, ZgalLoader, ZgalProgramModule } from './zgalMount';
 
 // A program mounted by the fake module: what it was given, and a stop the test resolves
@@ -234,31 +234,6 @@ describe('ZgalCanvas', () => {
 			await waitFor(() => expect(consoleError).toHaveBeenCalledTimes(2));
 		} finally {
 			consoleError.mockRestore();
-		}
-	});
-
-	it('starts anyway, with a warning, once a stop has hung for the cap', async () => {
-		const { mounts, load } = fakeProgram();
-		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-		try {
-			const first = render(<ZgalCanvas mainUrl={MAIN} width={4} height={3} scaling="fit"
-				title="Particles" load={load} />);
-			await waitFor(() => expect(mounts).toHaveLength(1));
-			first.unmount();
-			// The first program's stop never settles (the test doesn't finish it)
-			vi.useFakeTimers();
-			render(<ZgalCanvas mainUrl={MAIN} width={4} height={3} scaling="fit" title="Particles" load={load} />);
-			await vi.advanceTimersByTimeAsync(STOP_WAIT_MS - 1);
-			expect(load).toHaveBeenCalledTimes(1);
-			expect(warn).not.toHaveBeenCalled();
-			await vi.advanceTimersByTimeAsync(1);
-			expect(load).toHaveBeenCalledTimes(2);
-			expect(mounts).toHaveLength(2);
-			expect(warn).toHaveBeenCalledTimes(1);
-			expect(warn.mock.calls[0][0]).toContain('still stopping');
-		} finally {
-			vi.useRealTimers();
-			warn.mockRestore();
 		}
 	});
 

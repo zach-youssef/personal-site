@@ -10,12 +10,8 @@ export type CanvasState = 'loading' | ProgramState;
 // Settles once every program a ZgalCanvas stopped has finished stopping, which each mount waits for,
 // whichever instance it is in: each program has its own WebGPU device and its own copy of its assets,
 // so a canvas re-keyed, swapped for another or reached again by navigating back mustn't hold a second
-// copy (e.g. of a large scene, on a phone) while the last one still stops. The wait is bounded by
-// STOP_WAIT_MS: a stop can hang (the runtime's stop awaits its asset downloads, which a dead
-// connection stalls), and an unbounded wait would then keep every later canvas on the site loading
-// until a reload. Past the cap the mount goes ahead with a warning, so a second copy is possible only
-// after a stop has hung.
-export const STOP_WAIT_MS = 10_000;
+// copy (e.g. of a large scene, on a phone) while the last one still stops. The runtime's stop aborts
+// the program's downloads rather than awaiting them, so a stalled connection doesn't hold it up.
 let pendingStops: Promise<void> = Promise.resolve();
 
 interface Props {
@@ -62,8 +58,9 @@ function boxStyle(width: number, height: number, style?: React.CSSProperties): R
 // Runs a ZGAL program in a canvas of the page (its main's mount), rather than a frame of its own
 // page. Keys come from the canvas while it has focus (keys: 'canvas'), so the page keeps scrolling.
 // A change of the main, its scaling, its command line or the loader stops the program and mounts it
-// again in the same canvas; unmounting stops it. Every mount waits, for at most STOP_WAIT_MS, until the
-// programs any ZgalCanvas stopped have stopped (pendingStops). The box's data-zgal attribute gives the state, for tests and styles.
+// again in the same canvas; unmounting stops it. Every mount waits until the programs any ZgalCanvas
+// stopped have stopped (pendingStops). The box's data-zgal attribute gives the state, for tests and
+// styles.
 function ZgalCanvas({
 	mainUrl, width, height, scaling, args = [], title, onState, onMessage, onProgress,
 	load = importProgram, className, style,
@@ -96,17 +93,7 @@ function ZgalCanvas({
 
 		const previous = pendingStops;
 		const started = (async () => {
-			let timer: ReturnType<typeof setTimeout> | undefined;
-			const timedOut = await Promise.race([
-				previous.then(() => false),
-				new Promise<boolean>(resolve => {
-					timer = setTimeout(() => resolve(true), STOP_WAIT_MS);
-				}),
-			]);
-			clearTimeout(timer);
-			if (timedOut && current) {
-				console.warn(`${mainUrl}: the previous program is still stopping after ${STOP_WAIT_MS / 1000} s; starting anyway`);
-			}
+			await previous;
 			if (!current) {
 				return;
 			}
