@@ -17,8 +17,12 @@ export default defineConfig({
         baseURL: `http://localhost:${FRONTEND_PORT}`,
         trace: 'retain-on-failure',
     },
+    // Every spec runs in Chromium; those that don't need a GPU run in Firefox too. The specs that
+    // draw with WebGPU or WebGL live in tests/gpu/ and run in Chromium only, on SwiftShader (see
+    // tests/gpu/webgpu.ts), as headless Firefox has no software WebGPU to run them on.
     projects: [
         { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+        { name: 'firefox', use: { ...devices['Desktop Firefox'] }, testIgnore: 'gpu/**' },
     ],
     webServer: [
         {

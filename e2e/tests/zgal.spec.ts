@@ -85,6 +85,9 @@ const SAMPLES = [
 ];
 
 test('switches examples from the selector, and records the choice in the URL', async ({ page }) => {
+    // The page shows the example's frame only where the browser has WebGPU, which headless Firefox
+    // on Linux doesn't: give every browser one (the frame needn't run here)
+    await withoutWebGPUAdapter(page);
     await page.goto('/projects/zgal');
     const selector = page.getByRole('group', { name: 'Example' });
     await expect(selector.getByRole('button', { name: 'Particles' })).toHaveAttribute('aria-pressed', 'true');

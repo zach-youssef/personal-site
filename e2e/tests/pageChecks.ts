@@ -34,7 +34,8 @@ export function collectErrors(page: Page): string[] {
 
 // Gives the page (and its frames) a WebGPU that has no adapter, as on a machine without a usable
 // GPU, whatever the browser offers: headless Chromium has WebGPU but no adapter, and whether
-// headless Firefox has WebGPU depends on its version and platform
+// headless Firefox has WebGPU depends on its version and platform (Linux's 155 has none)
+// (the stub offers only requestAdapter, which the runtime calls before any other WebGPU member)
 export async function withoutWebGPUAdapter(page: Page): Promise<void> {
     await page.addInitScript(() => {
         const gpu = { requestAdapter: async () => null };

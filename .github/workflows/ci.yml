@@ -178,7 +178,7 @@ jobs:
           CI: 1
         run: |
           npm ci --no-audit --no-fund
-          npx playwright install --with-deps --only-shell chromium > /dev/null
+          npx playwright install --with-deps --only-shell chromium firefox > /dev/null
           npm test
       - name: Upload the end-to-end report
         if: failure()
