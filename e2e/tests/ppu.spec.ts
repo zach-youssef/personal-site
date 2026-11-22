@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures';
+import { withoutWebGPUAdapter } from './pageChecks';
 
 import { GAMES, gameFrame } from './ppuGames';
 
@@ -19,7 +20,7 @@ test('the backend serves the games as modules, with their memory dumps and scree
 });
 
 test('says so when a game can\'t get a WebGPU adapter', async ({ page }) => {
-    // Without the switch, headless Chromium has WebGPU but no adapter
+    await withoutWebGPUAdapter(page);
     await page.goto('/projects/vkPPU');
 
     for (const [, title] of GAMES) {

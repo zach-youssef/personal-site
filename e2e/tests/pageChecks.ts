@@ -31,3 +31,13 @@ export function collectErrors(page: Page): string[] {
     page.on('pageerror', error => errors.push(error.message));
     return errors;
 }
+
+// Gives the page (and its frames) a WebGPU that has no adapter, as on a machine without a usable
+// GPU, whatever the browser offers: headless Chromium has WebGPU but no adapter, and whether
+// headless Firefox has WebGPU depends on its version and platform
+export async function withoutWebGPUAdapter(page: Page): Promise<void> {
+    await page.addInitScript(() => {
+        const gpu = { requestAdapter: async () => null };
+        Object.defineProperty(Navigator.prototype, 'gpu', { configurable: true, get: () => gpu });
+    });
+}

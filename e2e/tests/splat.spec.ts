@@ -1,6 +1,6 @@
 import { Page } from '@playwright/test';
 import { test, expect } from './fixtures';
-import { collectErrors } from './pageChecks';
+import { collectErrors, withoutWebGPUAdapter } from './pageChecks';
 
 const PAGE = '/projects/splats';
 const SCREENSHOT_ALT = 'The viewer\'s start view (screenshot)';
@@ -70,6 +70,7 @@ test('shows the controls, and the screenshot in browsers without WebGPU', async 
 
 test('shows touch devices a poster, which downloads nothing until asked', async ({ page }) => {
     const downloads = sceneRequests(page);
+    await withoutWebGPUAdapter(page);
     // A coarse primary pointer, as on phones and tablets
     await page.addInitScript(() => {
         const matchMedia = window.matchMedia.bind(window);
@@ -95,7 +96,6 @@ test('shows touch devices a poster, which downloads nothing until asked', async 
     await expect(page.locator('canvas')).toHaveCount(0);
     expect(downloads).toEqual([]);
 
-    // Headless Chromium has WebGPU but, without the WebGPU specs' switches, no adapter
     await start.click();
     await expect(page.getByRole('alert')).toContainText('The viewer couldn\'t run in this browser', { timeout: 15_000 });
     await expect(page.getByAltText(SCREENSHOT_ALT)).toBeVisible();
@@ -103,6 +103,7 @@ test('shows touch devices a poster, which downloads nothing until asked', async 
 
 test('says so when the viewer can\'t get a WebGPU adapter', async ({ page }) => {
     const errors = collectErrors(page);
+    await withoutWebGPUAdapter(page);
     await page.goto(PAGE);
 
     await expect(page.getByRole('alert')).toContainText('The viewer couldn\'t run in this browser', { timeout: 15_000 });

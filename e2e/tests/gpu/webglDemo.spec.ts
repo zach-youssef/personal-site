@@ -1,6 +1,6 @@
-import { test, expect } from './fixtures';
+import { test, expect } from '../fixtures';
 import { Locator, Page } from '@playwright/test';
-import { collectErrors, colorCount } from './pageChecks';
+import { collectErrors, colorCount } from '../pageChecks';
 
 // Without a GPU, as on CI runners, Chromium draws WebGL on SwiftShader, which renders the castle at
 // about 5 frames a second, so the page takes about 20 s to measure its frame rate over 100 frames

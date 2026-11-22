@@ -3,8 +3,8 @@ import { createServer, Server } from 'node:http';
 import { AddressInfo } from 'node:net';
 import { resolve } from 'node:path';
 import { Page } from '@playwright/test';
-import { test, expect } from './fixtures';
-import { collectErrors, colorCount } from './pageChecks';
+import { test, expect } from '../fixtures';
+import { collectErrors, colorCount } from '../pageChecks';
 import { WEBGPU_LAUNCH_OPTIONS } from './webgpu';
 
 test.use({ launchOptions: WEBGPU_LAUNCH_OPTIONS });
@@ -14,8 +14,8 @@ const SCENE_URL = '/assets/splat/scene.json';
 const SCREENSHOT_URL = '/assets/splat/screenshot.webp';
 
 // The lock's fixture (a small stream and its cameras), which ./build-splat puts beside the specs
-const LOCK = JSON.parse(readFileSync(resolve(__dirname, '../../splat-scene.json'), 'utf8'));
-const FIXTURE_DIR = resolve(__dirname, '../fixtures/splat');
+const LOCK = JSON.parse(readFileSync(resolve(__dirname, '../../../splat-scene.json'), 'utf8'));
+const FIXTURE_DIR = resolve(__dirname, '../../fixtures/splat');
 
 // A black 1x1 PNG
 const BLACK_PIXEL = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg==', 'base64');

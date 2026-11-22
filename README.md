@@ -48,7 +48,7 @@ GitHub Actions (`.github/workflows/ci.yml`) builds and tests every commit a push
 - The public submodules are checked out over https. SeamCarving is private, so it's checked out with a read-only deploy key on [SeamCarving](https://github.com/zach-youssef/SeamCarving), whose private half is the repository secret `SEAMCARVING_DEPLOY_KEY`.
 - Without a GPU, `./build-zgal` and `./build-splat` draw their screenshots on Mesa's software Vulkan driver (lavapipe), so they can differ from those drawn on a Mac. Each job uploads them as the `screenshots-<sha>` artifact (`zgal/<name>/screenshot.webp`, `zgal/image_filter/blur_edges.png` and `splat/screenshot.webp`).
 - `./build-splat`'s downloads of the locked scene are cached (`actions/cache` on `~/.cache/personal-site/splat`, which setup-build hands `./build-splat` as `SPLAT_CACHE_DIR`) under a key made of the sha256s in `splat-scene.json`, so a job downloads the scene only when the lock names a new one; `./build-splat` checks every cached file against the lock anyway.
-- The WebGPU specs run Chromium's WebGPU on SwiftShader rather than a GPU, so CI and a Mac run them the same way (see `e2e/tests/webgpu.ts`).
+- The WebGPU specs run Chromium's WebGPU on SwiftShader rather than a GPU, so CI and a Mac run them the same way (see `e2e/tests/gpu/webgpu.ts`).
 - Tests print a dot each and their failures in full when `CI` is set. On a failure, the job uploads the Playwright report with the failures' traces (`e2e-report-<sha>`) and the backend's test report (`backend-test-report-<sha>`); `gh run download <run id>` fetches them.
 
 Notes for editing the workflow:

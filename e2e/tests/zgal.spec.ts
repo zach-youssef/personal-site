@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures';
+import { withoutWebGPUAdapter } from './pageChecks';
 
 // The examples ./build-zgal copies, each with what it loads besides its page and scripts, a form its
 // source contains, and whether it has a screenshot (image_filter has no window)
@@ -109,7 +110,7 @@ test('switches examples from the selector, and records the choice in the URL', a
 
 for (const { title, path, screenshotWidth } of SAMPLES) {
     test(`says so when the ${title.toLowerCase()} example can't get a WebGPU adapter`, async ({ page }) => {
-        // Without the switch, headless Chromium has WebGPU but no adapter
+        await withoutWebGPUAdapter(page);
         await page.goto(path);
 
         await expect(page.getByRole('alert').filter({ hasText: `${title} couldn't run in this browser.` })).toBeVisible({ timeout: 15_000 });
@@ -130,7 +131,7 @@ for (const { title, path, screenshotWidth } of SAMPLES) {
 
 test.describe('the image filter', () => {
     test('says so, and shows what it made at build time, when it can\'t get a WebGPU adapter', async ({ page }) => {
-        // Without the switch, headless Chromium has WebGPU but no adapter
+        await withoutWebGPUAdapter(page);
         await page.goto('/projects/zgal?sample=image_filter');
 
         await expect(page.getByRole('alert').filter({ hasText: "Image filter couldn't run in this browser." })).toBeVisible({ timeout: 15_000 });

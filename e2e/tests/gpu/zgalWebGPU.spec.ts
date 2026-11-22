@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Page } from '@playwright/test';
-import { test, expect } from './fixtures';
-import { collectErrors, colorCount } from './pageChecks';
-import { decodePng, Pixels } from './png';
+import { test, expect } from '../fixtures';
+import { collectErrors, colorCount } from '../pageChecks';
+import { decodePng, Pixels } from '../png';
 import { WEBGPU_LAUNCH_OPTIONS } from './webgpu';
 
 test.use({ launchOptions: WEBGPU_LAUNCH_OPTIONS });
@@ -43,7 +43,7 @@ for (const { title, path } of SAMPLES) {
 }
 
 // image_filter's output that ./build-zgal filtered under Node with --blur 2 --edges, losslessly
-const BLUR_EDGES = resolve(__dirname, '../../graphql-server/assets/zgal/image_filter/blur_edges.png');
+const BLUR_EDGES = resolve(__dirname, '../../../graphql-server/assets/zgal/image_filter/blur_edges.png');
 const MAIN = '/assets/zgal/image_filter/image_filter.zgal.main.js';
 
 // The PNG the page offers to download, decoded
@@ -169,7 +169,7 @@ test.describe('the image filter', () => {
         await page.getByLabel('Picture').setInputFiles({
             name: 'photo.png',
             mimeType: 'image/png',
-            buffer: readFileSync(resolve(__dirname, '../../graphql-server/assets/zgal/image_filter/assets/input.png')),
+            buffer: readFileSync(resolve(__dirname, '../../../graphql-server/assets/zgal/image_filter/assets/input.png')),
         });
         await expect(page.getByAltText('Image filter input')).toHaveAttribute('src', /^blob:/);
         await expect.poll(() => page.getByRole('link', { name: 'Download' }).getAttribute('href'), { timeout: 60_000 }).not.toBe(exampleHref);

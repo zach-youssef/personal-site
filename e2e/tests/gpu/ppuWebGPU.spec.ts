@@ -1,6 +1,6 @@
-import { test, expect } from './fixtures';
-import { collectErrors, colorCount } from './pageChecks';
-import { GAMES, gameFrame } from './ppuGames';
+import { test, expect } from '../fixtures';
+import { collectErrors, colorCount } from '../pageChecks';
+import { GAMES, gameFrame } from '../ppuGames';
 import { WEBGPU_LAUNCH_OPTIONS } from './webgpu';
 
 test.use({ launchOptions: WEBGPU_LAUNCH_OPTIONS });
