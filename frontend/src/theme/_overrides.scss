@@ -67,7 +67,10 @@ h1, h2, h3 {
 
   .navbar-brand {
     margin-right: .25rem;
-    font-size: .9375rem;
+    // Small enough for the row to fit with a wider fallback font than the apple-system and Segoe
+    // ones (Linux's DejaVu Sans), which wraps the menu button onto a second row at .9375rem
+    font-size: .8125rem;
+    letter-spacing: 0;
   }
 
   .navbar-toggler {
