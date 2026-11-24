@@ -53,7 +53,7 @@ runs:
         echo "dir=${dir}" >> "${GITHUB_OUTPUT}"
         echo "SPLAT_CACHE_DIR=${dir}" >> "${GITHUB_ENV}"
     - name: Restore the splat scene's download cache
-      uses: actions/cache@v6
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ steps.splat-cache-key.outputs.dir }}
         key: ${{ steps.splat-cache-key.outputs.key }}
@@ -70,17 +70,17 @@ runs:
         echo "key=wasi-sdk-${RUNNER_OS}-${RUNNER_ARCH}-${version}" >> "${GITHUB_OUTPUT}"
         echo "dir=external/zgal/.cache/wasi-sdk-${version}" >> "${GITHUB_OUTPUT}"
     - name: Restore ZGAL's wasi-sdk cache
-      uses: actions/cache@v6
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ steps.wasi-sdk-cache-key.outputs.dir }}
         key: ${{ steps.wasi-sdk-cache-key.outputs.key }}
 
-    - uses: Bogdanp/setup-racket@v1.15
+    - uses: Bogdanp/setup-racket@2466913449df77df2bad149d1f2fc4e1ea4795dd # v1.15
       with:
         version: '8.18'
         distribution: full
         variant: CS
-    - uses: actions/setup-node@v7
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:
         node-version: 24
         cache: npm
@@ -90,12 +90,12 @@ runs:
           external/zgal/web/package-lock.json
           external/vk_ppu/external/vulkan_test/web/package-lock.json
           external/vk_splats/external/vulkan_test/web/package-lock.json
-    - uses: actions/setup-java@v6
+    - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
       with:
         distribution: temurin
         java-version: 21
     # v5, the last MIT major: v6 accepts the Terms of Use of a closed-source caching component
-    - uses: gradle/actions/setup-gradle@v5
+    - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
       with:
         # Gradle's job summary only when a build failed
         add-job-summary: on-failure

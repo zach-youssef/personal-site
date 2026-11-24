@@ -35,7 +35,7 @@ jobs:
     outputs:
       shas: ${{ steps.list.outputs.shas }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -109,7 +109,7 @@ jobs:
       matrix:
         sha: ${{ fromJSON(needs.commits.outputs.shas) }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ matrix.sha }}
           # Keeps the job's token out of git's config, where the npm and Gradle steps could read it
@@ -151,7 +151,7 @@ jobs:
         run: ./build-splat
       - name: Upload the screenshots
         # Drawn on lavapipe here rather than on the Mac's GPU, so they can differ from the live ones
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: screenshots-${{ matrix.sha }}
           path: |
@@ -166,7 +166,7 @@ jobs:
         run: ./gradlew test --console=plain
       - name: Upload the backend's test report
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: backend-test-report-${{ matrix.sha }}
           path: graphql-server/build/reports/tests/
@@ -182,7 +182,7 @@ jobs:
           npm test
       - name: Upload the end-to-end report
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: e2e-report-${{ matrix.sha }}
           path: |

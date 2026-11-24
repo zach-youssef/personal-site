@@ -44,7 +44,7 @@ jobs:
     outputs:
       index-js: ${{ steps.index.outputs.path }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Keeps the job's token out of git's config, where the npm and Gradle steps could read it
           persist-credentials: false
@@ -68,7 +68,7 @@ jobs:
               exit 1
           fi
           echo "path=${found[0]}" >> "${GITHUB_OUTPUT}"
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ env.BUNDLE }}
           path: |
@@ -92,7 +92,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ${{ env.BUNDLE }}
           path: ${{ runner.temp }}/bundle
@@ -192,7 +192,7 @@ jobs:
               echo "current=false" >> "${GITHUB_OUTPUT}"
           fi
       - if: steps.tip.outputs.current == 'true'
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ${{ env.BUNDLE }}
           path: ${{ runner.temp }}/bundle
@@ -221,7 +221,7 @@ jobs:
       - name: Keep the deployed manifest
         # For the dry runs to compare with
         if: steps.tip.outputs.current == 'true'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: deployed-manifest
           path: ${{ runner.temp }}/bundle/MANIFEST
