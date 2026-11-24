@@ -2,7 +2,7 @@
 # installs the toolchains and packages the builds need. CI's test jobs and the deploy's bundle job
 # share it. See "CI" in README.md.
 name: Set up the build
-description: Checks out the submodules, restores the splat scene's download cache and installs Racket, Node, Java, Gradle, lavapipe and cwebp
+description: Checks out the submodules, restores the splat scene's download cache and ZGAL's wasi-sdk and installs Racket, Node, Java, Gradle, lavapipe and cwebp
 inputs:
   seamcarving-deploy-key:
     description: The private half of SeamCarving's read-only deploy key (secret SEAMCARVING_DEPLOY_KEY)
@@ -57,6 +57,23 @@ runs:
       with:
         path: ${{ steps.splat-cache-key.outputs.dir }}
         key: ${{ steps.splat-cache-key.outputs.key }}
+
+    - name: Key ZGAL's wasi-sdk cache
+      # ./build-zgal builds ZGAL's runtime's image decoder with wasi-sdk, which ZGAL's make downloads
+      # into external/zgal/.cache/ the first time; keyed by the version ZGAL pins, so it downloads
+      # again only when that changes. (The PPU's and the splat viewer's vulkan_test pins don't build
+      # the decoder yet; when one does, its .cache/ belongs here too.)
+      id: wasi-sdk-cache-key
+      shell: bash
+      run: |
+        version=$(sh external/zgal/.github/actions/setup-zgal/wasi-sdk.sh version)
+        echo "key=wasi-sdk-${RUNNER_OS}-${RUNNER_ARCH}-${version}" >> "${GITHUB_OUTPUT}"
+        echo "dir=external/zgal/.cache/wasi-sdk-${version}" >> "${GITHUB_OUTPUT}"
+    - name: Restore ZGAL's wasi-sdk cache
+      uses: actions/cache@v6
+      with:
+        path: ${{ steps.wasi-sdk-cache-key.outputs.dir }}
+        key: ${{ steps.wasi-sdk-cache-key.outputs.key }}
 
     - uses: Bogdanp/setup-racket@v1.15
       with:

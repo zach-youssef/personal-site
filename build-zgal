@@ -10,8 +10,11 @@
 #
 #   ./build-zgal [zgal checkout]    defaults to the external/zgal submodule
 #
-# Building needs what ZGAL's `make web` needs: Racket 8 (ZGAL's compiler), Node 24 and npm. The
-# screenshots and image_filter's output for browsers without WebGPU are drawn under Node on Dawn, so
+# Building needs what ZGAL's `make web` needs: Racket 8 (ZGAL's compiler), Node 24, npm, and curl,
+# which downloads the wasi-sdk release ZGAL pins (clang for WebAssembly, which builds the runtime's
+# image decoder) into the checkout's .cache/ the first time (CI caches it; WASI_SDK_PATH names an
+# installed one instead). naga (built with cargo) and glslc are needed only by programs with GLSL
+# bodies or extern-glsl functions, which none of these has. The screenshots and image_filter's output for browsers without WebGPU are drawn under Node on Dawn, so
 # they need a GPU too, and cwebp (brew install webp) compresses them.
 set -euo pipefail
 
@@ -44,11 +47,16 @@ copy_program() {
     local name=$1
     local built=${ZGAL_DIR}/build/web/${name} out=${OUT_DIR}/${name}
     mkdir -p "${out}"
-    # The page, its scripts, the runtime, and whatever the program loads: its assets (models,
+    # The page, its scripts, the runtime with its image decoder (zgal/stb_image.wasm, which decodes
+    # every image a program loads or is given), and whatever the program loads: its assets (models,
     # images) and WebAssembly. The TypeScript sources, the node_modules link and package.json only
     # matter for building and running under Node.
     cp "${built}/${name}.zgal.html" "${built}"/*.js "${out}/"
     cp -R "${built}/zgal" "${out}/"
+    if [ ! -f "${out}/zgal/stb_image.wasm" ]; then
+        echo "${built}/zgal has no stb_image.wasm, the image decoder ZGAL's runtime loads" >&2
+        exit 1
+    fi
     if [ -d "${built}/assets" ]; then
         cp -R "${built}/assets" "${out}/"
     fi
