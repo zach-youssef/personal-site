@@ -157,6 +157,8 @@ test.describe('the image filter', () => {
         expect(offered).toEqual(options);
         // Its two positionals: the picture (the file picker) and the PNG it writes (the download)
         await expect(page.getByLabel('Picture')).toHaveAttribute('type', 'file');
+        // Offering only what the runtime's decoder (stb_image) reads
+        await expect(page.getByLabel('Picture')).toHaveAttribute('accept', '.png,.jpg,.jpeg,.bmp,.gif,.tga,.psd,.pic,.pnm,.pgm,.ppm');
     });
 
     test('filters a picture the visitor chooses', async ({ page }) => {

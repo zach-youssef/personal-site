@@ -33,6 +33,11 @@ export const RERUN_DELAY_MS = 300;
 
 // The default input, in assets/ beside the main, where the program's relative paths resolve
 const DEFAULT_INPUT = 'input.png';
+// The pictures the file picker offers: what ZGAL's web runtime decodes, with stb_image built to
+// WebAssembly as natively (web/zgal/image-decode.ts): PNG, JPEG, BMP, GIF, TGA, PSD, Softimage PIC
+// and binary PNM (PGM and PPM; stb_image reads no PBM). Named by extension, as browsers know no MIME
+// types for most of them; HDR isn't among them, as the runtime's decoder refuses it.
+const PICTURE_TYPES = '.png,.jpg,.jpeg,.bmp,.gif,.tga,.psd,.pic,.pnm,.pgm,.ppm';
 // The file the program writes, which names the download
 export const OUTPUT = 'image_filter.png';
 
@@ -266,7 +271,7 @@ function ImageFilterDemo({ sample, webGPU, run = 0, load = importHeadless }: Pro
 						key={pickerKey}
 						type="file"
 						id="image-filter-picture"
-						accept="image/*"
+						accept={PICTURE_TYPES}
 						onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
 							const file = event.target.files?.[0];
 							if (file) {
