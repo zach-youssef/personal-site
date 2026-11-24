@@ -197,6 +197,14 @@ class ApplicationTest {
     }
 
     @Test
+    fun `projectInfo is null for an unknown id`() = withApp {
+        // Ids are case sensitive
+        for (id in listOf("doesNotExist", "SeamCarver", "")) {
+            assertTrue(graphQL("{ projectInfo(id: \"$id\") { name } }").path("projectInfo").isNull, id)
+        }
+    }
+
+    @Test
     fun `levels lists every sokoban level`() = withApp {
         assertEquals(listOf("LEVEL_0", "LEVEL_1", "LEVEL_2"), graphQL("{ levels }").path("levels").texts())
     }

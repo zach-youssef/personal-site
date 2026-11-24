@@ -1,68 +1,69 @@
 package com.zyoussef.Respositories
 
-import com.zyoussef.Models.ProjectInfo.ProjectInfo
 import com.zyoussef.Models.ProjectInfo.ProjectCategory
+import com.zyoussef.Models.ProjectInfo.ProjectId
+import com.zyoussef.Models.ProjectInfo.ProjectInfo
 
 class SimpleProjectInfoRepository : IProjectInfoRepository {
     // Relative, so thumbnails load over whichever protocol the page uses
-    val cdnUrl = "/assets/projectThumbnail"
-    val projectInfos: Map<String, ProjectInfo> = mapOf(
-        "sokoban" to ProjectInfo(
+    private val cdnUrl = "/assets/projectThumbnail"
+    private val projects: Map<ProjectId, ProjectInfo> = mapOf(
+        ProjectId.sokoban to ProjectInfo(
             "Sokoban AI",
             "sokoban",
             "A* and Q Learning implementations to solve the game Sokoban",
             "$cdnUrl/sokoban.webp"
         ),
-        "seamCarver" to ProjectInfo(
+        ProjectId.seamCarver to ProjectInfo(
             "Seam Carver",
             "seamCarver",
             "An algorithm for reshaping an image's aspect ratio",
             "$cdnUrl/seamCarver.webp"
         ),
-        "raytracer" to ProjectInfo(
+        ProjectId.raytracer to ProjectInfo(
             "Raytracer",
             "raytracer",
             "A simple raytracing algorithm",
             // Also shown on the raytracer page, so the browser downloads it once for both
             "/assets/raytracer/TransparencyWithMirrorWalls.webp"
         ),
-        "webglDemo" to ProjectInfo(
+        ProjectId.webglDemo to ProjectInfo(
             "Web GL Demo",
             "webglDemo",
             "A demonstration of webgl shaders and lighting",
             "$cdnUrl/webGlDemoThumbnail.webp"
         ),
-        "foundationDbFs" to ProjectInfo(
+        ProjectId.foundationDbFs to ProjectInfo(
             "FoundationDB-FS",
             "foundationDbFs",
             "A distributed file system built on top of FoundationDB",
             "$cdnUrl/fdb_arch_noalpha.webp"
         ),
-        "broadAR" to ProjectInfo (
+        ProjectId.broadAR to ProjectInfo(
             "Broad Museum AR Experience",
             "broadAR",
             "Location tracked AR Experience I worked on at Meta",
             "$cdnUrl/broad.webp"
         ),
-        "metaAvatars" to ProjectInfo (
+        ProjectId.metaAvatars to ProjectInfo(
             "Mobile 3D Avatars",
             "metaAvatars",
             "Mobile & AR rendering changes for Avatar Style Upgrade",
             "$cdnUrl/ava.webp"
         ),
-        "vkPPU" to ProjectInfo (
+        ProjectId.vkPPU to ProjectInfo(
             "Vulkan Retro PPU",
             "vkPPU",
             "Vulkan Compute Pipeline for rendering NES games",
             "$cdnUrl/ppu.webp"
         ),
-        "zgal" to ProjectInfo (
+        ProjectId.zgal to ProjectInfo(
             "ZGAL",
             "zgal",
             "A language for GPU programs that compiles to Vulkan and WebGPU",
             "$cdnUrl/zgal.webp"
         ),
-        "splats" to ProjectInfo (
+        ProjectId.splats to ProjectInfo(
             "Gaussian Splatting",
             "splats",
             "A 3D Gaussian splatting trainer and real-time viewer written in ZGAL, running in the browser with WebGPU",
@@ -70,29 +71,14 @@ class SimpleProjectInfoRepository : IProjectInfoRepository {
         ),
     )
 
-    val categories: Map<ProjectCategory, Set<String>> = mapOf(
-        ProjectCategory.UNIVERSITY to setOf(
-            "sokoban", 
-            "seamCarver", 
-            "raytracer", 
-            "webglDemo", 
-            "foundationDbFs"
-        ),
-        ProjectCategory.PROFESSIONAL to setOf("broadAR", "metaAvatars"),
-        ProjectCategory.PERSONAL to setOf("vkPPU", "zgal", "splats")
-    )
-
-    // Shown on the home page in projectInfos order
-    val featuredIds: Set<String> = setOf("vkPPU", "zgal", "splats")
-
-    override fun getProject(id: String): ProjectInfo? {
-        return projectInfos[id];
+    init {
+        require(projects.keys == ProjectId.entries.toSet()) { "Every project needs an entry" }
     }
 
-    override fun getAllProjects(featured: Boolean, category: ProjectCategory?): List<ProjectInfo> {
-        return projectInfos.filter {
-            (!featured || featuredIds.contains(it.key))
-            && (category == null || categories[category]?.contains(it.key) ?: false)
-        }.values.toList()
-    }
+    override fun getProject(id: ProjectId): ProjectInfo = projects.getValue(id)
+
+    override fun getAllProjects(featured: Boolean, category: ProjectCategory?): List<ProjectInfo> =
+        ProjectId.entries
+            .filter { (!featured || it.featured) && (category == null || it.category == category) }
+            .map { projects.getValue(it) }
 }

@@ -158,7 +158,8 @@ fun Application.module(testing: Boolean = false) {
             query("projectInfo") {
                 description = "Retrieve a projects metadata by id"
                 resolver { id: String ->
-                    projectInfoRepository.getProject(id)
+                    // Null for an id that isn't a project's
+                    ProjectId.fromId(id)?.let(projectInfoRepository::getProject)
                 }
             }
 
