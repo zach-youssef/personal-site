@@ -63,6 +63,16 @@ function maxDifference(a: Pixels, b: Pixels): number {
     return most;
 }
 
+// The mean of two images' channel differences
+function meanDifference(a: Pixels, b: Pixels): number {
+    expect([a.width, a.height]).toEqual([b.width, b.height]);
+    let sum = 0;
+    for (let i = 0; i < a.rgba.length; i++) {
+        sum += Math.abs(a.rgba[i] - b.rgba[i]);
+    }
+    return sum / a.rgba.length;
+}
+
 test.describe('the image filter', () => {
     // Each run creates its own WebGPU device on SwiftShader
     test.setTimeout(90_000);
@@ -182,5 +192,39 @@ test.describe('the image filter', () => {
         await page.getByLabel('Picture').setInputFiles({ name: 'notes.png', mimeType: 'image/png', buffer: Buffer.from('not a picture') });
         await expect(page.getByRole('alert')).toContainText("Image filter couldn't filter notes.png", { timeout: 60_000 });
         await expect(page.getByAltText('Image filter output')).toHaveCount(0);
+    });
+
+    test('filters a JPEG the visitor chooses', async ({ page }) => {
+        const errors = collectErrors(page);
+        await page.goto('/projects/zgal?sample=image_filter');
+        const demo = page.locator('.image-filter');
+        await expect(demo).toHaveAttribute('data-zgal', 'stopped', { timeout: 60_000 });
+
+        // The example picture as a JPEG, encoded by the browser (at quality 0.95, so nearly the same
+        // pixels), which the runtime's decoder (stb_image) reads rather than the browser's
+        const jpeg = Buffer.from(await page.evaluate(async url => {
+            const picture = await createImageBitmap(await (await fetch(url)).blob());
+            const canvas = new OffscreenCanvas(picture.width, picture.height);
+            canvas.getContext('2d')!.drawImage(picture, 0, 0);
+            const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.95 });
+            return [...new Uint8Array(await blob.arrayBuffer())];
+        }, '/assets/zgal/image_filter/assets/input.png'));
+        expect([...jpeg.subarray(0, 3)]).toEqual([0xff, 0xd8, 0xff]);
+
+        const exampleHref = await page.getByRole('link', { name: 'Download' }).getAttribute('href');
+        await page.getByLabel('Picture').setInputFiles({ name: 'photo.jpg', mimeType: 'image/jpeg', buffer: jpeg });
+        await expect(page.getByAltText('Image filter input')).toHaveAttribute('src', /^blob:/);
+        await expect.poll(() => page.getByRole('link', { name: 'Download' }).getAttribute('href'), { timeout: 60_000 }).not.toBe(exampleHref);
+        await expect(demo).toHaveAttribute('data-zgal', 'stopped');
+
+        // The build's --blur 2 --edges of the example, but for what JPEG's compression changed (on
+        // SwiftShader 0.3 per channel on average and 5 at most); a misread picture differs far more
+        const filtered = await capture(page);
+        const reference = decodePng(readFileSync(BLUR_EDGES));
+        expect(meanDifference(filtered, reference)).toBeLessThan(1);
+        expect(maxDifference(filtered, reference)).toBeLessThanOrEqual(12);
+
+        await expect(page.getByRole('alert')).toHaveCount(0);
+        expect(errors).toEqual([]);
     });
 });
