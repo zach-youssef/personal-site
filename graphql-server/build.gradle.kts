@@ -45,10 +45,18 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:$logback_version")
     implementation("com.apurebase:kgraphql:$KGraphQLVersion")
     implementation("com.apurebase:kgraphql-ktor:$KGraphQLVersion")
+    // Ktor 1.5.4 and KGraphQL 0.17.8 pull in netty 4.1.63, jackson 2.12.2 and gson 2.8.0, which
+    // have published vulnerabilities. These constraints raise them within the same major lines
+    // (logback 1.2.13 is set directly in gradle.properties).
+    implementation(platform("io.netty:netty-bom:4.1.141.Final"))
+    implementation(platform("com.fasterxml.jackson:jackson-bom:2.18.12"))
+    constraints {
+        implementation("com.google.code.gson:gson:2.15.0")
+    }
     testImplementation("io.ktor:ktor-server-tests:$ktor_version")
     testImplementation(kotlin("test-junit"))
-    // Matches the version KGraphQL uses at runtime
-    testImplementation("com.fasterxml.jackson.core:jackson-databind:2.12.2")
+    // Version comes from the jackson BOM above
+    testImplementation("com.fasterxml.jackson.core:jackson-databind")
 }
 
 tasks.test {
