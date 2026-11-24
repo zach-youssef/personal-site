@@ -13,6 +13,8 @@ cd frontend && npm test
 cd e2e && npm install && npx playwright install chromium firefox && npm test
 ```
 
+`frontend/README.md` notes the traps of the component tests (jsdom's missing object URLs, module-level state shared between tests).
+
 The end-to-end tests run in two Playwright projects, headless Chromium and headless Firefox (`npm test -- --project=firefox` runs one). Every spec that doesn't need a GPU runs in both. The specs that draw with WebGPU or WebGL live in `e2e/tests/gpu/` and run in Chromium only, on SwiftShader (see `e2e/tests/gpu/webgpu.ts`), as headless Firefox has no WebGPU adapter (on Linux it has no `navigator.gpu` at all, on macOS it has one that gives no adapter); the Firefox project leaves out that directory. A new spec goes in `e2e/tests/gpu/` only if it needs a GPU to draw; tests of what a page does without WebGPU, or without an adapter (`withoutWebGPUAdapter` in `e2e/tests/pageChecks.ts`), stay outside it, so both browsers run them. A test that needs the page to behave as it does where WebGPU exists, such as showing a frame in place of a screenshot, applies `withoutWebGPUAdapter` too, as Firefox's own WebGPU differs by platform.
 
 The Vulkan Retro PPU's page (`/projects/vkPPU`) runs its games in the browser on WebGPU. They are built from the [vk_ppu](https://github.com/zach-youssef/vk_ppu) submodule (`external/vk_ppu`, with its own `vulkan_test` submodule) by `./build-ppu` into `graphql-server/assets/ppu`, which git ignores and the backend serves as `/assets/ppu/<game>/`. Run it before the end-to-end tests or a local backend, and again after updating the submodule; `./bundle` (and so `./deploy`) runs it itself. Building needs what the PPU's `make web` needs: Racket 8 and Node 24 with npm.
