@@ -53,6 +53,9 @@ dependencies {
     constraints {
         implementation("com.google.code.gson:gson:2.15.0")
     }
+    // Reads the site copy (resources/content/projects.yaml); versions come from the jackson BOM above
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     testImplementation("io.ktor:ktor-server-tests:$ktor_version")
     testImplementation(kotlin("test-junit"))
     // Version comes from the jackson BOM above

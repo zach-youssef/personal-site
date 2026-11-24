@@ -1,16 +1,19 @@
 package com.zyoussef.Respositories
 
+import com.zyoussef.Content.ProjectCopy
 import com.zyoussef.Models.ProjectInfo.ProjectCategory
 import com.zyoussef.Models.ProjectInfo.ProjectId
 import com.zyoussef.Models.ProjectInfo.ProjectInfo
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class SimpleProjectInfoRepositoryTest {
-    private val repository = SimpleProjectInfoRepository()
+    private val repository = SimpleProjectInfoRepository.fromResource()
 
-    // Golden: the site's projects, their copy and order. A change to either updates this.
+    // Golden: the site's projects as they were when the copy lived in Kotlin. A change to the copy
+    // in resources/content/projects.yaml, or to ProjectId, updates this.
     private val expected = listOf(
         ProjectInfo("Sokoban AI", "sokoban", "A* and Q Learning implementations to solve the game Sokoban", "/assets/projectThumbnail/sokoban.webp"),
         ProjectInfo("Seam Carver", "seamCarver", "An algorithm for reshaping an image's aspect ratio", "/assets/projectThumbnail/seamCarver.webp"),
@@ -62,5 +65,12 @@ class SimpleProjectInfoRepositoryTest {
     @Test
     fun `the home page has at least one featured project`() {
         assertTrue(repository.getAllProjects(featured = true).isNotEmpty())
+    }
+
+    @Test
+    fun `refuses copy that is missing a project`() {
+        val copy = ProjectId.entries.associateWith { ProjectCopy("t", "d", "/t.webp") } - ProjectId.zgal
+        val e = assertFailsWith<IllegalArgumentException> { SimpleProjectInfoRepository(copy) }
+        assertEquals("No copy for project zgal", e.message)
     }
 }

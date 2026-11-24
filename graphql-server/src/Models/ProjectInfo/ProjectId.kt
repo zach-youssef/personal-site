@@ -4,8 +4,9 @@ import com.zyoussef.Models.ProjectInfo.ProjectCategory.*
 
 // Every project on the site, in the order the site lists it: the unfiltered list, each category's
 // list and the home page's featured projects all keep this order. A constant's name is the
-// project's public id, used in its URL (/projects/<id>) and as its GraphQL id. Renaming a
-// constant changes both.
+// project's public id, used in its URL (/projects/<id>), as its GraphQL id and as its key in
+// resources/content/projects.yaml, which holds its copy (title, description, thumbnail). Renaming
+// a constant changes all three.
 @Suppress("EnumEntryName")
 enum class ProjectId(val category: ProjectCategory, val featured: Boolean) {
     sokoban(UNIVERSITY, featured = false),

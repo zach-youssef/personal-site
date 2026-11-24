@@ -50,6 +50,9 @@ private class RetypedContent(
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
+    // Loaded first, so that invalid copy in resources/content/projects.yaml stops the server at startup
+    val projectInfoRepository: IProjectInfoRepository = SimpleProjectInfoRepository.fromResource()
+
     // Static files carry Last-Modified, so browsers can revalidate a cached copy and get a
     // 304 instead of downloading it again
     install(ConditionalHeaders)
@@ -144,8 +147,6 @@ fun Application.module(testing: Boolean = false) {
         playground = true
         schema {
             // Project Metadata
-            val projectInfoRepository: IProjectInfoRepository = SimpleProjectInfoRepository()
-
             type<ProjectInfo> {
                 description = "Metadata for a project featured on the website"
             }

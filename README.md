@@ -45,6 +45,10 @@ cd frontend && BACKEND_URL=http://zyoussef.com npm start
 
 The end-to-end tests point the preview server at the test backend, so they never touch the live site.
 
+## Site copy
+
+The project cards' copy lives in `graphql-server/resources/content/projects.yaml`, one entry per project keyed by its id: `title` (the card's heading), `description` (its one-line summary) and `thumbnail` (its image, a root-relative URL such as `/assets/projectThumbnail/zgal.webp`). The projects themselves are the `ProjectId` enum (`graphql-server/src/Models/ProjectInfo/ProjectId.kt`): a constant's name is the project's public id (its URL, its GraphQL `id` and its key in the YAML), and its declaration order, category and `featured` flag set where and in which order the site lists it. Adding a project means a constant there and an entry in the YAML. The backend reads the file from its classpath at startup and refuses to start if it is malformed, misses a project, has a key that isn't a project, repeats a key or field, has a field it doesn't know, or misses a field or leaves one blank; `ProjectCopyLoaderTest` covers each case and `SimpleProjectInfoRepositoryTest` holds the expected copy, so a copy edit updates that test too.
+
 ## CI
 
 GitHub Actions (`.github/workflows/ci.yml`) builds and tests every commit a push brings, each in its own job on `ubuntu-24.04`: on `master` the commits the push added, on any other branch every commit that `master` doesn't have; in either case the newest 20 at most. A newer push to a working branch cancels the checks still running for its older one, while every push to `master` is checked in full. Each job runs `tests/deploy-test.sh` (with its lock tests, as the runner has `flock`), the frontend tests, `./build-ppu`, `./build-zgal`, `./build-splat`, the backend tests and the end-to-end tests, and its commit gets a `CI / test` commit status, so a branch shows which of its commits pass.

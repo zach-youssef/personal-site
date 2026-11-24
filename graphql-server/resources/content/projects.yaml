@@ -1,0 +1,60 @@
+# The copy of each project's card on the site, keyed by the project's id. The projects themselves,
+# their order, category and whether the home page features them, are ProjectId
+# (src/Models/ProjectInfo/ProjectId.kt); this file must have exactly one entry for each of them,
+# with every field. The server refuses to start otherwise. See "Site copy" in the README.
+#
+#   title:       the card's heading
+#   description: the card's one-line summary
+#   thumbnail:   the card's image, a root-relative URL (relative, so thumbnails load over
+#                whichever protocol the page uses)
+
+sokoban:
+  title: Sokoban AI
+  description: A* and Q Learning implementations to solve the game Sokoban
+  thumbnail: /assets/projectThumbnail/sokoban.webp
+
+seamCarver:
+  title: Seam Carver
+  description: An algorithm for reshaping an image's aspect ratio
+  thumbnail: /assets/projectThumbnail/seamCarver.webp
+
+raytracer:
+  title: Raytracer
+  description: A simple raytracing algorithm
+  # Also shown on the raytracer page, so the browser downloads it once for both
+  thumbnail: /assets/raytracer/TransparencyWithMirrorWalls.webp
+
+webglDemo:
+  title: Web GL Demo
+  description: A demonstration of webgl shaders and lighting
+  thumbnail: /assets/projectThumbnail/webGlDemoThumbnail.webp
+
+foundationDbFs:
+  title: FoundationDB-FS
+  description: A distributed file system built on top of FoundationDB
+  thumbnail: /assets/projectThumbnail/fdb_arch_noalpha.webp
+
+broadAR:
+  title: Broad Museum AR Experience
+  description: Location tracked AR Experience I worked on at Meta
+  thumbnail: /assets/projectThumbnail/broad.webp
+
+metaAvatars:
+  title: Mobile 3D Avatars
+  description: Mobile & AR rendering changes for Avatar Style Upgrade
+  thumbnail: /assets/projectThumbnail/ava.webp
+
+vkPPU:
+  title: Vulkan Retro PPU
+  description: Vulkan Compute Pipeline for rendering NES games
+  thumbnail: /assets/projectThumbnail/ppu.webp
+
+zgal:
+  title: ZGAL
+  description: A language for GPU programs that compiles to Vulkan and WebGPU
+  thumbnail: /assets/projectThumbnail/zgal.webp
+
+splats:
+  title: Gaussian Splatting
+  description: A 3D Gaussian splatting trainer and real-time viewer written in ZGAL, running in the browser with WebGPU
+  thumbnail: /assets/projectThumbnail/splats.webp
