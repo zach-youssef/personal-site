@@ -7,6 +7,10 @@
 #                            its loader (an ES module exporting load(url))
 #   java/carver.<hash>.js    the same Java built to JavaScript by TeaVM (an ES module), for browsers
 #                            without WasmGC or exnref
+#   flat/flat.<hash>.js, flat/flat_bg.<hash>.wasm
+#                            the Rust engine for large images (seamcarver-web/flat), built to
+#                            WebAssembly, with its wasm-bindgen glue (an ES module: init(url), then
+#                            Carver)
 #   manifest.json            the paths above by engine and part
 #
 # <hash> is the first 16 hex digits of the file's sha256, so a file's name changes with its content:
@@ -24,7 +28,10 @@
 #
 #   ./build-seamcarver
 #
-# Needs Java (the Gradle wrapper picks a JDK 21 toolchain), Node 24 and jq.
+# Needs Java (the Gradle wrapper picks a JDK 21 toolchain), Node 24, jq, and what
+# seamcarver-web/flat/build.sh needs: the Rust toolchain its rust-toolchain.toml pins (rustup) and
+# wasm-bindgen-cli at the crate's exact wasm-bindgen version (see "Seam carver Rust engine" in
+# README.md).
 set -euo pipefail
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -75,9 +82,20 @@ java_wasm=$(place "${teavm_out}/wasm-gc/carver.wasm" java)
 java_runtime=$(place "${teavm_out}/wasm-gc/carver.wasm-runtime.js" java)
 java_js=$(place "${teavm_out}/js/carver.js" java)
 
-# manifest.json: {"java": {"wasm": <path>, "wasmRuntime": <path>, "js": <path>}}
-jq -n --arg wasm "${java_wasm}" --arg runtime "${java_runtime}" --arg js "${java_js}" '{
-    java: {wasm: $wasm, wasmRuntime: $runtime, js: $js}
+# The Rust engine; build.sh also writes TypeScript declarations, which the page doesn't load
+flat_out=${STAGE}/flat-build
+"${WEB_DIR}/flat/build.sh" "${flat_out}"
+mkdir "${STAGE}/flat"
+flat_js=$(place "${flat_out}/flat.js" flat)
+flat_wasm=$(place "${flat_out}/flat_bg.wasm" flat)
+rm -rf "${flat_out}"
+
+# manifest.json: {"java": {"wasm": <path>, "wasmRuntime": <path>, "js": <path>},
+#                 "flat": {"js": <path>, "wasm": <path>}}
+jq -n --arg wasm "${java_wasm}" --arg runtime "${java_runtime}" --arg js "${java_js}" \
+      --arg flat_js "${flat_js}" --arg flat_wasm "${flat_wasm}" '{
+    java: {wasm: $wasm, wasmRuntime: $runtime, js: $js},
+    flat: {js: $flat_js, wasm: $flat_wasm}
 }' > "${STAGE}/manifest.json"
 
 node "${node_flags[@]}" "${WEB_DIR}/golden-check.mjs" "${STAGE}"
@@ -85,4 +103,6 @@ node "${node_flags[@]}" "${WEB_DIR}/golden-check.mjs" "${STAGE}"
 rm -rf "${OUT_DIR}"
 mkdir -p "$(dirname "${OUT_DIR}")"
 cp -R "${STAGE}" "${OUT_DIR}"
+# mktemp makes the stage private; the assets are as public as the rest
+chmod 755 "${OUT_DIR}" "${OUT_DIR}"/*/
 echo "Built ${OUT_DIR} ($(find "${OUT_DIR}" -type f | wc -l | tr -d ' ') files)"

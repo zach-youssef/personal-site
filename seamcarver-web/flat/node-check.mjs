@@ -6,8 +6,8 @@
 //
 //   node node-check.mjs <dir> [--bench] [--quick]
 //
-// The TeaVM build's golden-check.mjs is to call this, or fold it in, once both engines are built
-// by build-seamcarver.
+// For working on the crate alone and for the benchmark: the site's build (./build-seamcarver) runs
+// the module it ships over the goldens itself, in ../golden-check.mjs with the Java engines.
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';

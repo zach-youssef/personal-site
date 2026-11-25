@@ -184,26 +184,29 @@ jobs:
           if-no-files-found: ignore
       - name: Seam carver Rust engine
         # Formatted, lint-clean (the wasm32 build too, since src/wasm.rs only compiles there), and
-        # reproducing the goldens natively (cargo test) and as the WebAssembly module under Node
-        # (build.sh, node-check.mjs). The toolchain and wasm-bindgen come from setup-build.
+        # reproducing the goldens natively (cargo test); its WebAssembly module is built and checked
+        # by ./build-seamcarver below. The toolchain comes from setup-build.
         working-directory: seamcarver-web/flat
         run: |
           cargo fmt --check
           cargo clippy --all-targets -- -D warnings
           cargo clippy --target wasm32-unknown-unknown -- -D warnings
           cargo test
-          ./build.sh "${RUNNER_TEMP}/seamcarver-flat"
-          node node-check.mjs "${RUNNER_TEMP}/seamcarver-flat"
       - name: Build the seam carver's web engines
-        # The SeamCarving Java built by TeaVM (WebAssembly and JavaScript), checked against the
-        # goldens under Node by the build itself; the end-to-end tests then run them in the browsers.
-        # Every job runs the pushed tip's steps, so a commit from before the script, lower in the
-        # same push, has nothing to build here.
+        # The SeamCarving Java built by TeaVM (WebAssembly and JavaScript) and the Rust engine built
+        # to WebAssembly (with setup-build's wasm-bindgen), each checked against the goldens under
+        # Node by the build itself; the end-to-end tests then run them in the browsers. Every job
+        # runs the pushed tip's steps, so a commit from before the script, lower in the same push,
+        # falls back to what its own ci.yml ran in the Rust step: the module built and checked
+        # under Node.
         run: |
           if [[ -x ./build-seamcarver ]]; then
               ./build-seamcarver
           else
-              echo "::notice::No ./build-seamcarver at this commit; nothing to build"
+              echo "::notice::No ./build-seamcarver at this commit; checking the Rust engine's WebAssembly under Node instead"
+              cd seamcarver-web/flat
+              ./build.sh "${RUNNER_TEMP}/seamcarver-flat"
+              node node-check.mjs "${RUNNER_TEMP}/seamcarver-flat"
           fi
 
       - name: End-to-end tests

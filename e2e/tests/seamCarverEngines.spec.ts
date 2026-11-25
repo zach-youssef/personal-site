@@ -25,22 +25,36 @@ type Image = ReturnType<typeof readGolden>;
 
 interface Manifest {
     java: { wasm: string, wasmRuntime: string, js: string },
+    flat: { js: string, wasm: string },
 }
 
 // The URL the page loads a manifest entry by: its path under the assets (the file's name carries
 // its content's hash, see build-seamcarver)
 const url = (path: string) => `${ASSETS}/${path}`;
 
-// Which build of the Java to load: TeaVM's WebAssembly, through its runtime's load(), or its
-// JavaScript module, whose named exports are WebCarver's
-type Variant = { wasm: { runtime: string, module: string } } | { js: string };
+// Which engine to load: the Java as TeaVM's WebAssembly, through its runtime's load(), or as its
+// JavaScript module, whose named exports are WebCarver's; or the Rust engine, wasm-bindgen's glue
+// initialised with its module's URL
+type Variant = { wasm: { runtime: string, module: string } } | { js: string } | { flat: { js: string, wasm: string } };
 
-// Carves the input to the target in the page with the given build, as the worker does: all vertical
-// seams, then all horizontal ones, through WebCarver's stepwise exports
+// Carves the input to the target in the page with the given engine, as the worker does: all
+// vertical seams, then all horizontal ones, through the stepwise exports
 function carveInBrowser(page: Page, variant: Variant, input: Image, target: { width: number, height: number }) {
     return page.evaluate(async ([variant, input, target]) => {
         // A dynamic import by its own name, so no transpiler turns it into a require
         const load = new Function('url', 'return import(url)') as (url: string) => Promise<any>;
+        if ('flat' in variant) {
+            const { default: init, Carver } = await load(variant.flat.js);
+            await init({ module_or_path: variant.flat.wasm });
+            const carver = new Carver(Uint32Array.from(input.rgb), input.width, input.height);
+            try {
+                while (carver.width() > target.width) carver.step_vertical();
+                while (carver.height() > target.height) carver.step_horizontal();
+                return Array.from(carver.rgb() as ArrayLike<number>);
+            } finally {
+                carver.free();
+            }
+        }
         const carver = 'wasm' in variant
             ? (await (await load(variant.wasm.runtime)).load(variant.wasm.module)).exports
             : await load(variant.js);
@@ -68,9 +82,17 @@ test.describe('seam carver engines in the browser', () => {
         const response = await page.goto(`${ASSETS}/manifest.json`);
         expect(response?.headers()['cache-control']).toBe('no-cache');
         manifest = JSON.parse(await page.locator('body').innerText());
-        for (const path of Object.values(manifest.java)) {
+        for (const path of [...Object.values(manifest.java), ...Object.values(manifest.flat)]) {
             expect(path, `${path} named by its hash`).toMatch(/\.[0-9a-f]{16}\.[^./]+$/);
         }
+    });
+
+    test('the Rust engine (WebAssembly) carves the medium golden exactly', { tag: '@firefox' }, async ({ page }) => {
+        const actual = await carveInBrowser(page, {
+            flat: { js: url(manifest.flat.js), wasm: url(manifest.flat.wasm) },
+        }, input, expected);
+        expect(actual.length).toBe(expected.rgb.length);
+        expect(actual).toEqual(expected.rgb);
     });
 
     test('the Java as WebAssembly (TeaVM) carves the medium golden exactly', { tag: '@firefox' }, async ({ page }) => {

@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 // Checks a build of the seam carver's web engines (what ./build-seamcarver puts in
 // graphql-server/assets/seamcarver-web) against the goldens in testdata/seamcarver, under Node:
-// every engine the build's manifest.json names carves every case, and any differing pixel fails
-// the check (exit 1). It also checks that each file the manifest names is there under a name that
-// carries its content's hash (<stem>.<first 16 hex digits of the sha256>.<ext>), since browsers
-// cache the files by name.
+// every engine the build's manifest.json names (the Java as TeaVM's WebAssembly and JavaScript,
+// the Rust engine's WebAssembly) carves every case, and any differing pixel fails the check
+// (exit 1). It also checks that each file the manifest names is there under a name that carries
+// its content's hash (<stem>.<first 16 hex digits of the sha256>.<ext>), since browsers cache the
+// files by name.
 //
 //   node --experimental-wasm-exnref golden-check.mjs <built dir>
 //
@@ -87,6 +88,25 @@ function javaEngine(name, exports) {
   }
   engines.push(javaEngine('Java, WebAssembly (TeaVM)', teavm.exports));
   engines.push(javaEngine('Java, JavaScript (TeaVM)', await import(pathToFileURL(file(manifest.java.js)).href)));
+}
+
+// The Rust engine (seamcarver-web/flat): wasm-bindgen's glue, initialised with the module's bytes
+{
+  const { default: init, Carver } = await import(pathToFileURL(file(manifest.flat.js)).href);
+  await init({ module_or_path: readFileSync(file(manifest.flat.wasm)) });
+  engines.push({
+    name: 'Rust, WebAssembly',
+    carve(input, targetWidth, targetHeight) {
+      const carver = new Carver(Uint32Array.from(input.rgb), input.width, input.height);
+      try {
+        while (carver.width() > targetWidth) carver.step_vertical();
+        while (carver.height() > targetHeight) carver.step_horizontal();
+        return carver.rgb();
+      } finally {
+        carver.free();
+      }
+    },
+  });
 }
 
 const names = readdirSync(goldens).filter((f) => f.endsWith('.in')).map((f) => f.slice(0, -3)).sort();
