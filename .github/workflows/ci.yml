@@ -182,6 +182,18 @@ jobs:
           name: seamcarver-web-test-report-${{ matrix.sha }}
           path: seamcarver-web/build/reports/tests/
           if-no-files-found: ignore
+      - name: Seam carver Rust engine
+        # Formatted, lint-clean (the wasm32 build too, since src/wasm.rs only compiles there), and
+        # reproducing the goldens natively (cargo test) and as the WebAssembly module under Node
+        # (build.sh, node-check.mjs). The toolchain and wasm-bindgen come from setup-build.
+        working-directory: seamcarver-web/flat
+        run: |
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo clippy --target wasm32-unknown-unknown -- -D warnings
+          cargo test
+          ./build.sh "${RUNNER_TEMP}/seamcarver-flat"
+          node node-check.mjs "${RUNNER_TEMP}/seamcarver-flat"
 
       - name: End-to-end tests
         working-directory: e2e

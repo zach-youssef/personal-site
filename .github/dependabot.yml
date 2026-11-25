@@ -24,6 +24,20 @@ updates:
       gradle-minor-patch:
         update-types: [minor, patch]
 
+  - package-ecosystem: cargo
+    # The seam carver's Rust engine. Its wasm-bindgen is pinned exactly, and CI installs the
+    # wasm-bindgen-cli of whatever Cargo.lock says, so a bump here carries the cli with it. The
+    # toolchain (rust-toolchain.toml) isn't Dependabot's; bump it by hand.
+    directories:
+      - /seamcarver-web/flat
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      cargo-minor-patch:
+        update-types: [minor, patch]
+
   - package-ecosystem: github-actions
     # The workflows and the local composite action (.github/actions/setup-build) both pin actions.
     directories:
