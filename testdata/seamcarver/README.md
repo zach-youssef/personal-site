@@ -32,6 +32,9 @@ give the same result.
 | `small-both` | 12x10 | 8x6 | all vertical seams, then all horizontal ones |
 | `small-noop` | 12x10 | 12x10 | nothing to remove (`.out` equals `.in`) |
 | `width-one` | 33x17 | 1x17 | carving down to a single column |
+| `height-one` | 17x33 | 17x1 | carving down to a single row |
+| `row-one` | 40x1 | 25x1 | a one-row input: every vertical seam is one pixel, chosen by the bottom-row tie-break alone |
+| `column-one` | 1x30 | 1x20 | a one-column input: every horizontal seam is one pixel |
 | `flat-ties` | 20x20 | 15x15 | two flat colours in 5x5 blocks: exact energy ties, so the tie-breaks decide |
 | `medium` | 64x48 | 48x36 | a 25% carve |
 | `large` | 120x90 | 90x70 | the largest, still under 50 KB per file |

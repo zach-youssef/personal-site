@@ -188,7 +188,14 @@ fn stepping_matches_every_golden() {
 /// The incremental energy update after a removal must equal recomputing every pixel.
 #[test]
 fn energy_cache_stays_exact() {
-    for name in ["large", "flat-ties", "width-one"] {
+    for name in [
+        "large",
+        "flat-ties",
+        "width-one",
+        "height-one",
+        "row-one",
+        "column-one",
+    ] {
         let (input, output) = case(name);
         let mut carver = Carver::new(&input.rgb, input.width, input.height).unwrap();
         assert_eq!(
