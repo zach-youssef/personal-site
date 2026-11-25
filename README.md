@@ -13,6 +13,8 @@ cd frontend && npm test
 cd e2e && npm install && npx playwright install chromium firefox && npm test
 ```
 
+The end-to-end tests need the git-ignored builds of the PPU's games, ZGAL's examples and the splat viewer first (`./build-ppu`, `./build-zgal`, `./build-splat`, which also fills `e2e/fixtures/splat`); without them about 56 ppu, splat and zgal specs fail in ways that look unrelated. To run one spec, name its file (`npx playwright test tests/seamCarver.spec.ts`): Playwright matches a filter against the whole path, ignoring case, so `seamCarver` alone matches every spec in a checkout whose path contains "seamcarver".
+
 `frontend/README.md` notes the traps of the component tests (jsdom's missing object URLs, module-level state shared between tests).
 
 The end-to-end tests run in two Playwright projects, headless Chromium and headless Firefox (`npm test -- --project=firefox` runs one). Every spec that doesn't need a GPU runs in both. The specs that draw with WebGPU or WebGL live in `e2e/tests/gpu/` and run in Chromium only, on SwiftShader (see `e2e/tests/gpu/webgpu.ts`), as headless Firefox has no WebGPU adapter (on Linux it has no `navigator.gpu` at all, on macOS it has one that gives no adapter); the Firefox project leaves out that directory. A new spec goes in `e2e/tests/gpu/` only if it needs a GPU to draw; tests of what a page does without WebGPU, or without an adapter (`withoutWebGPUAdapter` in `e2e/tests/pageChecks.ts`), stay outside it, so both browsers run them. A test that needs the page to behave as it does where WebGPU exists, such as showing a frame in place of a screenshot, applies `withoutWebGPUAdapter` too, as Firefox's own WebGPU differs by platform.
@@ -100,6 +102,8 @@ ssh ec2-user@zyoussef.com 'cat > server-deploy && chmod 755 server-deploy' < ser
 ```
 
 The first deploy after that keeps a manifest and deletes nothing; later ones delete by it.
+
+The server needs Java 21 (the `java` on its `PATH`, which `server-restart` starts the backend's jar with), as the backend is built for it (see `graphql-server/README.md`).
 
 On the server, [Caddy](https://caddyserver.com) serves the site over https on ports 80 and 443, with a Let's Encrypt certificate it obtains and renews itself, and forwards requests to the Ktor server on `127.0.0.1:8080`. Its config is `Caddyfile`, which `server-restart` installs on every deploy. Caddy is set up once per server with:
 
