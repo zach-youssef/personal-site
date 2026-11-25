@@ -12,7 +12,7 @@ runs:
   steps:
     - name: Check out the public submodules
       # Their URLs are ssh, which needs a key; over https they need none. Passed with -c, the
-      # rewrite reaches the nested submodules (vk_ppu's and vk_splats' vulkan_test) but not
+      # rewrite reaches the nested submodules (vk_ppu's and vk_splats' zgal) but not
       # SeamCarving's checkout below, which is private and needs its deploy key.
       shell: bash
       run: >-
@@ -61,7 +61,7 @@ runs:
     - name: Key ZGAL's wasi-sdk cache
       # ./build-zgal builds ZGAL's runtime's image decoder with wasi-sdk, which ZGAL's make downloads
       # into external/zgal/.cache/ the first time; keyed by the version ZGAL pins, so it downloads
-      # again only when that changes. (The PPU's and the splat viewer's vulkan_test pins don't build
+      # again only when that changes. (The PPU's and the splat viewer's zgal pins don't build
       # the decoder yet; when one does, its .cache/ belongs here too.)
       id: wasi-sdk-cache-key
       shell: bash
@@ -118,8 +118,8 @@ runs:
           frontend/package-lock.json
           e2e/package-lock.json
           external/zgal/web/package-lock.json
-          external/vk_ppu/external/vulkan_test/web/package-lock.json
-          external/vk_splats/external/vulkan_test/web/package-lock.json
+          external/vk_ppu/external/zgal/web/package-lock.json
+          external/vk_splats/external/zgal/web/package-lock.json
     - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
       with:
         distribution: temurin
