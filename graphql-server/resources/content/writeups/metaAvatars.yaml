@@ -1,0 +1,37 @@
+# The metaAvatars project page's copy; its title and image are its card's, in ../projects.yaml.
+# See "Site copy" in the README. The server refuses to start if this file is invalid.
+#
+#   context:  one line under the title: employer, year, role
+#   imageAlt: the alt text of the page's image (the card's thumbnail)
+#   sections: the body, in order; each has a `text` and may have a `heading`. Paste the text
+#             into the `|` block, indented; blank lines separate paragraphs, and the line breaks
+#             inside a paragraph are joined with spaces, so hard-wrapped text is fine.
+#   articles: at least one; each has a title, source (the publisher), url (https://), note (one
+#             line on what it covers) and, if known, date ("YYYY-MM" or "YYYY-MM-DD").
+#
+# Quote values YAML would otherwise read as something else: dates, numbers, and words like
+# yes, no, on and off ("2024-09", "yes"). Placeholders start with TODO(copy).
+
+context: "TODO(copy): employer, year, role"
+imageAlt: >-
+  Six of Meta's restyled 3D avatars on the stage screen at Meta Connect 2024
+sections:
+  - text: |
+      TODO(copy): what the avatar style upgrade was and where the avatars appear.
+  - heading: "TODO(copy): My role"
+    text: |
+      TODO(copy): the team you were on and what you owned.
+  - heading: "TODO(copy): Technical work"
+    text: |
+      TODO(copy): the mobile and AR rendering changes.
+
+      TODO(copy): a second paragraph, if wanted.
+  - heading: "TODO(copy): Outcome"
+    text: |
+      TODO(copy): how it shipped and was received.
+articles:
+  - title: Meta is giving its metaverse avatars a glow-up
+    source: The Verge
+    date: "2024-09-25"
+    url: https://www.theverge.com/2024/9/25/24254331/meta-metaverse-avatars-glow-up-connect-2024
+    note: "TODO(copy): one line on what this article covers"

@@ -264,6 +264,67 @@ class ApplicationTest {
     }
 
     @Test
+    fun `projectWriteup returns a professional project's page copy with every field`() = withApp {
+        val writeup = graphQL(
+            """
+            {
+                projectWriteup(id: "broadAR") {
+                    id, context, imageAlt, sections { heading, paragraphs },
+                    articles { title, source, date, url, note }
+                }
+            }
+            """,
+        ).path("projectWriteup")
+
+        assertEquals("broadAR", writeup.path("id").asText())
+        assertTrue(writeup.path("context").asText().isNotBlank())
+        assertTrue(writeup.path("imageAlt").asText().isNotBlank())
+        val sections = writeup.path("sections")
+        assertTrue(sections.size() > 0)
+        for (section in sections) {
+            // Present, and null or text
+            assertTrue(section.has("heading") && (section.path("heading").isNull || section.path("heading").isTextual), "$section")
+            assertTrue(section.path("paragraphs").isArray && section.path("paragraphs").size() > 0, "$section")
+            assertTrue(section.path("paragraphs").all { it.isTextual && it.asText().isNotBlank() }, "$section")
+        }
+        val articles = writeup.path("articles")
+        assertTrue(articles.size() > 0)
+        for (article in articles) {
+            for (field in listOf("title", "source", "url", "note")) {
+                assertTrue(article.path(field).isTextual && article.path(field).asText().isNotBlank(), "$field in $article")
+            }
+            assertTrue(article.has("date") && (article.path("date").isNull || article.path("date").isTextual), "$article")
+            assertTrue(article.path("url").asText().startsWith("https://"), "$article")
+        }
+    }
+
+    @Test
+    fun `a project page's query gets the card's name and image and the write-up in one request`() = withApp {
+        // The frontend's query (frontend/src/features/projectWriteup/ProjectWriteup.ts), verbatim
+        val query = """
+            query ProjectWriteupQuery(${'$'}id: String!) {
+              projectInfo(id: ${'$'}id) { name, imagePath }
+              projectWriteup(id: ${'$'}id) { context, imageAlt, sections { heading, paragraphs },
+                                        articles { title, source, date, url, note } }
+            }
+        """
+        for ((id, name) in listOf("broadAR" to "Broad Museum AR Experience", "metaAvatars" to "Mobile 3D Avatars")) {
+            val data = graphQL(query, mapOf("id" to id))
+            assertEquals(name, data.path("projectInfo").path("name").asText())
+            assertTrue(data.path("projectInfo").path("imagePath").asText().endsWith(".webp"))
+            assertTrue(data.path("projectWriteup").path("sections").size() > 0, id)
+            assertTrue(data.path("projectWriteup").path("articles").size() > 0, id)
+        }
+    }
+
+    @Test
+    fun `projectWriteup is null for an unknown id or a project without a page`() = withApp {
+        for (id in listOf("doesNotExist", "BroadAR", "", "zgal")) {
+            assertTrue(graphQL("{ projectWriteup(id: \"$id\") { context } }").path("projectWriteup").isNull, id)
+        }
+    }
+
+    @Test
     fun `levels lists every sokoban level`() = withApp {
         assertEquals(listOf("LEVEL_0", "LEVEL_1", "LEVEL_2"), graphQL("{ levels }").path("levels").texts())
     }

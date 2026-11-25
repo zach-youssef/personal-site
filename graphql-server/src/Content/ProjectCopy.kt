@@ -1,11 +1,6 @@
 package com.zyoussef.Content
 
-import com.fasterxml.jackson.core.JacksonException
-import com.fasterxml.jackson.core.StreamReadFeature
 import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
-import com.fasterxml.jackson.module.kotlin.kotlinModule
 import com.zyoussef.Models.ProjectInfo.ProjectId
 
 // A project's copy, as written in resources/content/projects.yaml (see the README's "Site copy")
@@ -18,37 +13,17 @@ data class ProjectCopy(
     val thumbnail: String,
 )
 
-class ProjectCopyException(message: String, cause: Throwable? = null) : IllegalStateException(message, cause)
-
 object ProjectCopyLoader {
-    // Read from the classpath, so it works from the fat jar as well as from the source tree
     const val RESOURCE = "content/projects.yaml"
-
-    private val mapper = YAMLMapper.builder()
-        .addModule(kotlinModule())
-        // A repeated key would otherwise silently replace the first entry
-        .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
-        .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-        // A second `---` document would otherwise be ignored without a word
-        .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
-        .build()
 
     // The site's copy. Throws ProjectCopyException if the file is missing or invalid, so that a
     // mistake in it stops the server from starting rather than showing up on the site.
-    fun fromResource(): Map<ProjectId, ProjectCopy> {
-        val stream = ProjectCopyLoader::class.java.classLoader.getResourceAsStream(RESOURCE)
-            ?: throw ProjectCopyException("$RESOURCE: not found on the classpath")
-        return parse(stream.use { it.readBytes().decodeToString() }, RESOURCE)
-    }
+    fun fromResource(): Map<ProjectId, ProjectCopy> = parse(ContentYaml.resourceText(RESOURCE), RESOURCE)
 
     // Parses and checks a projects.yaml document: one entry for every ProjectId, keyed by its id,
     // no other keys, and every field present and non-blank. `source` names it in error messages.
     fun parse(yaml: String, source: String): Map<ProjectId, ProjectCopy> {
-        val entries: Map<String, ProjectCopy> = try {
-            mapper.readValue(yaml, object : TypeReference<Map<String, ProjectCopy>?>() {})
-        } catch (e: JacksonException) {
-            throw ProjectCopyException("$source: ${e.originalMessage}${e.location?.let { " (line ${it.lineNr}, column ${it.columnNr})" } ?: ""}", e)
-        } ?: throw ProjectCopyException("$source: is empty")
+        val entries = ContentYaml.parse(yaml, source, object : TypeReference<Map<String, ProjectCopy>?>() {})
 
         val problems = mutableListOf<String>()
         val unknown = entries.keys.filter { ProjectId.fromId(it) == null }

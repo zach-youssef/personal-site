@@ -114,4 +114,15 @@ class ProjectCopyLoaderTest {
             failure(document().replace("/assets/zgal.webp", "assets/zgal.webp")),
         )
     }
+
+    @Test
+    fun `refuses unquoted values YAML reads as booleans or numbers`() {
+        // They would otherwise become the text "true" or "2024"
+        for (value in listOf("yes", "2024")) {
+            val message = failure(document().replace("  title: Title of zgal\n", "  title: $value\n"))
+            assertContains(message, "zgal.title must be quoted text")
+            assertContains(message, "(line ")
+        }
+        assertEquals("yes", ProjectCopyLoader.parse(document().replace("  title: Title of zgal\n", "  title: \"yes\"\n"), "test.yaml")[ProjectId.zgal]!!.title)
+    }
 }

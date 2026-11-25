@@ -3,6 +3,7 @@ package com.zyoussef
 import com.zyoussef.Models.ProjectInfo.*
 import com.zyoussef.Models.Sokoban.*
 import com.zyoussef.Respositories.*
+import com.zyoussef.Schema.projectWriteupSchema
 import de.stuebingerb.kgraphql.GraphQL
 import io.ktor.http.*
 import io.ktor.http.content.*
@@ -50,8 +51,10 @@ private suspend fun ApplicationCall.respondFrontendFile(name: String) {
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
-    // Loaded first, so that invalid copy in resources/content/projects.yaml stops the server at startup
+    // Loaded first, so that invalid copy in resources/content/ stops the server at startup
     val projectInfoRepository: IProjectInfoRepository = SimpleProjectInfoRepository.fromResource()
+    val projectWriteupRepository: IProjectWriteupRepository = ProjectWriteupRepository.fromResource()
+
     // Where uploads are written while they're carved: the system's temporary directory unless the
     // config names one (the tests do, to check that none is left behind)
     val uploadDir = environment.config.propertyOrNull("seamcarver.uploadDir")?.getString()?.let(::File)
@@ -173,6 +176,9 @@ fun Application.module(testing: Boolean = false) {
                     projectInfoRepository.getAllProjects(featured ?: false, category)
                 }
             }
+
+            // Professional projects' pages
+            projectWriteupSchema(projectWriteupRepository)
 
             // Sokoban AI
             val sokobanRepository: ISokobanRepository = SokobanEngine()
