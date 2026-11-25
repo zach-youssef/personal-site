@@ -10,12 +10,8 @@ import io.ktor.http.content.*
 import io.ktor.server.config.*
 import io.ktor.server.http.content.*
 import io.ktor.server.testing.*
-import java.awt.Color
-import java.awt.image.BufferedImage
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.nio.file.Files
-import javax.imageio.ImageIO
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -421,85 +417,15 @@ class ApplicationTest {
         assertNull(call.headers[HttpHeaders.AccessControlAllowOrigin])
     }
 
-    // A 12x10 PNG to carve
-    private fun testPng(): ByteArray {
-        val input = BufferedImage(12, 10, BufferedImage.TYPE_INT_RGB)
-        for (x in 0 until input.width) for (y in 0 until input.height) {
-            input.setRGB(x, y, Color((x * 20) % 256, (y * 25) % 256, ((x + y) * 10) % 256).rgb)
-        }
-        return ByteArrayOutputStream().also { ImageIO.write(input, "png", it) }.toByteArray()
-    }
-
-    private fun FormBuilder.appendImage(bytes: ByteArray) = append("file", bytes, Headers.build {
-        append(HttpHeaders.ContentDisposition, "filename=\"test.png\"")
-        append(HttpHeaders.ContentType, ContentType.Image.PNG.toString())
-    })
-
-    // Carved images used to be cached, publicly, in this directory (served under /assets); checks
-    // that the test adds nothing to it
-    private inline fun withCarvingOutputs(test: () -> Unit) {
-        val outputDir = File("assets/seamcarver/output")
-        val existingOutputs = outputDir.listFiles()?.toSet() ?: emptySet()
-        test()
-        assertEquals(existingOutputs, outputDir.listFiles()?.toSet() ?: emptySet(), "carved images kept")
-    }
-
     @Test
-    fun `seam carver upload returns an image of the requested size`() = withApp {
-        val png = testPng()
-        withCarvingOutputs {
+    fun `the seam carver upload endpoint is gone`() = withApp {
+        // The page carves in the browser; the server no longer carves, keeps or serves carved images
+        withFrontendFile("index.html", "<title>Zoey</title>") {
             val call = client.submitFormWithBinaryData("/seamCarver/upload", formData {
                 append("width", "9")
                 append("height", "7")
-                appendImage(png)
             })
-
-            assertEquals(HttpStatusCode.OK, call.status)
-            val carved = assertNotNull(ImageIO.read(assertNotNull(call.bodyAsBytes()).inputStream()))
-            assertEquals(9, carved.width)
-            assertEquals(7, carved.height)
-        }
-    }
-
-    @Test
-    fun `uploads leave no file behind while they're carved`() {
-        val uploadDir = Files.createTempDirectory("seamcarver-uploads").toFile()
-        try {
-            withApp(MapApplicationConfig("seamcarver.uploadDir" to uploadDir.path)) {
-                fun leftBehind() = uploadDir.list()!!.toList()
-                val png = testPng()
-                withCarvingOutputs {
-                    // Two files: the second replaces the first
-                    val twice = client.submitFormWithBinaryData("/seamCarver/upload", formData {
-                        append("width", "9")
-                        append("height", "7")
-                        appendImage(png)
-                        appendImage(png)
-                    })
-                    assertEquals(HttpStatusCode.OK, twice.status)
-                    assertEquals(emptyList(), leftBehind(), "after two files")
-
-                    // Not an image
-                    val notAnImage = client.submitFormWithBinaryData("/seamCarver/upload", formData {
-                        append("width", "9")
-                        append("height", "7")
-                        appendImage("not a PNG".toByteArray())
-                    })
-                    assertEquals(HttpStatusCode.BadRequest, notAnImage.status)
-                    assertEquals(emptyList(), leftBehind(), "after an unreadable image")
-
-                    // A width that isn't a number, after the file
-                    val notANumber = client.submitFormWithBinaryData("/seamCarver/upload", formData {
-                        appendImage(png)
-                        append("width", "nine")
-                        append("height", "7")
-                    })
-                    assertEquals(HttpStatusCode.BadRequest, notANumber.status)
-                    assertEquals(emptyList(), leftBehind(), "after a bad width")
-                }
-            }
-        } finally {
-            uploadDir.deleteRecursively()
+            assertEquals(HttpStatusCode.NotFound, call.status)
         }
     }
 

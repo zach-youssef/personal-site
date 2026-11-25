@@ -1,10 +1,5 @@
-import { existsSync, readdirSync, rmSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-
-// The backend writes carved images here, relative to its working directory
-const OUTPUT_DIR = resolve(__dirname, '../../graphql-server/assets/seamcarver/output');
-
-const listOutputs = () => existsSync(OUTPUT_DIR) ? readdirSync(OUTPUT_DIR) : [];
 
 // The PPU's games, ZGAL's examples, the splat viewer with its scene and the seam carver's web
 // engines, which the backend serves for their pages, the splat specs' fixture scene, and the
@@ -17,17 +12,11 @@ const BUILT_ASSETS = [
     [resolve(__dirname, '../../graphql-server/assets/seamcarver-web'), './build-seamcarver'],
 ];
 
-// Remove the carved images the tests produce
+// Refuse to start without the builds, whose absence would fail many specs in unrelated-looking ways
 export default function globalSetup() {
     for (const [dir, script] of BUILT_ASSETS) {
         if (!existsSync(dir)) {
             throw new Error(`Nothing built in ${dir}: run ${script} first`);
         }
     }
-    const existing = new Set(listOutputs());
-    return () => {
-        for (const file of listOutputs().filter(file => !existing.has(file))) {
-            rmSync(resolve(OUTPUT_DIR, file));
-        }
-    };
 }

@@ -176,7 +176,6 @@ function basePlugin(): Plugin {
 // Frontend build output also lives under /assets, so only the backend's asset folders are listed.
 const BACKEND_PATHS = [
 	"/graphql",
-	"/seamCarver",
 	"/assets/projectThumbnail",
 	"/assets/raytracer",
 	"/assets/ppu",

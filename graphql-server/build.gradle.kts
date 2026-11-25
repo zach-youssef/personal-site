@@ -72,10 +72,6 @@ tasks.test {
 }
 
 
-sourceSets.main {
-    java.srcDir("src/java")
-}
-
 kotlin.sourceSets["main"].kotlin.srcDirs("src")
 kotlin.sourceSets["test"].kotlin.srcDirs("test")
 

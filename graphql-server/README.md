@@ -31,7 +31,7 @@ The server reads files relative to its working directory: `assets/`, the fronten
 
 `test/ApplicationTest.kt` runs the real module over HTTP with Ktor's `testApplication`, through the `withApp` helper. Things to know when adding a test:
 
-- `testApplication` loads `application.conf` itself, which installs the module a second time (DuplicatePluginException), so `withApp` sets its own config (`MapApplicationConfig`) before `application { module(testing = true) }`. Pass config keys to `withApp`, e.g. `seamcarver.uploadDir`, the directory uploads are written to while they're carved (the system's temporary directory when unset), which a test sets to check that none is left behind.
+- `testApplication` loads `application.conf` itself, which installs the module a second time (DuplicatePluginException), so `withApp` sets its own config (`MapApplicationConfig`) before `application { module(testing = true) }`. Pass any config keys a test needs to `withApp`.
 - The default client follows redirects; `withApp`'s doesn't, so tests see the 301s.
 - Multipart uploads go through `client.submitFormWithBinaryData(formData { ... })`; read bodies with `bodyAsText()` / `bodyAsBytes()`.
 - Tests that need the gitignored frontend build or ZGAL's docs stand in files of their own (`withFrontendFile`) and remove them afterwards.

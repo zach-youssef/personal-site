@@ -16,7 +16,6 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import java.io.File
-import kotlin.time.Duration.Companion.seconds
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -57,10 +56,6 @@ fun Application.module(testing: Boolean = false) {
     val projectInfoRepository: IProjectInfoRepository = SimpleProjectInfoRepository.fromResource()
     val projectWriteupRepository: IProjectWriteupRepository = ProjectWriteupRepository.fromResource()
 
-    // Where uploads and their carved images are written while they're carved: the system's temporary directory unless the
-    // config names one (the tests do, to check that none is left behind)
-    val uploadDir = environment.config.propertyOrNull("seamcarver.uploadDir")?.getString()?.let(::File)
-
     // Static files carry Last-Modified, so browsers can revalidate a cached copy and get a
     // 304 instead of downloading it again
     install(ConditionalHeaders)
@@ -94,9 +89,6 @@ fun Application.module(testing: Boolean = false) {
         // The app's page for any other path, last, so the frontend's router picks the page. GET
         // only: HEAD requests are answered with 404, as before.
         get("{...}") { call.respondFrontendFile("index.html") }
-
-        // How long a visitor waits for another's carve to end before being told to try again
-        seamCarverUpload(SeamCarvingEngine(), uploadDir, busyWait = 5.seconds)
     }
     install(GraphQL) {
         playground = true

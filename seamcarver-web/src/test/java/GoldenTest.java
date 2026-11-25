@@ -62,7 +62,7 @@ class GoldenTest {
         assertSameImage(c.name() + ".energy", GoldenWriter.energy(c));
     }
 
-    // The server's path: the input as a PNG file, decoded by ImageIO, carved by file name
+    // The path the server took when it carved: the input as a PNG file, decoded by ImageIO, carved by file name
     @ParameterizedTest(name = "{0}")
     @FieldSource("CASES")
     void carvingAPngFileMatchesTheGolden(GoldenWriter.Case c, @TempDir Path tmp) throws IOException {
