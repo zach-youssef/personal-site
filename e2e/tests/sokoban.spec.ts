@@ -63,7 +63,7 @@ test('switching levels loads the new level and solution', async ({ page }) => {
     expect(body.data.aStarSolution.length).toBeGreaterThan(0);
 });
 
-test('plays the level with arrow keys in manual mode', async ({ page }) => {
+test('plays the level with arrow keys in manual mode', { tag: '@firefox' }, async ({ page }) => {
     await openSokoban(page);
 
     const reloaded = graphQLResponse(page, 'sokobanLevel');

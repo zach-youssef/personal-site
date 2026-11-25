@@ -11,7 +11,7 @@ const themeSwitch = (page: Page) => page.getByRole('switch', { name: 'Dark mode'
 test.describe('with a light system theme', () => {
     test.use({ colorScheme: 'light' });
 
-    test('starts light, toggles to dark and keeps the choice after reloading', async ({ page }) => {
+    test('starts light, toggles to dark and keeps the choice after reloading', { tag: '@firefox' }, async ({ page }) => {
         await page.goto('/');
         await expect(themeSwitch(page)).not.toBeChecked();
         expect(await bodyBackground(page)).toBe(LIGHT_BACKGROUND);
@@ -32,14 +32,14 @@ test.describe('with a light system theme', () => {
 test.describe('with a dark system theme', () => {
     test.use({ colorScheme: 'dark' });
 
-    test('starts dark', async ({ page }) => {
+    test('starts dark', { tag: '@firefox' }, async ({ page }) => {
         await page.goto('/');
         await expect(themeSwitch(page)).toBeChecked();
         expect(await bodyBackground(page)).toBe(DARK_BACKGROUND);
     });
 });
 
-test('keeps the switch in the header bar on small phones', async ({ page }) => {
+test('keeps the switch in the header bar on small phones', { tag: '@firefox' }, async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 640 });
     await page.goto('/');
 

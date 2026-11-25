@@ -16,7 +16,7 @@ function countUploads(page: import('@playwright/test').Page) {
     return uploads;
 }
 
-test('carves an uploaded image to the requested size', async ({ page }) => {
+test('carves an uploaded image to the requested size', { tag: '@firefox' }, async ({ page }) => {
     await page.goto('/projects/seamCarver');
 
     await chooseGradient(page);

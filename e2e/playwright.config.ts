@@ -17,12 +17,15 @@ export default defineConfig({
         baseURL: `http://localhost:${FRONTEND_PORT}`,
         trace: 'retain-on-failure',
     },
-    // Every spec runs in Chromium; those that don't need a GPU run in Firefox too. The specs that
-    // draw with WebGPU or WebGL live in tests/gpu/ and run in Chromium only, on SwiftShader (see
-    // tests/gpu/webgpu.ts), as headless Firefox has no software WebGPU to run them on.
+    // Every test runs in Chromium. Firefox runs only the tests tagged '@firefox': those where it can
+    // behave differently from Chromium (layout and CSS, keyboard and focus, file uploads, pages
+    // without WebGPU). Tests that only call the backend ({ request }), or check app-level logic
+    // such as a stubbed missing WebGPU adapter, run once. The GPU specs in tests/gpu/ are untagged:
+    // they run Chromium's WebGPU on SwiftShader (see tests/gpu/webgpu.ts), and headless Firefox
+    // has no WebGPU adapter. The project's grep combines with a command-line --grep (both must match).
     projects: [
         { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-        { name: 'firefox', use: { ...devices['Desktop Firefox'] }, testIgnore: 'gpu/**' },
+        { name: 'firefox', use: { ...devices['Desktop Firefox'] }, grep: /@firefox/ },
     ],
     webServer: [
         {

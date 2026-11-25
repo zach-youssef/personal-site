@@ -84,7 +84,7 @@ const SAMPLES = [
     { title: 'Scene', path: '/projects/zgal?sample=scene', screenshotWidth: 1280 },
 ];
 
-test('switches examples from the selector, and records the choice in the URL', async ({ page }) => {
+test('switches examples from the selector, and records the choice in the URL', { tag: '@firefox' }, async ({ page }) => {
     // The page shows the example's frame only where the browser has WebGPU, which headless Firefox
     // on Linux doesn't: give every browser one (the frame needn't run here)
     await withoutWebGPUAdapter(page);
@@ -119,7 +119,7 @@ for (const { title, path, screenshotWidth } of SAMPLES) {
         await expect(page.getByRole('alert').filter({ hasText: `${title} couldn't run in this browser.` })).toBeVisible({ timeout: 15_000 });
     });
 
-    test(`shows a screenshot of the ${title.toLowerCase()} example in browsers without WebGPU`, async ({ page }) => {
+    test(`shows a screenshot of the ${title.toLowerCase()} example in browsers without WebGPU`, { tag: '@firefox' }, async ({ page }) => {
         await page.addInitScript(() => {
             delete (Navigator.prototype as { gpu?: unknown }).gpu;
         });
@@ -142,7 +142,7 @@ test.describe('the image filter', () => {
         await expect(page.getByAltText('Image filter output')).toHaveAttribute('src', '/assets/zgal/image_filter/blur_edges.webp');
     });
 
-    test('shows its input and the output filtered at build time in browsers without WebGPU', async ({ page }) => {
+    test('shows its input and the output filtered at build time in browsers without WebGPU', { tag: '@firefox' }, async ({ page }) => {
         await page.addInitScript(() => {
             delete (Navigator.prototype as { gpu?: unknown }).gpu;
         });

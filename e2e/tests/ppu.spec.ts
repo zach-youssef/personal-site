@@ -29,7 +29,7 @@ test('says so when a game can\'t get a WebGPU adapter', async ({ page }) => {
     }
 });
 
-test('shows screenshots in browsers without WebGPU', async ({ page }) => {
+test('shows screenshots in browsers without WebGPU', { tag: '@firefox' }, async ({ page }) => {
     await page.addInitScript(() => {
         delete (Navigator.prototype as { gpu?: unknown }).gpu;
     });

@@ -45,7 +45,7 @@ test('the backend serves the scene\'s description, the viewer\'s main, the scene
     expect((await request.get(scene.screenshot)).headers()['content-type']).toBe('image/webp');
 });
 
-test('shows the controls, and the screenshot in browsers without WebGPU', async ({ page }) => {
+test('shows the controls, and the screenshot in browsers without WebGPU', { tag: '@firefox' }, async ({ page }) => {
     const errors = collectErrors(page);
     const downloads = sceneRequests(page);
     await page.addInitScript(() => {
@@ -68,7 +68,7 @@ test('shows the controls, and the screenshot in browsers without WebGPU', async 
     expect(errors).toEqual([]);
 });
 
-test('shows touch devices a poster, which downloads nothing until asked', async ({ page }) => {
+test('shows touch devices a poster, which downloads nothing until asked', { tag: '@firefox' }, async ({ page }) => {
     const downloads = sceneRequests(page);
     await withoutWebGPUAdapter(page);
     // A coarse primary pointer, as on phones and tablets
