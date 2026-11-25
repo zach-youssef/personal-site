@@ -1,6 +1,6 @@
 import React from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route } from 'react-router-dom';
 import { vi } from 'vitest';
 import ProjectDisplayContainer from './ProjectDisplayContainer';
@@ -21,6 +21,8 @@ function renderContainer() {
 describe('ProjectDisplayContainer', () => {
     afterEach(() => {
         vi.unstubAllGlobals();
+        // Unmount first: resizing a mounted container updates it outside act()
+        cleanup();
         setWindowWidth(1024);
     });
 
@@ -40,7 +42,7 @@ describe('ProjectDisplayContainer', () => {
         const server = mockGraphQL({});
         const { container } = renderContainer();
 
-        await vi.waitFor(() => expect(server.fetchMock).toHaveBeenCalled());
+        await waitFor(() => expect(server.fetchMock).toHaveBeenCalled());
         await new Promise(resolve => setTimeout(resolve, 50));
 
         expect(server.fetchMock).toHaveBeenCalledTimes(1);

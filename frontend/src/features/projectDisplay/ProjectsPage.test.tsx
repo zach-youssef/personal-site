@@ -1,6 +1,6 @@
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter, Route } from 'react-router-dom';
 import ProjectsPage from './ProjectsPage';
 import { mockGraphQL, projects, writeups } from '../../testUtils/mockGraphQL';
@@ -23,7 +23,7 @@ describe('ProjectsPage', () => {
     });
 
     it('ends a project page with a link back to every project', async () => {
-        mockGraphQL({ raytracerImages: () => [] });
+        const server = mockGraphQL({ raytracerImages: () => [] });
         const { container } = renderAt('/projects/raytracer');
 
         expect(screen.getByRole('heading', { name: 'Browser Raytracer' })).toBeInTheDocument();
@@ -31,6 +31,8 @@ describe('ProjectsPage', () => {
         expect(back).toHaveAttribute('href', '/projects');
         expect(back).toHaveClass('w-100');
         expect(container.querySelector(':scope > :last-child a:last-child')).toBe(back);
+        // Then takes in the (empty) images, within the test
+        await waitFor(() => expect(server.requests()).toHaveLength(1));
     });
 
     it('routes /projects/splats to the splat viewer', () => {
@@ -58,11 +60,13 @@ describe('ProjectsPage', () => {
         });
     }
 
-    it('leaves the link out of the list of projects', () => {
-        mockGraphQL({ projectInfos: () => [] });
+    it('leaves the link out of the list of projects', async () => {
+        const server = mockGraphQL({ projectInfos: () => [] });
         renderAt('/projects');
 
         expect(screen.getByRole('heading', { name: 'Side Projects' })).toBeInTheDocument();
         expect(screen.queryByRole('link', { name: 'Back to Projects' })).not.toBeInTheDocument();
+        // Then takes in each category's (empty) projects, within the test
+        await waitFor(() => expect(server.requests()).toHaveLength(3));
     });
 });

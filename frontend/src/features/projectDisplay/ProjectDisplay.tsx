@@ -3,7 +3,7 @@ import ProjectInfo from './ProjectInfo';
 import { Card, Col, Row, Image } from 'react-bootstrap';
 import { useRouteMatch } from 'react-router-dom';
 
-export function ProjectDisplayCard({projectInfo, index}: Props) {
+export function ProjectDisplayCard({projectInfo}: Props) {
     const {name, description, imagePath, id} = projectInfo;
     
     let url = useRouteMatch().url;
@@ -25,7 +25,7 @@ export function ProjectDisplayCard({projectInfo, index}: Props) {
     );
 }
 
-export function ProjectDisplayFeatured({projectInfo, index}: Props) {
+export function ProjectDisplayFeatured({projectInfo, index = 0}: Props) {
     const { name, description, imagePath, id } = projectInfo;
 
     // The first featured card is near the top of the page, so its image loads right away
@@ -62,13 +62,6 @@ export function ProjectDisplayFeatured({projectInfo, index}: Props) {
 
 interface Props {
     projectInfo: ProjectInfo,
-    index: number
-}
-
-ProjectDisplayCard.defaultProps = {
-    index: 0
-}
-
-ProjectDisplayFeatured.defaultProps = {
-    index: 0
+    // Position in its list; only the featured card uses it (the first one loads its image eagerly)
+    index?: number
 }

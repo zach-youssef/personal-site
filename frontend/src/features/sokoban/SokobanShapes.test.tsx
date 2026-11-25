@@ -1,6 +1,6 @@
 import React from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { render } from '@testing-library/react';
+import { cleanup, render } from '@testing-library/react';
 import SokobanSquare, { SquareType } from './SokobanSquare';
 import SokobanPiece from './SokobanPiece';
 import SokobanGrid from './SokobanGrid';
@@ -61,7 +61,11 @@ describe('SokobanGrid', () => {
         [SquareType.WALL, SquareType.PLAYER, SquareType.BOX, SquareType.SPOT],
     ];
 
-    afterEach(() => setWindowWidth(1024));
+    // Unmount first: resizing a mounted grid updates it outside act()
+    afterEach(() => {
+        cleanup();
+        setWindowWidth(1024);
+    });
 
     it('shows a spinner while the level loads', () => {
         const { container } = render(<SokobanGrid data={[]} />);

@@ -61,7 +61,7 @@ function Sokoban() {
     const [agentType, setAgentType] = useState(AgentType.ASTAR);
 
     // Handle keypress input in manual mode
-    const onKeyDown = useCallback(({key}) => {
+    const onKeyDown = useCallback(({key}: KeyboardEvent) => {
         if (agentType === AgentType.MANUAL) {
             console.log(key);
             var move: Move = Move.UNDEF;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
-import { act, cleanup, render, screen, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, RouteComponentProps } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'node:fs';
@@ -31,7 +31,7 @@ describe('RaytracerPage', () => {
         render(<RaytracerPage />);
 
         expect(screen.getByRole('heading', { name: 'Browser Raytracer' })).toBeInTheDocument();
-        await vi.waitFor(() => expect(screen.getAllByAltText('Demo').map(img => img.getAttribute('src'))).toEqual(images));
+        await waitFor(() => expect(screen.getAllByAltText('Demo').map(img => img.getAttribute('src'))).toEqual(images));
         // Only the first slide is shown at first, so the others wait to load
         expect(screen.getAllByAltText('Demo').map(img => img.getAttribute('loading'))).toEqual([null, 'lazy']);
     });
@@ -138,6 +138,33 @@ describe('WebGLDemoPage', () => {
         expect(demo.dispose).not.toHaveBeenCalled();
         unmount();
         expect(demo.dispose).toHaveBeenCalledTimes(1);
+    });
+
+    // StrictMode mounts the page, unmounts it and mounts it again in development. dispose() loses
+    // the canvas's WebGL context for good, so the second mount must draw into another canvas
+    it('draws into a new canvas when mounted again, as StrictMode does', () => {
+        const demos: { dispose: Mock }[] = [];
+        const create = vi.spyOn(WebGLDemo, 'create').mockImplementation(() => {
+            const demo = { loaded: Promise.resolve(), setCameraMode: vi.fn(), setDrawPath: vi.fn(), dispose: vi.fn() };
+            demos.push(demo);
+            return demo as unknown as WebGLDemo;
+        });
+        render(<React.StrictMode><WebGLDemoPage /></React.StrictMode>);
+
+        expect(create).toHaveBeenCalledTimes(2);
+        const [first, second] = create.mock.calls.map(([canvas]) => canvas);
+        expect(second).not.toBe(first);
+        expect(demos[0].dispose).toHaveBeenCalledTimes(1);
+        expect(demos[1].dispose).not.toHaveBeenCalled();
+        // The page shows the live demo's canvas, and only that one
+        expect(screen.getAllByLabelText('WebGL Demo')).toEqual([second]);
+    });
+
+    it('keeps one canvas under StrictMode when the browser has no WebGL', () => {
+        vi.spyOn(WebGLDemo, 'create').mockReturnValue(null);
+        render(<React.StrictMode><WebGLDemoPage /></React.StrictMode>);
+
+        expect(screen.getAllByLabelText('WebGL Demo')).toHaveLength(1);
     });
 
     it('says so when the browser has no WebGL', () => {
@@ -290,21 +317,31 @@ describe('ZgalPage', () => {
         return programDocument;
     }
 
+    // The page loads the shown sample's source and the source manifest as it opens: waits until it
+    // shows both, so their updates land within the test
+    async function loaded(file: string) {
+        await waitFor(() => {
+            expect(screen.getByLabelText(file).textContent).toBe(SOURCE);
+            expect(screen.getByRole('link', { name: /^View on GitHub at / })).toBeInTheDocument();
+        });
+    }
+
     afterEach(() => {
         setWebGPU(false);
         vi.unstubAllGlobals();
         vi.restoreAllMocks();
     });
 
-    it('links to the project on GitHub', () => {
+    it('links to the project on GitHub', async () => {
         serveSource({ ok: true, text: async () => SOURCE });
         renderPage();
 
         expect(screen.getByRole('heading', { name: 'ZGAL', level: 2 })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: 'View on GitHub' })).toHaveAttribute('href', ZGAL_GITHUB_URL);
+        await loaded('particles.zgal');
     });
 
-    it('offers particles, scene and the image filter, and selects particles by default', () => {
+    it('offers particles, scene and the image filter, and selects particles by default', async () => {
         setWebGPU(true);
         serveSource({ ok: true, text: async () => SOURCE });
         renderPage();
@@ -317,16 +354,18 @@ describe('ZgalPage', () => {
         expect(screen.getByTitle('Particles')).toBeInTheDocument();
         expect(screen.queryByTitle('Scene')).not.toBeInTheDocument();
         expect(screen.getByText(PARTICLES.blurb)).toBeInTheDocument();
+        await loaded('particles.zgal');
     });
 
     it.each([['?sample=missing'], ['?sample='], ['?sample=Scene'], ['?other=scene']])(
-        'selects particles when the URL names no sample it has (%s)', search => {
+        'selects particles when the URL names no sample it has (%s)', async search => {
             setWebGPU(true);
             serveSource({ ok: true, text: async () => SOURCE });
             renderPage(search);
 
             expect(selected()).toEqual(['Particles']);
             expect(screen.getByTitle('Particles')).toHaveAttribute('src', '/assets/zgal/particles/particles.zgal.html');
+            await loaded('particles.zgal');
         });
 
     it('opens on the sample a link names', async () => {
@@ -342,7 +381,7 @@ describe('ZgalPage', () => {
         // Revalidated, so the listing and the link can't come from different deploys
         expect(fetchMock).toHaveBeenCalledWith(MANIFEST_URL, { cache: 'no-cache' });
         expect(screen.getByText(SCENE.blurb)).toBeInTheDocument();
-        await vi.waitFor(() => expect(screen.getByLabelText('scene.zgal').textContent).toBe(SOURCE));
+        await waitFor(() => expect(screen.getByLabelText('scene.zgal').textContent).toBe(SOURCE));
     });
 
     it('switches samples from the selector and records the choice in the URL', async () => {
@@ -368,7 +407,7 @@ describe('ZgalPage', () => {
         const fetchMock = serveSource({ ok: true, text: async () => SOURCE });
         const { current } = renderPage('?sample=scene');
         const first = screen.getByTitle('Scene');
-        await vi.waitFor(() => expect(screen.getByLabelText('scene.zgal').textContent).toBe(SOURCE));
+        await waitFor(() => expect(screen.getByLabelText('scene.zgal').textContent).toBe(SOURCE));
 
         // The running sample's button says choosing it restarts; the others don't
         expect(selector().getByRole('button', { name: 'Scene' })).toHaveAttribute('title', 'Restart');
@@ -383,16 +422,17 @@ describe('ZgalPage', () => {
         expect(fetchesOf(fetchMock, MANIFEST_URL)).toBe(1);
     });
 
-    it('does not offer a restart without WebGPU', () => {
+    it('does not offer a restart without WebGPU', async () => {
         setWebGPU(false);
         serveSource({ ok: true, text: async () => SOURCE });
         renderPage('?sample=scene');
 
         expect(screen.queryByText(/restart/i)).toBeNull();
         expect(selector().getByRole('button', { name: 'Scene' })).not.toHaveAttribute('title');
+        await loaded('scene.zgal');
     });
 
-    it("lists each sample's controls from its main", () => {
+    it("lists each sample's controls from its main", async () => {
         serveSource({ ok: true, text: async () => SOURCE });
         renderPage('?sample=scene');
 
@@ -400,6 +440,7 @@ describe('ZgalPage', () => {
         const actions = [...document.querySelectorAll('dd')].map(action => action.textContent);
         expect(terms).toEqual(['Drag', 'Scroll', 'L', 'S', '+ / -', 'Esc']);
         expect(actions[terms.indexOf('Esc')]).toBe('stops the program');
+        await loaded('scene.zgal');
     });
 
     // The samples with a window, which run in frames of their pages
@@ -417,11 +458,11 @@ describe('ZgalPage', () => {
 
             expect(screen.getByTitle(sample.title)).toHaveAttribute('src', `/assets/zgal/${id}/${id}.zgal.html`);
             expect(fetchMock).toHaveBeenCalledWith(`/assets/zgal/${id}/${id}.zgal`, { cache: 'no-cache' });
-            await vi.waitFor(() => expect(screen.getByLabelText(`${id}.zgal`).textContent).toBe(SOURCE));
+            await waitFor(() => expect(screen.getByLabelText(`${id}.zgal`).textContent).toBe(SOURCE));
             expect(screen.queryByRole('alert')).not.toBeInTheDocument();
         });
 
-        it("keeps its window's aspect ratio and scales to its frame", () => {
+        it("keeps its window's aspect ratio and scales to its frame", async () => {
             setWebGPU(true);
             serveSource({ ok: true, text: async () => SOURCE });
             renderPage(`?sample=${id}`);
@@ -434,9 +475,10 @@ describe('ZgalPage', () => {
                 'height: 100% !important', 'object-fit: contain', 'image-rendering: auto !important']) {
                 expect(fit).toContain(declaration);
             }
+            await loaded(`${id}.zgal`);
         });
 
-        it('shows a frame from it when the browser has no WebGPU', () => {
+        it('shows a frame from it when the browser has no WebGPU', async () => {
             setWebGPU(false);
             serveSource({ ok: true, text: async () => SOURCE });
             const { container } = renderPage(`?sample=${id}`);
@@ -444,6 +486,7 @@ describe('ZgalPage', () => {
             expect(screen.getByRole('alert')).toHaveTextContent('This program needs a browser that supports WebGPU');
             expect(container.querySelector('iframe')).toBeNull();
             expect(screen.getByAltText(sample.title)).toHaveAttribute('src', `/assets/zgal/${id}/screenshot.webp`);
+            await loaded(`${id}.zgal`);
         });
 
         it('says so when it fails to run', async () => {
@@ -453,7 +496,7 @@ describe('ZgalPage', () => {
             const programDocument = loadFrame(sample.title);
 
             programDocument.documentElement.dataset.zgal = 'running';
-            await new Promise(resolve => setTimeout(resolve, 0));
+            await loaded(`${id}.zgal`);
             expect(screen.queryByRole('alert')).not.toBeInTheDocument();
             programDocument.documentElement.dataset.zgal = 'failed';
 
@@ -471,7 +514,7 @@ describe('ZgalPage', () => {
             `https://github.com/zach-youssef/zgal/blob/${COMMIT}/examples/particles/particles.zgal`);
         expect(link).toHaveAttribute('title', COMMIT);
         // The listing still comes from the backend's copy, not GitHub
-        await vi.waitFor(() => expect(screen.getByLabelText('particles.zgal').textContent).toBe(SOURCE));
+        await waitFor(() => expect(screen.getByLabelText('particles.zgal').textContent).toBe(SOURCE));
         expect(fetchMock.mock.calls.map(([url]) => url).filter(url => !url.startsWith('/'))).toEqual([]);
 
         await userEvent.click(selector().getByRole('button', { name: 'Scene' }));
@@ -488,7 +531,7 @@ describe('ZgalPage', () => {
 
         expect(await screen.findByText('local build')).toHaveClass('text-muted');
         expect(screen.queryByRole('link', { name: /View on GitHub at/ })).not.toBeInTheDocument();
-        await vi.waitFor(() => expect(screen.getByLabelText('particles.zgal').textContent).toBe(SOURCE));
+        await waitFor(() => expect(screen.getByLabelText('particles.zgal').textContent).toBe(SOURCE));
     });
 
     it.each([
@@ -503,8 +546,8 @@ describe('ZgalPage', () => {
         serveSource({ ok: true, text: async () => SOURCE }, manifest);
         renderPage();
 
-        await vi.waitFor(() => expect(screen.getByLabelText('particles.zgal').textContent).toBe(SOURCE));
-        await vi.waitFor(() => expect(error).toHaveBeenCalled());
+        await waitFor(() => expect(screen.getByLabelText('particles.zgal').textContent).toBe(SOURCE));
+        await waitFor(() => expect(error).toHaveBeenCalled());
         expect(screen.queryByRole('link', { name: /View on GitHub at/ })).not.toBeInTheDocument();
         expect(screen.queryByText('local build')).not.toBeInTheDocument();
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
@@ -527,7 +570,7 @@ describe('ZgalPage', () => {
         vi.spyOn(console, 'error').mockImplementation(() => {});
         renderPage();
         loadFrame('Particles').documentElement.dataset.zgal = 'failed';
-        await vi.waitFor(() => expect(screen.getAllByRole('alert')).toHaveLength(2));
+        await waitFor(() => expect(screen.getAllByRole('alert')).toHaveLength(2));
 
         // Clicked synchronously, to see the listing before the scene's source arrives
         act(() => selector().getByRole('button', { name: 'Scene' }).click());
@@ -535,7 +578,7 @@ describe('ZgalPage', () => {
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
         expect(screen.getByLabelText('scene.zgal').textContent).toBe('Loading…');
         expect(screen.getByTitle('Scene')).toHaveAttribute('src', '/assets/zgal/scene/scene.zgal.html');
-        await vi.waitFor(() => expect(screen.getByLabelText('scene.zgal').textContent).toBe(SOURCE));
+        await waitFor(() => expect(screen.getByLabelText('scene.zgal').textContent).toBe(SOURCE));
     });
 
     it("doesn't list the last sample's source when it arrives after another sample's", async () => {
@@ -548,7 +591,7 @@ describe('ZgalPage', () => {
         const { rerender } = render(<SampleView sample={PARTICLES} webGPU={false} manifest={MANIFEST} />);
 
         rerender(<SampleView sample={SCENE} webGPU={false} manifest={MANIFEST} />);
-        await vi.waitFor(() => expect(screen.getByLabelText('scene.zgal').textContent).toBe(SOURCE));
+        await waitFor(() => expect(screen.getByLabelText('scene.zgal').textContent).toBe(SOURCE));
         await act(async () => {
             serveParticles(';; particles\n');
             await new Promise(resolve => setTimeout(resolve, 0));
@@ -651,7 +694,7 @@ describe('ImageFilterDemo', () => {
         const { runs, load } = fakeProgram();
         const { container } = render(<ImageFilterDemo sample={FILTER} webGPU load={load} />);
 
-        await vi.waitFor(() => expect(runs).toHaveLength(1));
+        await waitFor(() => expect(runs).toHaveLength(1));
         expect(load).toHaveBeenCalledWith('/assets/zgal/image_filter/image_filter.zgal.main.js');
         expect(runs[0].options.args).toEqual(['input.png', 'image_filter.png', '--blur', '2', '--edges']);
         expect(screen.getByText('Filtering…')).toBeInTheDocument();
@@ -678,7 +721,7 @@ describe('ImageFilterDemo', () => {
     it('stops the last run before filtering again when a switch changes', async () => {
         const { runs, release, load } = fakeProgram({ holdStops: true });
         render(<ImageFilterDemo sample={FILTER} webGPU load={load} />);
-        await vi.waitFor(() => expect(runs).toHaveLength(1));
+        await waitFor(() => expect(runs).toHaveLength(1));
         await runs[0].succeed();
 
         await userEvent.click(screen.getByRole('switch', { name: 'Edges' }));
@@ -692,7 +735,7 @@ describe('ImageFilterDemo', () => {
         await new Promise(resolve => setTimeout(resolve, 10));
         expect(runs).toHaveLength(1);
         act(() => release());
-        await vi.waitFor(() => expect(runs).toHaveLength(2));
+        await waitFor(() => expect(runs).toHaveLength(2));
         // Only the last settings run: the change between was stopped before it started
         expect(runs[1].options.args).toEqual(['input.png', 'image_filter.png', '--blur', '2', '--threshold', '0.15']);
         // The last output stays until the next arrives
@@ -706,7 +749,7 @@ describe('ImageFilterDemo', () => {
     it('starts no run until the runs of an instance before it have stopped', async () => {
         const { runs, release, load } = fakeProgram({ holdStops: true });
         const { unmount } = render(<ImageFilterDemo sample={FILTER} webGPU load={load} />);
-        await vi.waitFor(() => expect(runs).toHaveLength(1));
+        await waitFor(() => expect(runs).toHaveLength(1));
         unmount();
 
         // As when another sample is chosen and this one again
@@ -715,13 +758,13 @@ describe('ImageFilterDemo', () => {
         expect(runs[0].stop).toHaveBeenCalled();
         expect(runs).toHaveLength(1);
         act(() => release());
-        await vi.waitFor(() => expect(runs).toHaveLength(2));
+        await waitFor(() => expect(runs).toHaveLength(2));
     });
 
     it('disables a value\'s slider while its option is off', async () => {
         const { runs, load } = fakeProgram();
         render(<ImageFilterDemo sample={FILTER} webGPU load={load} />);
-        await vi.waitFor(() => expect(runs).toHaveLength(1));
+        await waitFor(() => expect(runs).toHaveLength(1));
         expect(screen.getByLabelText('Blur radius')).toBeEnabled();
         expect(screen.getByLabelText('Threshold level')).toBeDisabled();
 
@@ -730,13 +773,13 @@ describe('ImageFilterDemo', () => {
 
         expect(screen.getByLabelText('Blur radius')).toBeDisabled();
         expect(screen.getByLabelText('Threshold level')).toBeEnabled();
-        await vi.waitFor(() => expect(runs.at(-1)!.options.args).toEqual(['input.png', 'image_filter.png', '--edges', '--threshold', '0.15']));
+        await waitFor(() => expect(runs.at(-1)!.options.args).toEqual(['input.png', 'image_filter.png', '--edges', '--threshold', '0.15']));
     });
 
     it('filters again once a slider has stopped moving, not at every step', async () => {
         const { runs, load } = fakeProgram();
         render(<ImageFilterDemo sample={FILTER} webGPU load={load} />);
-        await vi.waitFor(() => expect(runs).toHaveLength(1));
+        await waitFor(() => expect(runs).toHaveLength(1));
         await runs[0].succeed();
 
         const radius = screen.getByLabelText('Blur radius');
@@ -747,7 +790,7 @@ describe('ImageFilterDemo', () => {
         await new Promise(resolve => setTimeout(resolve, RERUN_DELAY_MS / 2));
         expect(runs).toHaveLength(1);
 
-        await vi.waitFor(() => expect(runs).toHaveLength(2));
+        await waitFor(() => expect(runs).toHaveLength(2));
         expect(runs[1].options.args).toEqual(['input.png', 'image_filter.png', '--blur', '5', '--edges']);
         await new Promise(resolve => setTimeout(resolve, RERUN_DELAY_MS));
         expect(runs).toHaveLength(2);
@@ -756,39 +799,39 @@ describe('ImageFilterDemo', () => {
     it('filters a picture the visitor chooses, and goes back to the example', async () => {
         const { runs, load } = fakeProgram();
         render(<ImageFilterDemo sample={FILTER} webGPU load={load} />);
-        await vi.waitFor(() => expect(runs).toHaveLength(1));
+        await waitFor(() => expect(runs).toHaveLength(1));
         const photo = new File(['jpeg'], 'photo.jpg', { type: 'image/jpeg' });
 
         await userEvent.upload(screen.getByLabelText('Picture'), photo);
 
-        await vi.waitFor(() => expect(runs).toHaveLength(2));
+        await waitFor(() => expect(runs).toHaveLength(2));
         expect(runs[1].options.args[0]).toBe('photo.jpg');
         expect(runs[1].options.files).toEqual({ 'photo.jpg': photo });
         expect(URL.createObjectURL).toHaveBeenCalledWith(photo);
         expect(screen.getByAltText('Image filter input').getAttribute('src')).toMatch(/^blob:/);
 
         await userEvent.click(screen.getByRole('button', { name: 'Use the example picture' }));
-        await vi.waitFor(() => expect(runs).toHaveLength(3));
+        await waitFor(() => expect(runs).toHaveLength(3));
         expect(runs[2].options.args[0]).toBe('input.png');
         expect(screen.getByAltText('Image filter input')).toHaveAttribute('src', '/assets/zgal/image_filter/assets/input.png');
 
         // The picker no longer holds the picture, so choosing it again is a change
         expect((screen.getByLabelText('Picture') as HTMLInputElement).files ?? []).toHaveLength(0);
         await userEvent.upload(screen.getByLabelText('Picture'), photo);
-        await vi.waitFor(() => expect(runs).toHaveLength(4));
+        await waitFor(() => expect(runs).toHaveLength(4));
         expect(runs[3].options.args[0]).toBe('photo.jpg');
     });
 
     it('runs again with the same settings when the sample is chosen again', async () => {
         const { runs, load } = fakeProgram();
         const { rerender } = render(<ImageFilterDemo sample={FILTER} webGPU load={load} run={0} />);
-        await vi.waitFor(() => expect(runs).toHaveLength(1));
+        await waitFor(() => expect(runs).toHaveLength(1));
         await userEvent.click(screen.getByRole('switch', { name: 'Edges' }));
-        await vi.waitFor(() => expect(runs).toHaveLength(2));
+        await waitFor(() => expect(runs).toHaveLength(2));
 
         rerender(<ImageFilterDemo sample={FILTER} webGPU load={load} run={1} />);
 
-        await vi.waitFor(() => expect(runs).toHaveLength(3));
+        await waitFor(() => expect(runs).toHaveLength(3));
         expect(runs[2].options.args).toEqual(runs[1].options.args);
     });
 
@@ -796,7 +839,7 @@ describe('ImageFilterDemo', () => {
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
         const { runs, load } = fakeProgram();
         const { container } = render(<ImageFilterDemo sample={FILTER} webGPU load={load} />);
-        await vi.waitFor(() => expect(runs).toHaveLength(1));
+        await waitFor(() => expect(runs).toHaveLength(1));
 
         await act(async () => {
             runs[0].options.onMessage?.('image_filter: no WebGPU adapter');
@@ -817,10 +860,10 @@ describe('ImageFilterDemo', () => {
         vi.spyOn(console, 'warn').mockImplementation(() => {});
         const { runs, load } = fakeProgram();
         render(<ImageFilterDemo sample={FILTER} webGPU load={load} />);
-        await vi.waitFor(() => expect(runs).toHaveLength(1));
+        await waitFor(() => expect(runs).toHaveLength(1));
         await runs[0].succeed();
         await userEvent.upload(screen.getByLabelText('Picture'), new File(['text'], 'notes.png', { type: 'image/png' }));
-        await vi.waitFor(() => expect(runs).toHaveLength(2));
+        await waitFor(() => expect(runs).toHaveLength(2));
 
         await act(async () => {
             runs[1].options.onMessage?.('image_filter: notes.png: not an image');
@@ -833,7 +876,7 @@ describe('ImageFilterDemo', () => {
 
         // A run that fails without a message
         await userEvent.upload(screen.getByLabelText('Picture'), new File(['text'], 'empty.png', { type: 'image/png' }));
-        await vi.waitFor(() => expect(runs).toHaveLength(3));
+        await waitFor(() => expect(runs).toHaveLength(3));
         await act(async () => {
             runs[2].end('failed');
         });
@@ -854,11 +897,11 @@ describe('ImageFilterDemo', () => {
     it('stops its run when it goes', async () => {
         const { runs, load } = fakeProgram();
         const { unmount } = render(<ImageFilterDemo sample={FILTER} webGPU load={load} />);
-        await vi.waitFor(() => expect(runs).toHaveLength(1));
+        await waitFor(() => expect(runs).toHaveLength(1));
 
         unmount();
 
-        await vi.waitFor(() => expect(runs[0].stop).toHaveBeenCalled());
+        await waitFor(() => expect(runs[0].stop).toHaveBeenCalled());
     });
 
     it('shows the pictures filtered at build time, without controls, in a browser without WebGPU', () => {
@@ -885,7 +928,7 @@ describe('ImageFilterDemo', () => {
         expect(screen.getByRole('heading', { name: 'image_filter.zgal' })).toBeInTheDocument();
         expect(screen.getByRole('alert')).toHaveTextContent('This program needs a browser that supports WebGPU, so below is what it made when the site was built.');
         expect(screen.getByAltText('Image filter output')).toHaveAttribute('src', '/assets/zgal/image_filter/blur_edges.webp');
-        await vi.waitFor(() => expect(screen.getByLabelText('image_filter.zgal').textContent).toBe('(graph FilterGraph)\n'));
+        await waitFor(() => expect(screen.getByLabelText('image_filter.zgal').textContent).toBe('(graph FilterGraph)\n'));
     });
 });
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import ProjectWriteupPage from './ProjectWriteupPage';
 import { formatArticleDate } from './ArticleCards';
 import { PROJECT_WRITEUP_QUERY } from './ProjectWriteup';
@@ -126,7 +126,7 @@ describe('ProjectWriteupPage', () => {
         const fetchMock = vi.fn(() => new Promise<Response>(resolve => { respond = resolve; }));
         vi.stubGlobal('fetch', fetchMock);
         const { unmount } = render(<ProjectWriteupPage id="broadAR"/>);
-        await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+        await waitFor(() => expect(fetchMock).toHaveBeenCalled());
 
         unmount();
         respond({ ok: true, json: async () => ({ data: { projectInfo: projects.broadAR, projectWriteup: writeup } }) } as Response);

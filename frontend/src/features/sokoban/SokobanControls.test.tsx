@@ -1,6 +1,6 @@
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SokobanStepperControls from './SokobanStepperControls';
 import AgentSelector, { AgentType } from './dropdowns/AgentSelect';
@@ -77,7 +77,7 @@ describe('LevelSelector', () => {
         const onLevelSelect = vi.fn();
         render(<LevelSelector onLevelSelect={onLevelSelect} />);
 
-        await vi.waitFor(() => expect(onLevelSelect).toHaveBeenCalledWith('LEVEL_0'));
+        await waitFor(() => expect(onLevelSelect).toHaveBeenCalledWith('LEVEL_0'));
 
         await userEvent.click(screen.getByText('Level Select'));
         expect(screen.getByText('LEVEL_1')).toBeInTheDocument();

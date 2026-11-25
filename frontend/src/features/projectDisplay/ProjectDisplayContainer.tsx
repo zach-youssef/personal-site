@@ -68,8 +68,8 @@ function ProjectDisplayContainer({category}: Props){
                         <CardGroup key={row}>
                             {
                                 projectInfos.slice(row * cardsPerRow, (row * cardsPerRow) + cardsPerRow)
-                                    .map((projectInfo, index) => 
-                                        <ProjectDisplayCard key={projectInfo.id} projectInfo={projectInfo} index={index}/>)
+                                    .map(projectInfo =>
+                                        <ProjectDisplayCard key={projectInfo.id} projectInfo={projectInfo}/>)
                             }
                         </CardGroup>
                     ))

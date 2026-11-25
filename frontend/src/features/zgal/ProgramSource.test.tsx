@@ -1,6 +1,6 @@
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import ProgramSource from './ProgramSource';
 
 afterEach(() => {
@@ -16,7 +16,7 @@ describe('ProgramSource', () => {
 		render(<ProgramSource url="/demo.zgal" name="demo.zgal" />);
 
 		const listing = screen.getByLabelText('demo.zgal');
-		await vi.waitFor(() => expect(listing.textContent).toBe(source));
+		await waitFor(() => expect(listing.textContent).toBe(source));
 		const spans = [...listing.querySelectorAll('span')].map(span => [span.className, span.textContent]);
 		expect(spans).toEqual([
 			['zgal-comment', ';; Draws'],
@@ -34,7 +34,7 @@ describe('ProgramSource', () => {
 		render(<ProgramSource url="/demo.zgal" name="demo.zgal" />);
 
 		const listing = screen.getByLabelText('demo.zgal');
-		await vi.waitFor(() => expect(listing.textContent).toBe(source));
+		await waitFor(() => expect(listing.textContent).toBe(source));
 		expect(listing.querySelector('b, img')).toBeNull();
 	});
 });

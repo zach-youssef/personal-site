@@ -1,6 +1,6 @@
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import Home from './Home';
 import { mockGraphQL, projects } from '../testUtils/mockGraphQL';
 
@@ -13,13 +13,15 @@ describe('Home', () => {
         vi.restoreAllMocks();
     });
 
-    it('shows the about me section', () => {
-        mockGraphQL({ projectInfos: () => [] });
+    it('shows the about me section', async () => {
+        const server = mockGraphQL({ projectInfos: () => [] });
         render(<Home />);
 
         expect(screen.getByRole('heading', { name: 'About Me' })).toBeInTheDocument();
         expect(screen.getByText('Software Engineer, Northeastern University Alum.', { exact: false })).toBeInTheDocument();
         expect(screen.getByText('I created this site as an interactive portfolio', { exact: false })).toBeInTheDocument();
+        // Then takes in the (empty) featured projects, within the test
+        await waitFor(() => expect(server.requests()).toHaveLength(1));
     });
 
     it('loads and lists the featured projects under their own heading', async () => {
@@ -59,7 +61,7 @@ describe('Home', () => {
         const server = mockGraphQL({ projectInfos: () => [] });
         render(<Home />);
 
-        await vi.waitFor(() => expect(server.requests()).toHaveLength(1));
+        await waitFor(() => expect(server.requests()).toHaveLength(1));
         expect(screen.queryByRole('heading', { name: 'Featured Projects' })).not.toBeInTheDocument();
         expect(screen.queryByRole('link', { name: 'See more' })).not.toBeInTheDocument();
     });
@@ -69,7 +71,7 @@ describe('Home', () => {
         vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch'); }));
         render(<Home />);
 
-        await vi.waitFor(() => expect(error).toHaveBeenCalledWith(new TypeError('Failed to fetch')));
+        await waitFor(() => expect(error).toHaveBeenCalledWith(new TypeError('Failed to fetch')));
         expect(screen.getByRole('heading', { name: 'About Me' })).toBeInTheDocument();
         expect(screen.queryByRole('heading', { name: 'Featured Projects' })).not.toBeInTheDocument();
     });
