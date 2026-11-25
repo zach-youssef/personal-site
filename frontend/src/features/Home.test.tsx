@@ -5,7 +5,7 @@ import Home from './Home';
 import { mockGraphQL, projects } from '../testUtils/mockGraphQL';
 
 // The home page features these, in this order
-const featured = [projects.vkPPU, projects.zgal, projects.splats];
+const featured = [projects.zgal, projects.splats];
 
 describe('Home', () => {
     afterEach(() => {
@@ -26,13 +26,12 @@ describe('Home', () => {
         const server = mockGraphQL({ projectInfos: () => featured });
         render(<Home />);
 
-        expect(await screen.findByText('Vulkan Retro PPU')).toBeInTheDocument();
-        expect(screen.getByText('ZGAL')).toBeInTheDocument();
+        expect(await screen.findByText('ZGAL')).toBeInTheDocument();
         expect(screen.getByText('Gaussian Splatting')).toBeInTheDocument();
         expect(screen.getAllByRole('heading', { level: 2 }).map(heading => heading.textContent))
             .toEqual(['About Me', 'Featured Projects']);
         expect(screen.getAllByRole('link', { name: 'View' }).map(link => link.getAttribute('href')))
-            .toEqual(['/projects/vkPPU', '/projects/zgal', '/projects/splats']);
+            .toEqual(['/projects/zgal', '/projects/splats']);
         expect(server.requests()).toHaveLength(1);
         expect(server.requests()[0].query).toMatch(/projectInfos\(featured: true\)/);
     });
@@ -52,8 +51,7 @@ describe('Home', () => {
         mockGraphQL({ projectInfos: () => featured });
         render(<Home />);
 
-        expect(await screen.findByAltText('Vulkan Retro PPU')).not.toHaveAttribute('loading');
-        expect(screen.getByAltText('ZGAL')).toHaveAttribute('loading', 'lazy');
+        expect(await screen.findByAltText('ZGAL')).not.toHaveAttribute('loading');
         expect(screen.getByAltText('Gaussian Splatting')).toHaveAttribute('loading', 'lazy');
     });
 

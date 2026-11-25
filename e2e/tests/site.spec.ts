@@ -4,13 +4,12 @@ test('home page lists the featured projects from the backend', async ({ page }) 
     await page.goto('/');
 
     await expect(page.getByRole('heading', { level: 2 })).toHaveText(['About Me', 'Featured Projects']);
-    await expect(page.locator('.featured-projects .card-title')).toHaveText(['Vulkan Retro PPU', 'ZGAL', 'Gaussian Splatting']);
-    await expect(page.getByText('Vulkan Compute Pipeline for rendering NES games')).toBeVisible();
+    await expect(page.locator('.featured-projects .card-title')).toHaveText(['ZGAL', 'Gaussian Splatting']);
     await expect(page.getByText('A language for GPU programs that compiles to Vulkan and WebGPU')).toBeVisible();
     await expect(page.getByText('A 3D Gaussian splatting trainer and real-time viewer written in ZGAL, running in the browser with WebGPU')).toBeVisible();
 });
 
-for (const [name, id] of [['Vulkan Retro PPU', 'vkPPU'], ['ZGAL', 'zgal'], ['Gaussian Splatting', 'splats']]) {
+for (const [name, id] of [['ZGAL', 'zgal'], ['Gaussian Splatting', 'splats']]) {
     test(`featured ${name} links to its project page`, async ({ page }) => {
         await page.goto('/');
         // Match the title exactly: another card's description can mention this name.
@@ -28,7 +27,7 @@ test('see more ends the featured projects, as wide as their cards, and opens the
         await page.goto('/');
         const seeMore = page.getByRole('link', { name: 'See more' });
         const cards = page.locator('.featured-projects > .card');
-        await expect(cards).toHaveCount(3);
+        await expect(cards).toHaveCount(2);
 
         const button = (await seeMore.boundingBox())!;
         for (const card of await cards.all()) {
@@ -49,8 +48,8 @@ test('projects page lists every project by category', async ({ page }) => {
     await page.getByRole('link', { name: 'Projects' }).click();
 
     await expect(page).toHaveURL('/projects');
-    // Side projects first
-    await expect(page.getByRole('heading', { level: 2 })).toHaveText(['Side Projects', 'Professional Work', 'University Projects']);
+    // Professional work, then side projects, then university
+    await expect(page.getByRole('heading', { level: 2 })).toHaveText(['Professional Work', 'Side Projects', 'University Projects']);
     for (const name of ['Broad Museum AR Experience', 'Sokoban AI', 'Seam Carver', 'Vulkan Retro PPU', 'ZGAL', 'Gaussian Splatting']) {
         await expect(page.getByText(name, { exact: true })).toBeVisible();
     }

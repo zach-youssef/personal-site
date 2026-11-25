@@ -31,9 +31,9 @@ describe('App routing', () => {
         });
         renderAt('/projects');
 
-        // Side projects come first
+        // Professional work, then side projects, then university
         expect(screen.getAllByRole('heading', { level: 2 }).map(heading => heading.textContent))
-            .toEqual(['Side Projects', 'Professional Work', 'University Projects']);
+            .toEqual(['Professional Work', 'Side Projects', 'University Projects']);
         expect(await screen.findByText('Vulkan Retro PPU')).toBeInTheDocument();
         expect(screen.getByText('ZGAL')).toBeInTheDocument();
         expect(server.requests().map(request => request.variables.category).sort())

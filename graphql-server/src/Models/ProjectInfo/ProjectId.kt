@@ -9,16 +9,16 @@ import com.zyoussef.Models.ProjectInfo.ProjectCategory.*
 // a constant changes all three.
 @Suppress("EnumEntryName")
 enum class ProjectId(val category: ProjectCategory, val featured: Boolean) {
-    sokoban(UNIVERSITY, featured = false),
-    seamCarver(UNIVERSITY, featured = false),
-    raytracer(UNIVERSITY, featured = false),
-    webglDemo(UNIVERSITY, featured = false),
-    foundationDbFs(UNIVERSITY, featured = false),
     broadAR(PROFESSIONAL, featured = false),
     metaAvatars(PROFESSIONAL, featured = false),
-    vkPPU(PERSONAL, featured = true),
+    vkPPU(PERSONAL, featured = false),
     zgal(PERSONAL, featured = true),
     splats(PERSONAL, featured = true),
+    sokoban(UNIVERSITY, featured = false),
+    seamCarver(UNIVERSITY, featured = false),
+    foundationDbFs(UNIVERSITY, featured = false),
+    raytracer(UNIVERSITY, featured = false),
+    webglDemo(UNIVERSITY, featured = false),
     ;
 
     val id: String get() = name

@@ -114,9 +114,9 @@ class ApplicationTest {
         val data = graphQL("{ projectInfos(featured: true) { id, name, description, imagePath } }")
         val projects = data.path("projectInfos")
 
-        assertEquals(listOf("vkPPU", "zgal", "splats"), projects.map { it.path("id").asText() })
-        assertEquals("Vulkan Retro PPU", projects[0].path("name").asText())
-        assertTrue(projects[0].path("imagePath").asText().endsWith("/ppu.webp"))
+        assertEquals(listOf("zgal", "splats"), projects.map { it.path("id").asText() })
+        assertEquals("ZGAL", projects[0].path("name").asText())
+        assertTrue(projects[0].path("imagePath").asText().endsWith("/zgal.webp"))
     }
 
     @Test
