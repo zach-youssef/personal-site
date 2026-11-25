@@ -12,26 +12,40 @@
 # Quote values YAML would otherwise read as something else: dates, numbers, and words like
 # yes, no, on and off ("2024-09", "yes"). Placeholders start with TODO(copy).
 
-context: "TODO(copy): employer, year, role"
+context: "Meta, 2022"
 imageAlt: >-
   A phone's camera view at The Broad: a person in a bucket hat waves beneath a cluster of
   Takashi Murakami's smiling AR flowers while visitors film on their phones
 sections:
   - text: |
-      TODO(copy): what the experience was, where it ran and who it was for.
-  - heading: "TODO(copy): My role"
+      Location Based AR Experience at The Broad
+  - heading: "Context"
     text: |
-      TODO(copy): the team you were on and what you owned.
-  - heading: "TODO(copy): Technical work"
-    text: |
-      TODO(copy): the location tracking and rendering work.
+      During my first year at Meta, I worked on a Spark AR team focused on building out capabilities and templates for
+      creators to build location based AR experiences on the Spark Platform.
 
-      TODO(copy): a second paragraph, if wanted.
-  - heading: "TODO(copy): Outcome"
-    text: |
-      TODO(copy): how it was received.
+      I worked on relative positioning based experiences that were launched from a QR code, then used relative tracking
+      to that QR code image to place 3D augments in the world (viewable through the user's smartphone in Instagram).
+
+      The result of this work was a collaboration with the Broad Museum to place 3D art inspired by Murakami's work
+      alongside his exhibit there.
 articles:
   - title: Meta x Murakami at The Broad
     source: BUCK
     url: https://buck.co/work/meta-x-murakami-at-the-broad
-    note: "TODO(copy): one line on what this article covers"
+    note: "Article from the contractors we partnered with to create the Murakami experience"
+  - title: major takashi murakami exhibition with digital immersive environments opens at the broad
+    source: designboom
+    date: "2022-05-24"
+    url: https://www.designboom.com/art/major-takashi-murakami-exhibition-with-digital-immersive-environments-the-broad-05-24-2022/
+    note: "Exhibition-opening coverage, including the Instagram AR in the plaza, lobby and galleries"
+  - title: Takashi Murakami opens major augmented reality show at The Broad in Los Angeles
+    source: The Art Newspaper
+    date: "2022-06-02"
+    url: https://www.theartnewspaper.com/2022/06/02/murakami-the-broad
+    note: "The AR show's launch: sidewalk QR codes opening Instagram effects, built with BUCK and Meta Spark"
+  - title: "Tools Of The Trade: How Buck And Takashi Murakami Used Spark AR To Bring The Artist's Work To Life"
+    source: Cartoon Brew
+    date: "2022-08-17"
+    url: https://www.cartoonbrew.com/tools-of-the-trade/spark-ar-helena-dong-takashi-murakami-220071.html
+    note: "How the experience was built: floor targets launching Instagram effects that track to place the art"

@@ -12,26 +12,61 @@
 # Quote values YAML would otherwise read as something else: dates, numbers, and words like
 # yes, no, on and off ("2024-09", "yes"). Placeholders start with TODO(copy).
 
-context: "TODO(copy): employer, year, role"
+context: "Meta, 2022 - 2026"
 imageAlt: >-
   Six of Meta's restyled 3D avatars on the stage screen at Meta Connect 2024
 sections:
-  - text: |
-      TODO(copy): what the avatar style upgrade was and where the avatars appear.
-  - heading: "TODO(copy): My role"
+  - heading: "Meta Style 2 Avatars"
     text: |
-      TODO(copy): the team you were on and what you owned.
-  - heading: "TODO(copy): Technical work"
+      I spent most of my time at Meta working on Avatars in various capacities, on mobile, VR,
+      and unreleased AR/MR devices.
+  - heading: "Avatar Mobile 3D Editor"
     text: |
-      TODO(copy): the mobile and AR rendering changes.
+      My most significant contributions came in the 3D Avatar editor, where I integrated our Avatar
+      pipeline into the SparkAR rendering engine for use with live parametric editing.
 
-      TODO(copy): a second paragraph, if wanted.
-  - heading: "TODO(copy): Outcome"
+      This included significant graphics feature and performance work to support the Style 2 upgrade that Avatars received,
+      including real time parametric colorization in compute shaders and cramming the hundreds of blendshapes required
+      for full parametric body editing into a mobile GPU.
+  - heading: "Other Avatar Projects"
     text: |
-      TODO(copy): how it shipped and was received.
+      Some other highlights were unreleased demo experiences in MR & AR, Avatar Real Time Calling in Messenger,
+      some invisible but highly satisfying codebase refactors, contributing to the versioning and release cycle
+      for the AvatarSDK, and writing compute shaders for GPU compact morph targets and real time bounding box
+      & raycasting interactions.
 articles:
   - title: Meta is giving its metaverse avatars a glow-up
     source: The Verge
     date: "2024-09-25"
     url: https://www.theverge.com/2024/9/25/24254331/meta-metaverse-avatars-glow-up-connect-2024
-    note: "TODO(copy): one line on what this article covers"
+    note: "Verge Article on the Style 2 Upgrade"
+  - title: v24 of the Meta Avatars SDK is now publicly available
+    source: Meta for Developers
+    date: "2023-12-19"
+    url: https://developers.meta.com/vr/blog/v24-of-the-meta-avatars-sdk-is-now-publicly-available/
+    note: "Meta's announcement of the v24 Avatars SDK release: new rig, hair and clothing visuals, customizable shaders"
+  - title: "Real-Time Avatar Calls for When You're Not Camera-Ready and More"
+    source: Meta Newsroom
+    date: "2023-07-11"
+    url: https://about.fb.com/news/2023/07/meta-avatar-calls/
+    note: "Meta's announcement of avatar calls in Messenger and Instagram"
+  - title: You can now use your Meta avatar in video calls on Instagram and Messenger
+    source: TechCrunch
+    date: "2023-07-11"
+    url: https://techcrunch.com/2023/07/11/you-can-now-use-your-meta-avatar-to-answer-video-calls-on-instagram-and-messenger
+    note: "Press coverage of the avatar calls launch"
+  - title: New Meta Avatars Graphics Overhaul Images Emerge Just Days Before Connect
+    source: UploadVR
+    date: "2024-09-23"
+    url: https://www.uploadvr.com/new-meta-avatars-graphics-overhaul-leaks/
+    note: "An early look at the Style 2 avatars, days before their Connect 2024 reveal"
+  - title: New Meta Avatars Now Available In Horizon Worlds, Home, Workrooms, And SDK
+    source: UploadVR
+    date: "2024-10-02"
+    url: https://www.uploadvr.com/new-meta-avatars-out-now/
+    note: "The Style 2 launch across Meta's VR apps, with a new Avatars SDK release"
+  - title: "Meta Avatars Get a Major Makeover With New Body Types, Poses & AI-driven Clothing Styles"
+    source: Road to VR
+    date: "2025-07-31"
+    url: https://roadtovr.com/meta-avatars-update-2025-body-face-makeup-clothes/
+    note: "A later update adding body shapes, finer face controls, poses and generated outfits"
