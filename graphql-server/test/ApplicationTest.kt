@@ -152,6 +152,16 @@ class ApplicationTest {
     }
 
     @Test
+    fun `JSON manifests are checked on every visit`() {
+        // The builds' manifests (the seam carver's manifest.json, the splat's scene.json) name files
+        // whose names change with their content, so a day-old manifest would name files a deploy
+        // has replaced
+        val manifest = File.createTempFile("manifest", ".json").apply { deleteOnExit() }
+        val options = assertNotNull(cachingOptions(LocalFileContent(manifest)))
+        assertEquals("no-cache", options.cacheControl.toString())
+    }
+
+    @Test
     fun `ZGAL's documentation is served from its directory's URL`() = withApp {
         // ./build-zgal builds the documentation into this gitignored directory; without it, the
         // test stands in a page and stylesheet of its own

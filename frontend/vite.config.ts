@@ -180,6 +180,7 @@ const BACKEND_PATHS = [
 	"/assets/zgal",
 	"/assets/splat",
 	"/assets/writeups",
+	"/assets/seamcarver-web",
 	"/zgal/docs",
 ];
 

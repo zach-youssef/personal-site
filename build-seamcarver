@@ -12,8 +12,9 @@
 # <hash> is the first 16 hex digits of the file's sha256, so a file's name changes with its content:
 # a cached copy under a name is always right, a new manifest never names a file a browser may hold
 # stale, and a deploy can't pair old JavaScript with new WebAssembly (at worst a page that read the
-# manifest before the deploy gets a 404 for a file it named). Both loaders take the URLs to load
-# explicitly, so nothing in the built files names another by its path.
+# manifest before the deploy gets a 404 for a file it named). The backend serves JSON no-cache, so a
+# visit reads the manifest afresh. Both loaders take the URLs to load explicitly, so nothing in the
+# built files names another by its path.
 #
 # The Java is the graphql-server/src/java/SeamCarving submodule, untouched: the Gradle project
 # seamcarver-web copies it with its AWT import pointed at a shim (and refuses a change there the shim

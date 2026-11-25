@@ -7,10 +7,11 @@
 # tests, which the Gradle build otherwise runs, for callers that have just run them (CI's deploy).
 #
 # The zip unpacks over the server's home directory: the frontend's build/ (its assets/ at the
-# top), the backend's jar and assets/ (with the PPU's games, ZGAL's examples and the splat viewer
-# with its scene, which this builds), server-restart, server-deploy and the Caddyfile. Its MANIFEST lists every file
+# top), the backend's jar and assets/ (with the PPU's games, ZGAL's examples, the splat viewer
+# with its scene and the seam carver's web engines, which this builds), server-restart,
+# server-deploy and the Caddyfile. Its MANIFEST lists every file
 # in it, one per line; server-deploy deletes what the previous deploy's manifest listed and this
-# one doesn't. Of the backend's assets only the files git tracks ship, besides the three builds, so
+# one doesn't. Of the backend's assets only the files git tracks ship, besides the four builds, so
 # a bundle doesn't depend on local leftovers like seam carver inputs.
 set -euo pipefail
 
@@ -37,19 +38,21 @@ trap 'rm -rf "${STAGE}"' EXIT
 cp -R "${SCRIPT_DIR}/frontend/build" "${STAGE}/"
 mv "${STAGE}/build/assets" "${STAGE}/assets"
 
-# The PPU's games, ZGAL's examples and the splat viewer with its scene, built into the backend's
-# assets
+# The PPU's games, ZGAL's examples, the splat viewer with its scene and the seam carver's web
+# engines, built into the backend's assets
 "${SCRIPT_DIR}/build-ppu"
 "${SCRIPT_DIR}/build-zgal"
 "${SCRIPT_DIR}/build-splat"
+"${SCRIPT_DIR}/build-seamcarver"
 
-# Backend, and its assets: the tracked ones and the three builds
+# Backend, and its assets: the tracked ones and the four builds
 (cd "${SCRIPT_DIR}/graphql-server" && ./gradlew "${GRADLE_ARGS[@]}")
 cp "${SCRIPT_DIR}/graphql-server/build/libs/graphql-server-${SERVER_VERSION}-standalone.jar" "${STAGE}/"
 git -C "${SCRIPT_DIR}/graphql-server" ls-files -z -- assets |
     (cd "${SCRIPT_DIR}/graphql-server" && tar --null -T - -cf -) | tar -xf - -C "${STAGE}"
 cp -R "${SCRIPT_DIR}/graphql-server/assets/ppu" "${SCRIPT_DIR}/graphql-server/assets/zgal" \
-    "${SCRIPT_DIR}/graphql-server/assets/splat" "${STAGE}/assets/"
+    "${SCRIPT_DIR}/graphql-server/assets/splat" "${SCRIPT_DIR}/graphql-server/assets/seamcarver-web" \
+    "${STAGE}/assets/"
 
 # The server's scripts and the https proxy's config
 cp "${SCRIPT_DIR}/server-deploy" "${SCRIPT_DIR}/server-restart" "${SCRIPT_DIR}/Caddyfile" "${STAGE}/"

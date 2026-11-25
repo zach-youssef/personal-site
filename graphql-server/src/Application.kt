@@ -25,8 +25,11 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 internal fun cachingOptions(content: OutgoingContent): CachingOptions? = when {
     // Files are streamed; GraphQL replies are text
     content !is OutgoingContent.ReadChannelContent -> null
-    // Pages name the current frontend bundle, so they're checked on every visit
-    content.contentType?.match(ContentType.Text.Html) == true -> CachingOptions(CacheControl.NoCache(null))
+    // Pages name the current frontend bundle, and the JSON manifests (ZGAL's source.json, the splat's
+    // scene.json, the seam carver's manifest.json) name the current builds' files, so they're
+    // checked on every visit
+    content.contentType?.match(ContentType.Text.Html) == true ||
+        content.contentType?.match(ContentType.Application.Json) == true -> CachingOptions(CacheControl.NoCache(null))
     // Everything else may be reused for a day before being checked again. Images keep
     // their names when they're replaced, so they can't be cached for good.
     else -> CachingOptions(CacheControl.MaxAge(maxAgeSeconds = 24 * 60 * 60))
