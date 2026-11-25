@@ -1,5 +1,6 @@
 package com.zyoussef
 
+import com.zyoussef.Respositories.ISeamCarvingRepository
 import com.zyoussef.Respositories.SeamCarvingEngine
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
@@ -15,10 +16,21 @@ import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
 import java.io.File
 import java.nio.file.Files
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Semaphore
+import java.util.concurrent.TimeUnit
 import java.util.zip.CRC32
 import java.util.zip.Deflater
 import javax.imageio.ImageIO
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlin.concurrent.thread
 import kotlin.test.AfterTest
 import kotlin.test.Test
@@ -37,10 +49,27 @@ class SeamCarverRouteTest {
         dir.deleteRecursively()
     }
 
-    private fun withRoute(test: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
-        routing { seamCarverUpload(SeamCarvingEngine(), uploadDir) }
+    private fun withRoute(
+        carver: ISeamCarvingRepository = SeamCarvingEngine(),
+        busyWait: Duration = 5.seconds,
+        test: suspend ApplicationTestBuilder.() -> Unit,
+    ) = testApplication {
+        routing { seamCarverUpload(carver, uploadDir, busyWait) }
         test()
         assertEquals(emptyList(), uploadDir.list()!!.toList(), "uploads left behind")
+    }
+
+    // Holds every carve until released, so a test can carve while another is under way
+    private class HeldCarver : ISeamCarvingRepository {
+        val started = Semaphore(0)
+        val release = CountDownLatch(1)
+
+        override fun carve(image: File, targetWidth: Int, targetHeight: Int, output: File): Boolean {
+            started.release()
+            release.await()
+            output.writeText("carved")
+            return true
+        }
     }
 
     // A 12x10 PNG to carve
@@ -242,7 +271,7 @@ class SeamCarverRouteTest {
     @Test
     fun `a failure to store the upload is the server's 500, not a malformed upload`() = testApplication {
         // An upload directory that doesn't exist, so no temporary file can be made
-        routing { seamCarverUpload(SeamCarvingEngine(), File(dir, "missing")) }
+        routing { seamCarverUpload(SeamCarvingEngine(), File(dir, "missing"), 5.seconds) }
         upload(testPng(), "width" to "9", "height" to "7")
             .assertRefused(HttpStatusCode.InternalServerError, "The server couldn't store the upload")
     }
@@ -293,5 +322,85 @@ class SeamCarverRouteTest {
             setBody("width=9")
         }
         call.assertRefused(HttpStatusCode.UnsupportedMediaType, "Expected a multipart/form-data upload")
+    }
+
+    @Test
+    fun `one image is carved at a time and a request that waits too long is told to try again`() {
+        val carver = HeldCarver()
+        withRoute(carver, busyWait = 200.milliseconds) {
+            coroutineScope {
+                val first = async { upload(testPng(), "width" to "9", "height" to "7") }
+                // Waits off the test's thread for the first carve to start
+                assertTrue(withContext(Dispatchers.IO) { carver.started.tryAcquire(10, TimeUnit.SECONDS) })
+
+                upload(testPng(), "width" to "9", "height" to "7")
+                    .assertRefused(HttpStatusCode.ServiceUnavailable, "Busy, try again")
+
+                carver.release.countDown()
+                assertEquals("carved", first.await().bodyAsText())
+            }
+            // Free again once the carve is done
+            assertEquals("carved", upload(testPng(), "width" to "9", "height" to "7").bodyAsText())
+        }
+    }
+
+    @Test
+    fun `a request that finds another carving waits for it`() {
+        val carver = HeldCarver()
+        withRoute(carver, busyWait = 10.seconds) {
+            coroutineScope {
+                val first = async { upload(testPng(), "width" to "9", "height" to "7") }
+                assertTrue(withContext(Dispatchers.IO) { carver.started.tryAcquire(10, TimeUnit.SECONDS) })
+                val second = async { upload(testPng(), "width" to "9", "height" to "7") }
+                // The second hasn't started carving while the first holds the slot
+                assertTrue(withContext(Dispatchers.IO) { !carver.started.tryAcquire(300, TimeUnit.MILLISECONDS) })
+
+                carver.release.countDown()
+                assertEquals(HttpStatusCode.OK, first.await().status)
+                assertEquals(HttpStatusCode.OK, second.await().status)
+            }
+        }
+    }
+
+    @Test
+    fun `a permit taken as the wait times out is reported as taken`() = runBlocking(Dispatchers.Default) {
+        // A semaphore whose acquire() waits for the permit, takes it, then (without suspending, so
+        // it can't be cancelled) returns only after the timeout has fired: withTimeoutOrNull
+        // { acquire() } reported that as no permit, and so never gave it back
+        val real = kotlinx.coroutines.sync.Semaphore(1, acquiredPermits = 1)
+        val slow = object : kotlinx.coroutines.sync.Semaphore by real {
+            override suspend fun acquire() {
+                real.acquire()
+                Thread.sleep(300)
+            }
+        }
+        thread {
+            Thread.sleep(20)
+            real.release()
+        }
+        assertTrue(slow.acquireWithin(100.milliseconds))
+        assertEquals(0, real.availablePermits)
+    }
+
+    @Test
+    fun `a permit taken as the caller is cancelled is given back`() = runBlocking(Dispatchers.Default) {
+        // The same slow acquire(), with the caller cancelled while it holds the permit taken: the
+        // caller gets the CancellationException, not the result, so acquireWithin must release it
+        val real = kotlinx.coroutines.sync.Semaphore(1, acquiredPermits = 1)
+        val slow = object : kotlinx.coroutines.sync.Semaphore by real {
+            override suspend fun acquire() {
+                real.acquire()
+                Thread.sleep(300)
+            }
+        }
+        thread {
+            Thread.sleep(20)
+            real.release()
+        }
+        val caller = async { slow.acquireWithin(5.seconds) }
+        delay(150)
+        caller.cancel()
+        assertTrue(runCatching { caller.await() }.exceptionOrNull() is kotlinx.coroutines.CancellationException)
+        assertEquals(1, real.availablePermits)
     }
 }

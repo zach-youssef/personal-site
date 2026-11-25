@@ -16,6 +16,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import java.io.File
+import kotlin.time.Duration.Companion.seconds
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -94,7 +95,8 @@ fun Application.module(testing: Boolean = false) {
         // only: HEAD requests are answered with 404, as before.
         get("{...}") { call.respondFrontendFile("index.html") }
 
-        seamCarverUpload(SeamCarvingEngine(), uploadDir)
+        // How long a visitor waits for another's carve to end before being told to try again
+        seamCarverUpload(SeamCarvingEngine(), uploadDir, busyWait = 5.seconds)
     }
     install(GraphQL) {
         playground = true

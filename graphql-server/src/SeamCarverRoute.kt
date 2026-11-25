@@ -14,11 +14,15 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import javax.imageio.ImageIO
+import kotlin.time.Duration
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 // The upload's limits, decided in the site's seam carver plan (S21, decision U): the image file may
 // be up to 1 MiB, and up to 96,048 pixels (about 310 x 310), which the original Java's ~3.4 KB per
@@ -125,13 +129,36 @@ private fun target(name: String, value: String?, max: Int): Int {
     return parsed
 }
 
+// Takes a permit if one comes free within timeout. Not withTimeoutOrNull { acquire() } == null: the
+// timeout can fire after acquire() has returned, which would report a permit it took as not taken,
+// and leak it (every later upload then busy). Once acquire() returns, nothing suspends before the
+// flag is set; cancelled before that, acquire() gives back the permit itself. A caller cancelled
+// after it (the client gone) gets the CancellationException instead of the result, so the permit
+// is given back here.
+internal suspend fun Semaphore.acquireWithin(timeout: Duration): Boolean {
+    var acquired = false
+    try {
+        withTimeoutOrNull(timeout) {
+            acquire()
+            acquired = true
+        }
+    } catch (e: CancellationException) {
+        if (acquired) release()
+        throw e
+    }
+    return acquired
+}
+
 // The seam carver page's endpoint: carves an uploaded image ("file") to the target "width" and
 // "height", each from 1 to the image's, and answers the PNG. The upload and the carved image are
 // written to uploadDir (the system's temporary directory if null) while they're carved, and deleted
-// however the request ends. Refusals are
-// plain text, which the page shows: 413 for a file over the limits, 400 for anything else wrong
-// with the upload.
-internal fun Route.seamCarverUpload(seamCarvingRepository: ISeamCarvingRepository, uploadDir: File?) {
+// however the request ends. Refusals are plain text, which the page shows: 413 for a file over the
+// limits, 400 for anything else wrong with the upload.
+//
+// One image is carved at a time, since one carve can take most of the heap: a request that finds
+// another carving waits up to busyWait for it to end, then gets 503 "Busy, try again".
+internal fun Route.seamCarverUpload(seamCarvingRepository: ISeamCarvingRepository, uploadDir: File?, busyWait: Duration) {
+    val carving = Semaphore(1)
     route("/seamCarver/upload") {
         install(UploadBodyLimit)
         post {
@@ -204,10 +231,18 @@ internal fun Route.seamCarverUpload(seamCarvingRepository: ISeamCarvingRepositor
                 // stays reachable on the server
                 val output = storing { File.createTempFile("seamcarver-output", ".png", uploadDir) }
                 outputFile = output
+                if (!carving.acquireWithin(busyWait)) {
+                    throw BadUpload(HttpStatusCode.ServiceUnavailable, "Busy, try again")
+                }
                 val carved = try {
-                    seamCarvingRepository.carve(image, targetWidth, targetHeight, output)
+                    // Off the request threads: carving blocks for seconds
+                    withContext(Dispatchers.IO) {
+                        seamCarvingRepository.carve(image, targetWidth, targetHeight, output)
+                    }
                 } catch (e: OutOfMemoryError) {
                     throw BadUpload(HttpStatusCode.PayloadTooLarge, "Ran out of memory, try a smaller image")
+                } finally {
+                    carving.release()
                 }
                 if (carved) {
                     // Read whole (it's at most SEAM_CARVER_MAX_PIXELS pixels), so the file can be
