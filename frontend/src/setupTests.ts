@@ -9,22 +9,26 @@ import { afterEach, beforeEach, vi } from 'vitest';
 // Konva needs the native canvas package outside the browser
 vi.mock('react-konva', () => import('./testUtils/reactKonvaMock'));
 
-// Treat React's development warnings (missing keys, invalid DOM nesting, etc.) as test failures
-const reactWarnings: string[] = [];
-const consoleError = console.error;
-console.error = (...args: unknown[]) => {
-    if (typeof args[0] === 'string' && args[0].startsWith('Warning:')) {
-        reactWarnings.push(format(...args).split('\n')[0]);
-    }
-    consoleError(...args);
-};
+// Fail any test that logs an error or a warning. React's development warnings (missing keys,
+// invalid DOM nesting, updates outside act(), etc.) go to console.error, and since React 19 they
+// carry no common prefix to pick them out by, so every message counts. A test that expects one
+// mocks the method out (`vi.spyOn(console, 'error').mockImplementation(...)`), so it never
+// reaches this hook.
+const logged: string[] = [];
+for (const level of ['error', 'warn'] as const) {
+    const original = console[level];
+    console[level] = (...args: unknown[]) => {
+        logged.push(`console.${level}: ${format(...args).split('\n')[0]}`);
+        original(...args);
+    };
+}
 
 beforeEach(() => {
-    reactWarnings.length = 0;
+    logged.length = 0;
 });
 
 afterEach(() => {
-    if (reactWarnings.length > 0) {
-        throw new Error(`React logged warnings:\n${reactWarnings.join('\n')}`);
+    if (logged.length > 0) {
+        throw new Error(`The test logged errors or warnings:\n${logged.join('\n')}`);
     }
 });
