@@ -23,6 +23,14 @@ The server reads files relative to its working directory: `assets/`, the fronten
 - `/assets` serves no directory index (`index = null`), and HEAD requests answer 404 (no automatic HEAD responses), as before Ktor 3; tests pin both.
 - Caching is set in one place, the `CachingHeaders` plugin (`cachingOptions`): pages are revalidated on every visit, other files may be reused for a day. Files carry Last-Modified, so revalidation gets a 304.
 
+## Ktor 3 and coroutine gotchas
+
+- **A failure while reading a multipart body cancels the whole call.** `receiveMultipart` parses in a coroutine of the scope it's called in, so a malformed body fails that scope before the handler can answer; receive and read the parts inside `supervisorScope { }` and catch the failure around it.
+- **`RequestBodyLimit` refuses a Content-Length over its limit before the handler runs**, with an empty 413. For a limit the client gets a message for, cap the body in a route-scoped plugin on `ReceiveRequestBytes` and answer from the handler.
+- **`copyAndClose` into a channel made by `reader { }` (`File.writeChannel()` among them) returns only once the reader's job ends**, and a write failure surfaces as the copy's failure, indistinguishable from a failed read of the source. Copy with a loop of your own to tell them apart.
+- **`ImageIO.write(image, "png", file)` deletes `file` first**, so a failed write leaves no file rather than the old one.
+- **`withTimeoutOrNull(t) { acquire() } == null` doesn't prove the acquire failed.** A block that suspended (waiting for the permit) and then finishes after the timeout has fired comes back as null, its result dropped, so a permit taken that way leaks. Record success in a variable the block sets once it has the permit. (A block that never suspended returns its value even past the timeout: kotlinx ignores a timeout that fires during an undispatched run.)
+
 ## Testing
 
 ```
@@ -34,6 +42,8 @@ The server reads files relative to its working directory: `assets/`, the fronten
 - `testApplication` loads `application.conf` itself, which installs the module a second time (DuplicatePluginException), so `withApp` sets its own config (`MapApplicationConfig`) before `application { module(testing = true) }`. Pass any config keys a test needs to `withApp`.
 - The default client follows redirects; `withApp`'s doesn't, so tests see the 301s.
 - Multipart uploads go through `client.submitFormWithBinaryData(formData { ... })`; read bodies with `bodyAsText()` / `bodyAsBytes()`.
+- A test written `fun name() = runBlocking { ... }` must be declared `: Unit` when the block's last expression isn't `Unit` (an assertion that returns its value): JUnit 4 (`kotlin("test-junit")`) fails a test method that returns a value with `initializationError: Method <name>() should be void`.
+- A test of a timeout race (an operation finishing just as `withTimeoutOrNull` fires) needs a fake that suspends first and then finishes past the timeout without suspending, such as a real `acquire()` followed by `Thread.sleep`: a fake that never suspends gets its value back, timeout or not (see above).
 - Tests that need the gitignored frontend build or ZGAL's docs stand in files of their own (`withFrontendFile`) and remove them afterwards.
 
 The tests at the end of `ApplicationTest` characterize behaviour that the port to Ktor 3 and the KGraphQL fork kept (GraphQL error shapes, enum and variable coercion, 404s, HEAD): change one only on purpose, and say so in the commit message.
