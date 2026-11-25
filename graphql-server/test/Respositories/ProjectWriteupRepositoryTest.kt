@@ -85,4 +85,17 @@ class ProjectWriteupRepositoryTest {
             }
         }
     }
+
+    // The copy went in with the write-ups; a placeholder must not come back, since every merge to master is deployed
+    @Test
+    fun `no write-up contains a TODO(copy) placeholder`() {
+        for (writeup in writeups) {
+            val strings = listOf(writeup.context, writeup.imageAlt) +
+                writeup.sections.flatMap { listOf(it.heading ?: "") + it.paragraphs } +
+                writeup.articles.flatMap { listOf(it.title, it.source, it.date ?: "", it.url, it.note) }
+            for (text in strings) {
+                assertTrue("TODO(copy)" !in text, "${writeup.id}: $text")
+            }
+        }
+    }
 }
