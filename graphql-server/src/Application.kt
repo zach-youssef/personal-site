@@ -1,17 +1,22 @@
 package com.zyoussef
 
-import com.apurebase.kgraphql.GraphQL
 import com.zyoussef.Models.ProjectInfo.*
 import com.zyoussef.Models.Sokoban.*
 import com.zyoussef.Respositories.*
-import io.ktor.application.*
-import io.ktor.features.*
+import de.stuebingerb.kgraphql.GraphQL
 import io.ktor.http.*
 import io.ktor.http.content.*
-import io.ktor.request.*
-import io.ktor.response.*
-import io.ktor.routing.*
+import io.ktor.server.application.*
+import io.ktor.server.http.content.*
+import io.ktor.server.plugins.cachingheaders.*
+import io.ktor.server.plugins.calllogging.*
+import io.ktor.server.plugins.conditionalheaders.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import io.ktor.util.*
+import io.ktor.util.cio.*
+import io.ktor.utils.io.*
 import java.io.File
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
@@ -43,6 +48,7 @@ private class RetypedContent(
     override val headers get() = original.headers
     override fun readFrom() = original.readFrom()
     override fun readFrom(range: LongRange) = original.readFrom(range)
+    override fun trailers() = original.trailers()
     override fun <T : Any> getProperty(key: AttributeKey<T>) = original.getProperty(key)
     override fun <T : Any> setProperty(key: AttributeKey<T>, value: T?) = original.setProperty(key, value)
 }
@@ -52,12 +58,15 @@ private class RetypedContent(
 fun Application.module(testing: Boolean = false) {
     // Loaded first, so that invalid copy in resources/content/projects.yaml stops the server at startup
     val projectInfoRepository: IProjectInfoRepository = SimpleProjectInfoRepository.fromResource()
+    // Where uploads are written while they're carved: the system's temporary directory unless the
+    // config names one (the tests do, to check that none is left behind)
+    val uploadDir = environment.config.propertyOrNull("seamcarver.uploadDir")?.getString()?.let(::File)
 
     // Static files carry Last-Modified, so browsers can revalidate a cached copy and get a
     // 304 instead of downloading it again
     install(ConditionalHeaders)
     install(CachingHeaders) {
-        options(::cachingOptions)
+        options { _, content -> cachingOptions(content) }
     }
     // Static files are sent with the type Ktor guesses from their extension. Only what it couldn't
     // type is retyped, so the app's page, which the backend serves for any other path, stays HTML.
@@ -105,42 +114,57 @@ fun Application.module(testing: Boolean = false) {
         post("/seamCarver/upload") {
             val seamCarvingRepository = SeamCarvingEngine(File("assets/seamcarver/output"))
 
-            val multiPartData = call.receiveMultipart()
+            // No size limit, as before Ktor 3, which caps every part at 50 MiB by default. The file is
+            // streamed to disk, so only carving holds the image in memory (and runs out of it below).
+            val multiPartData = call.receiveMultipart(formFieldLimit = Long.MAX_VALUE)
             var imageFile: File? = null
             var targetWidth: Int? = null
             var targetHeight: Int? = null
-            // Parse form data
-            multiPartData.forEachPart { part ->
-                when(part) {
-                    is PartData.FormItem -> {
-                        when(part.name) {
-                            "width" -> targetWidth = Integer.parseInt(part.value)
-                            "height" -> targetHeight = Integer.parseInt(part.value)
+            try {
+                // Parse form data
+                multiPartData.forEachPart { part ->
+                    try {
+                        when (part) {
+                            is PartData.FormItem -> {
+                                when (part.name) {
+                                    "width" -> targetWidth = Integer.parseInt(part.value)
+                                    "height" -> targetHeight = Integer.parseInt(part.value)
+                                }
+                            }
+                            is PartData.FileItem -> {
+                                // A file per request, so concurrent uploads can't overwrite each other
+                                val file = File.createTempFile("seamcarver-upload", ".png", uploadDir)
+                                imageFile?.delete()
+                                imageFile = file
+                                part.provider().copyAndClose(file.writeChannel())
+                            }
+                            else -> {}
                         }
+                    } finally {
+                        // Releases what the part holds, such as a temporary file of Ktor's
+                        part.release()
                     }
-                    is PartData.FileItem -> {
-                        // A file per request, so concurrent uploads can't overwrite each other
-                        imageFile = File.createTempFile("seamcarver-upload", ".png")
-                        imageFile!!.writeBytes(part.streamProvider().readBytes())
-                    }
-                    else -> {}
                 }
-            }
 
-            // Carve the image and return the output file
-            if (imageFile != null && targetHeight != null && targetWidth != null) {
-                try {
-                    val carved = seamCarvingRepository.carve(imageFile!!, targetWidth!!, targetHeight!!)
-                    if (carved != null) {
-                        call.respondFile(carved)
-                    } else {
-                        call.respondText("Unknown error ocurred", status = HttpStatusCode(500, "Internal server error"))
+                // Carve the image and return the output file
+                val image = imageFile
+                val width = targetWidth
+                val height = targetHeight
+                if (image != null && width != null && height != null) {
+                    try {
+                        val carved = seamCarvingRepository.carve(image, width, height)
+                        if (carved != null) {
+                            call.respondFile(carved)
+                        } else {
+                            call.respondText("Unknown error ocurred", status = HttpStatusCode(500, "Internal server error"))
+                        }
+                    } catch (e: OutOfMemoryError) {
+                        call.respondText("Ran out of memory, try a smaller image", status = HttpStatusCode(413, "Input image too large"))
                     }
-                } catch (e: OutOfMemoryError) {
-                    call.respondText("Ran out of memory, try a smaller image", status = HttpStatusCode(413, "Input image too large"))
                 }
+            } finally {
+                imageFile?.delete()
             }
-            imageFile?.delete()
         }
     }
     install(GraphQL) {
@@ -233,6 +257,10 @@ fun Application.module(testing: Boolean = false) {
             }
         }
     }
-    install(CallLogging)
+    install(CallLogging) {
+        // Colors would put ANSI escapes in callTrace.log, and installing Jansi's console loads a
+        // native library, which recent JDKs warn about in server.log
+        disableDefaultColors()
+    }
 }
 

@@ -255,8 +255,8 @@ jobs:
               fi
               failures=()
               grep -qF "/${INDEX_JS}" <<< "${index}" || failures+=("the index doesn't name /${INDEX_JS}")
-              # The Sokoban levels, read from the server's resources/. KGraphQL has no
-              # __typename, and answers errors with 200 too, so the data is what counts.
+              # The Sokoban levels, read from the server's resources/. KGraphQL answers
+              # errors with 200 too, so the data is what counts.
               grep -qF '{"data":{"levels":[' <<< "${graphql}" || failures+=("/graphql didn't answer: ${graphql:0:200}")
               [[ ${game} == 200 ]] || failures+=("/assets/ppu/smb3/smb3.zgal.html answered ${game:-nothing}")
               if [[ -z ${stream} || -z ${version} ]]; then

@@ -11,4 +11,7 @@
     </root>
     <logger name="org.eclipse.jetty" level="INFO"/>
     <logger name="io.netty" level="INFO"/>
+    <!-- Ktor 3 traces its routing decisions and body transforms for every request at TRACE, about
+         20 lines each; CallLogging's line per request is logged as Application -->
+    <logger name="io.ktor" level="INFO"/>
 </configuration>

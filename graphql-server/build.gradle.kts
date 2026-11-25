@@ -45,9 +45,14 @@ dependencies {
     // an old version of their own (1.8.10) against the newer stdlib; versionless, it follows the plugin
     implementation(kotlin("reflect"))
     implementation("io.ktor:ktor-server-netty:$ktor_version")
+    implementation("io.ktor:ktor-server-conditional-headers:$ktor_version")
+    implementation("io.ktor:ktor-server-caching-headers:$ktor_version")
+    implementation("io.ktor:ktor-server-call-logging:$ktor_version")
+    // Ktor 3 logs through SLF4J 2, which logback binds from 1.3 on
     implementation("ch.qos.logback:logback-classic:$logback_version")
-    implementation("com.apurebase:kgraphql:$KGraphQLVersion")
-    implementation("com.apurebase:kgraphql-ktor:$KGraphQLVersion")
+    // The maintained fork of KGraphQL (github.com/stuebingerb/KGraphQL); com.apurebase stopped at Ktor 2
+    implementation("de.stuebingerb:kgraphql:$KGraphQLVersion")
+    implementation("de.stuebingerb:kgraphql-ktor:$KGraphQLVersion")
     // Ktor 1.5.4 and KGraphQL 0.17.8 pull in netty 4.1.63, jackson 2.12.2 and gson 2.8.0, which
     // have published vulnerabilities. These constraints raise them within the same major lines
     // (logback 1.2.13 is set directly in gradle.properties).
@@ -59,7 +64,7 @@ dependencies {
     // Reads the site copy (resources/content/projects.yaml); versions come from the jackson BOM above
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-    testImplementation("io.ktor:ktor-server-tests:$ktor_version")
+    testImplementation("io.ktor:ktor-server-test-host:$ktor_version")
     testImplementation(kotlin("test-junit"))
     // Version comes from the jackson BOM above
     testImplementation("com.fasterxml.jackson.core:jackson-databind")
