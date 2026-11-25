@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter, Route } from 'react-router-dom';
 import ProjectsPage from './ProjectsPage';
-import { mockGraphQL } from '../../testUtils/mockGraphQL';
+import { mockGraphQL, projects, writeups } from '../../testUtils/mockGraphQL';
 
 function renderAt(path: string) {
     window.history.pushState({}, '', path);
@@ -39,6 +39,24 @@ describe('ProjectsPage', () => {
 
         expect(screen.getByRole('heading', { name: 'Gaussian Splatting' })).toBeInTheDocument();
     });
+
+    for (const id of ['broadAR', 'metaAvatars'] as const) {
+        it(`routes /projects/${id} to its write-up, in place of the external page it redirected to`, async () => {
+            // Every project gets the same write-up: the page itself is tested in ProjectWriteupPage.test
+            const server = mockGraphQL({
+                projectInfo: ({ id }) => projects[id as keyof typeof projects] ?? null,
+                projectWriteup: () => writeups.broadAR,
+            });
+            const { container } = renderAt(`/projects/${id}`);
+
+            expect(await screen.findByRole('heading', { level: 2 })).toHaveTextContent(projects[id].name);
+            expect(server.requests().map(request => request.variables)).toEqual([{ id }]);
+            expect(screen.getByText(writeups.broadAR.context)).toBeInTheDocument();
+            const back = screen.getByRole('link', { name: 'Back to Projects' });
+            expect(container.querySelector(':scope > :last-child a:last-child')).toBe(back);
+            expect(window.location.href).toBe(`${window.location.origin}/projects/${id}`);
+        });
+    }
 
     it('leaves the link out of the list of projects', () => {
         mockGraphQL({ projectInfos: () => [] });

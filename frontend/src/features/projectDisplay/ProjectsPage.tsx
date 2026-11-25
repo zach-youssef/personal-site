@@ -15,6 +15,8 @@ import RaytracerPage from '../raytracer/RaytracerPage';
 import PpuPage from '../ppu/PpuPage';
 import ZgalPage from '../zgal/ZgalPage';
 import SplatPage from '../splat/SplatPage';
+import ProjectWriteupPage from '../projectWriteup/ProjectWriteupPage';
+import { WRITEUP_IDS } from '../projectWriteup/ProjectWriteup';
 import { Container, Row } from 'react-bootstrap';
 
 // A project shown on this site, ending with a way back to the list
@@ -66,14 +68,11 @@ function ProjectsPage() {
                 <Route path={`${match.path}/splats`}>
                     <ProjectPage><SplatPage /></ProjectPage>
                 </Route>
-                <Route path={`${match.path}/broadAR`} component={ () => { 
-                    window.location.href="https://buck.co/work/meta-x-murakami-at-the-broad";
-                    return null;
-                }}/>
-                <Route path={`${match.path}/metaAvatars`} component={ () => { 
-                    window.location.href="https://www.theverge.com/2024/9/25/24254331/meta-metaverse-avatars-glow-up-connect-2024";
-                    return null;
-                }}/>
+                {WRITEUP_IDS.map(id => (
+                    <Route key={id} path={`${match.path}/${id}`}>
+                        <ProjectPage><ProjectWriteupPage id={id} /></ProjectPage>
+                    </Route>
+                ))}
                 <Route path={match.path}>
                     <Container>
                         {

@@ -68,15 +68,35 @@ test('project cards link to their demo pages', async ({ page }) => {
     await expect(page.getByRole('button', { name: 'Level Select' })).toBeVisible();
 });
 
-for (const [id, url] of [
-    ['foundationDbFs', 'https://github.com/zach-youssef/foundationdb-fs'],
-    ['broadAR', 'https://buck.co/work/meta-x-murakami-at-the-broad'],
-    ['metaAvatars', 'https://www.theverge.com/2024/9/25/24254331/meta-metaverse-avatars-glow-up-connect-2024'],
-]) {
-    test(`/projects/${id} redirects to its external page`, async ({ page }) => {
-        await page.goto(`/projects/${id}`);
+test('/projects/foundationDbFs redirects to its repository', async ({ page }) => {
+    await page.goto('/projects/foundationDbFs');
 
-        await expect(page).toHaveURL(url);
+    await expect(page).toHaveURL('https://github.com/zach-youssef/foundationdb-fs');
+});
+
+// The Professional Work cards, in the backend's order, open their write-ups. Checks the pages'
+// structure, not their copy, which lives in graphql-server's write-ups.
+for (const [index, id] of ['broadAR', 'metaAvatars'].entries()) {
+    test(`professional work card ${id} opens its write-up page`, async ({ page }) => {
+        await page.goto('/projects');
+        // The category's heading, in its row, in the category's block
+        const category = page.getByRole('heading', { level: 2, name: 'Professional Work' }).locator('xpath=../../..');
+        const cards = category.locator('.card');
+        await expect(cards).toHaveCount(2);
+        const card = cards.nth(index);
+        const name = (await card.locator('.card-title').textContent())!;
+        await card.getByRole('link', { name: 'View' }).click();
+
+        await expect(page).toHaveURL(`/projects/${id}`);
+        await expect(page.getByRole('heading', { level: 2, name, exact: true })).toBeVisible();
+        const hero = page.locator('.project-writeup img');
+        await expect.poll(() => hero.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+        const articles = page.locator('.article-card a');
+        await expect(articles.first()).toBeVisible();
+        for (const link of await articles.all()) {
+            await expect(link).toHaveAttribute('href', /^https:\/\//);
+        }
+        await expect(page.getByRole('link', { name: 'Back to Projects' })).toBeVisible();
     });
 }
 
@@ -90,7 +110,7 @@ test('pages only request their own origin', async ({ page, baseURL }) => {
         }
     });
 
-    for (const path of ['/', '/projects', '/projects/sokoban', '/projects/seamCarver', '/projects/raytracer', '/projects/webglDemo', '/projects/zgal', '/projects/splats']) {
+    for (const path of ['/', '/projects', '/projects/sokoban', '/projects/seamCarver', '/projects/raytracer', '/projects/webglDemo', '/projects/zgal', '/projects/splats', '/projects/broadAR', '/projects/metaAvatars']) {
         await page.goto(path);
         await page.waitForLoadState('networkidle');
     }
