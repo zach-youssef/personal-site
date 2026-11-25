@@ -23,6 +23,16 @@ export interface StepCarver {
     end(): void,
 }
 
+// The Rust engine's carver also shows its state, for the visualisation
+export interface ViewCarver extends StepCarver {
+    // The Java toEnergyImage's grey level of every pixel, row-major, width() x height()
+    energyMap(): Uint8Array,
+    // The column, per row, of the seam stepVertical would remove next
+    nextVerticalSeam(): Uint32Array,
+    // The row, per column, of the seam stepHorizontal would remove next
+    nextHorizontalSeam(): Uint32Array,
+}
+
 export interface LoadedEngine {
     variant: Variant,
     begin(rgb: Int32Array, width: number, height: number): StepCarver,
@@ -86,7 +96,11 @@ async function loadJavaJs(manifest: Manifest, deps: LoadDeps, asset: (path: stri
     return javaEngine('java-js', await deps.importModule(asset(manifest.java.js)));
 }
 
-async function loadRust(manifest: Manifest, deps: LoadDeps, asset: (path: string) => string): Promise<LoadedEngine> {
+export interface RustEngine extends LoadedEngine {
+    begin(rgb: Int32Array, width: number, height: number): ViewCarver,
+}
+
+async function loadRust(manifest: Manifest, deps: LoadDeps, asset: (path: string) => string): Promise<RustEngine> {
     const { default: init, Carver } = await deps.importModule(asset(manifest.flat.js));
     await init({ module_or_path: asset(manifest.flat.wasm) });
     return {
@@ -103,6 +117,9 @@ async function loadRust(manifest: Manifest, deps: LoadDeps, asset: (path: string
                     return new Int32Array(rgb.buffer, rgb.byteOffset, rgb.length);
                 },
                 end: () => carver.free(),
+                energyMap: () => carver.energy_map(),
+                nextVerticalSeam: () => carver.next_vertical_seam(),
+                nextHorizontalSeam: () => carver.next_horizontal_seam(),
             };
         },
     };
@@ -113,6 +130,8 @@ async function loadRust(manifest: Manifest, deps: LoadDeps, asset: (path: string
 // D7). Any failure to load the WebAssembly falls back, since browsers differ in what they throw
 // (a CompileError or LinkError, or a TypeError from the runtime on a missing WebAssembly API);
 // a variant asked for by name loads as that variant or fails.
+export function loadEngine(engine: 'rust', variant: Variant | undefined, deps: LoadDeps): Promise<RustEngine>;
+export function loadEngine(engine: Engine, variant: Variant | undefined, deps: LoadDeps): Promise<LoadedEngine>;
 export async function loadEngine(engine: Engine, variant: Variant | undefined, deps: LoadDeps): Promise<LoadedEngine> {
     const manifest = await readManifest(deps);
     const asset = (path: string) => new URL(`${ENGINE_ASSETS}${path}`, deps.base).href;

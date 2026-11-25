@@ -95,6 +95,9 @@ describe('loadEngine', () => {
             step_vertical() { this.w--; }
             step_horizontal() { this.h--; }
             rgb() { return Uint32Array.from([0xffffff, 1]); }
+            energy_map() { return Uint8Array.from([255, 0]); }
+            next_vertical_seam() { return Uint32Array.from([1]); }
+            next_horizontal_seam() { return Uint32Array.from([0, 0]); }
             free = vi.fn();
         }
         const d = deps({ [at(MANIFEST.flat.js)]: () => ({ default: init, Carver }) });
@@ -108,6 +111,10 @@ describe('loadEngine', () => {
         carver.stepHorizontal();
         expect(carver.height()).toBe(0);
         expect(Array.from(carver.result())).toEqual([0xffffff, 1]);
+        // What the visualisation reads
+        expect(Array.from(carver.energyMap())).toEqual([255, 0]);
+        expect(Array.from(carver.nextVerticalSeam())).toEqual([1]);
+        expect(Array.from(carver.nextHorizontalSeam())).toEqual([0, 0]);
     });
 
     it('fails when the manifest is missing', async () => {
