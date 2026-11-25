@@ -8,6 +8,8 @@ enum SiteText {
     ProjectHeader,
     WorkHeader,
     Personal,
+    ArticlesHeader,
+    WriteupLoadFailed,
 }
 
 const SiteTextContents: { [key in SiteText]: string } = {
@@ -20,6 +22,8 @@ const SiteTextContents: { [key in SiteText]: string } = {
     [SiteText.ProjectHeader] : "University Projects",
     [SiteText.WorkHeader] : "Professional Work",
     [SiteText.Personal] : "Side Projects",
+    [SiteText.ArticlesHeader] : "Articles",
+    [SiteText.WriteupLoadFailed] : "This project's page couldn't be loaded. Please try again later.",
 };
 
 export { SiteText, SiteTextContents }

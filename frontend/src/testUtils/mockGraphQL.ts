@@ -72,7 +72,63 @@ export const projects = {
         description: "An algorithm for reshaping an image's aspect ratio",
         imagePath: '/assets/projectThumbnail/seamCarver.webp',
     },
+    broadAR: {
+        id: 'broadAR',
+        name: 'Broad AR',
+        description: 'An AR experience at The Broad',
+        imagePath: '/assets/projectThumbnail/broad.webp',
+    },
+    metaAvatars: {
+        id: 'metaAvatars',
+        name: 'Meta Avatars',
+        description: 'Rendering for Meta Avatars',
+        imagePath: '/assets/projectThumbnail/ava.webp',
+    },
 };
+
+// Professional project pages, shaped like graphql-server's projectWriteup; test data, not the site's copy
+export const writeups = {
+    broadAR: {
+        context: 'Studio, 2024, engineer',
+        imageAlt: 'Visitors holding phones up to a sculpture',
+        sections: [
+            { heading: null, paragraphs: ['First paragraph.', 'Second paragraph.'] },
+            { heading: 'The technical work', paragraphs: ['Third paragraph.'] },
+        ],
+        articles: [
+            {
+                title: 'An article with a month',
+                source: 'Studio',
+                date: '2024-09',
+                url: 'https://example.com/first',
+                note: 'What the first article covers',
+            },
+            {
+                title: 'An article with a day',
+                source: 'Newspaper',
+                date: '2024-09-25',
+                url: 'https://example.com/second',
+                note: 'What the second article covers',
+            },
+            {
+                title: 'An undated article',
+                source: 'Blog',
+                date: null,
+                url: 'https://example.com/third',
+                note: 'What the third article covers',
+            },
+        ],
+    },
+};
+
+// A fake backend with the write-ups above: projectInfo and projectWriteup by id, null when unknown
+export function writeupResolvers() {
+    const byId = <T,>(table: Record<string, T>) => ({ id }: Variables) => table[id] ?? null;
+    return {
+        projectInfo: byId<{ name: string, imagePath: string }>(projects),
+        projectWriteup: byId<unknown>(writeups),
+    };
+}
 
 // Level 0 from the server: the player pushes one box right onto a spot
 export const level0 = [

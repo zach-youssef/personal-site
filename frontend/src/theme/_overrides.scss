@@ -258,6 +258,22 @@ h1, h2, h3 {
   }
 }
 
+// A professional project's article cards link as a whole (a stretched link), so they lift on hover
+// as the project cards do, and show the same edge while the link has keyboard focus (:focus-visible,
+// not :focus-within, which a mouse click would also trigger and leave the card lifted)
+.article-card {
+  &:hover,
+  &:has(.stretched-link:focus-visible) {
+    transform: translateY(-3px);
+    border-color: rgba($accent, .45);
+    box-shadow: 0 .75rem 2rem $shadow-color;
+  }
+
+  .card-title {
+    line-height: 1.35;
+  }
+}
+
 // The home page stacks its featured cards, with the link to every project as wide as they are
 .featured-projects {
   display: flex;
