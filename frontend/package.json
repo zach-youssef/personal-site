@@ -6,7 +6,7 @@
     "@types/gl-matrix": "^3.2.0",
     "@types/react": "^16.14.21",
     "@types/react-dom": "^16.9.14",
-    "bootstrap": "^4.6.2",
+    "bootstrap": "^5.3.9",
     "fast-png": "^8.0.0",
     "gl-matrix": "^3.4.4",
     "konva": "^8.3.1",
