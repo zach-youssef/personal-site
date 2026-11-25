@@ -179,6 +179,7 @@ const BACKEND_PATHS = [
 	"/assets/ppu",
 	"/assets/zgal",
 	"/assets/splat",
+	"/assets/writeups",
 	"/zgal/docs",
 ];
 

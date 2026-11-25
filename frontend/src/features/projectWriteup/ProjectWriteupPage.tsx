@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Col, Container, Row } from 'react-bootstrap';
+import { Button, Col, Container, Row } from 'react-bootstrap';
 import { fetchGraphQL } from '../../FetchHelper';
 import { SiteText, SiteTextContents } from '../../content/text/SiteText';
 import ArticleCards from './ArticleCards';
+import WriteupFigure from './WriteupFigure';
+import WriteupVideo from './WriteupVideo';
 import { PROJECT_WRITEUP_QUERY, ProjectWriteupResponse } from './ProjectWriteup';
 
 type Load =
@@ -10,7 +12,8 @@ type Load =
     | { state: 'failed' }
     | { state: 'loaded', data: ProjectWriteupResponse };
 
-// A professional project's page: its write-up beside the card's image, then the articles about it
+// A project's page: its write-up beside the card's image or a video, then links to the project and
+// the articles about it
 function ProjectWriteupPage({ id }: { id: string }) {
     const [load, setLoad] = useState<Load>({ state: 'loading' });
 
@@ -43,7 +46,7 @@ function ProjectWriteupPage({ id }: { id: string }) {
     }
 
     const { name, imagePath } = load.data.projectInfo!;
-    const { context, imageAlt, sections, articles } = load.data.projectWriteup!;
+    const { context, imageAlt, video, sections, links, articles } = load.data.projectWriteup!;
     return (
         <Container className="project-writeup">
             <h2>{name}</h2>
@@ -55,16 +58,30 @@ function ProjectWriteupPage({ id }: { id: string }) {
                             {section.heading && <h4>{section.heading}</h4>}
                             {section.paragraphs.map((paragraph, paragraphIndex) =>
                                 <p key={paragraphIndex}>{paragraph}</p>)}
+                            {section.figures.map(figure => <WriteupFigure key={figure.src} figure={figure}/>)}
                         </section>
                     ))}
+                    {links.length > 0 && (
+                        <div className="writeup-links mb-4">
+                            {links.map(link => (
+                                <Button key={link.url} variant="primary" href={link.url} className="mr-2 mb-2">{link.title}</Button>
+                            ))}
+                        </div>
+                    )}
                 </Col>
                 <Col lg={5}>
-                    {/* The card's image, so it's usually cached already; near the top, so not lazy */}
-                    <img src={imagePath} alt={imageAlt} className="img-fluid rounded mb-4"/>
+                    {video
+                        ? <WriteupVideo video={video}/>
+                        // The card's image, so it's usually cached already; near the top, so not lazy
+                        : <img src={imagePath} alt={imageAlt ?? ''} className="img-fluid rounded mb-4"/>}
                 </Col>
             </Row>
-            <h3>{SiteTextContents[SiteText.ArticlesHeader]}</h3>
-            <ArticleCards articles={articles}/>
+            {articles.length > 0 && (
+                <>
+                    <h3>{SiteTextContents[SiteText.ArticlesHeader]}</h3>
+                    <ArticleCards articles={articles}/>
+                </>
+            )}
         </Container>
     );
 }

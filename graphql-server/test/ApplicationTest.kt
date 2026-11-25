@@ -308,8 +308,9 @@ class ApplicationTest {
         val query = """
             query ProjectWriteupQuery(${'$'}id: String!) {
               projectInfo(id: ${'$'}id) { name, imagePath }
-              projectWriteup(id: ${'$'}id) { context, imageAlt, sections { heading, paragraphs },
-                                        articles { title, source, date, url, note } }
+              projectWriteup(id: ${'$'}id) { context, imageAlt, video { youtubeId, title },
+                                        sections { heading, paragraphs, figures { src, alt, caption } },
+                                        links { title, url }, articles { title, source, date, url, note } }
             }
         """
         for ((id, name) in listOf("broadAR" to "Broad Museum AR Experience", "metaAvatars" to "Mobile 3D Avatars")) {

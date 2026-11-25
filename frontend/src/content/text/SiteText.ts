@@ -10,6 +10,8 @@ enum SiteText {
     Personal,
     ArticlesHeader,
     WriteupLoadFailed,
+    PlayVideo,
+    VideoLoadsFromYouTube,
 }
 
 const SiteTextContents: { [key in SiteText]: string } = {
@@ -24,6 +26,8 @@ const SiteTextContents: { [key in SiteText]: string } = {
     [SiteText.Personal] : "Side Projects",
     [SiteText.ArticlesHeader] : "Articles",
     [SiteText.WriteupLoadFailed] : "This project's page couldn't be loaded. Please try again later.",
+    [SiteText.PlayVideo] : "Play video",
+    [SiteText.VideoLoadsFromYouTube] : "Plays from YouTube (youtube-nocookie.com)",
 };
 
 export { SiteText, SiteTextContents }

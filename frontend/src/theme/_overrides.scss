@@ -274,6 +274,84 @@ h1, h2, h3 {
   }
 }
 
+// A write-up's diagrams are SVGs drawn inline (WriteupFigure), so these classes colour them for the
+// theme; the files' own fill and stroke attributes are the light theme's, for viewing them alone.
+// See "Write-up diagrams" in the README.
+.writeup-figure {
+  margin: 0 0 1.5rem;
+
+  // Narrow screens scroll a diagram sideways rather than shrink its text below legibility
+  .writeup-figure-svg {
+    overflow-x: auto;
+  }
+
+  svg {
+    display: block;
+    width: 100%;
+    min-width: 30rem;
+    height: auto;
+  }
+
+  figcaption {
+    margin-top: .5rem;
+    font-size: $font-size-sm;
+  }
+
+  .wd-text { fill: $body-color; }
+  .wd-muted { fill: $text-muted; }
+  .wd-mono { font-family: $font-family-monospace; }
+  .wd-node { fill: $surface; stroke: rgba($body-color, .55); }
+  .wd-db { fill: rgba($accent, .14); stroke: $accent; }
+  .wd-file { fill: rgba($code-keyword, .16); stroke: $code-keyword; }
+  .wd-dir { fill: rgba($code-literal, .16); stroke: $code-literal; }
+  .wd-value { fill: $surface; stroke: rgba($body-color, .4); }
+  .wd-arrow { fill: none; stroke: $text-muted; }
+  .wd-arrowhead { fill: $text-muted; stroke: none; }
+}
+
+// A write-up's video until it's clicked: a poster in the card colours with a play button
+.writeup-video-poster {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .75rem;
+  padding: 1rem;
+  border-radius: $border-radius-lg;
+  background: linear-gradient(135deg, $card-bg, rgba($accent, .18));
+  color: $headings-color;
+  cursor: pointer;
+
+  .writeup-video-play {
+    width: 4.25rem;
+    transition: transform .15s;
+
+    rect { fill: $primary; }
+    path { fill: $white; }
+  }
+
+  &:hover .writeup-video-play,
+  &:focus-visible .writeup-video-play {
+    transform: scale(1.08);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 $input-btn-focus-width $input-btn-focus-color;
+  }
+
+  .writeup-video-title {
+    font-weight: $headings-font-weight;
+    font-size: 1.125rem;
+    text-align: center;
+  }
+
+  .writeup-video-note {
+    color: $text-muted;
+    font-size: $font-size-sm;
+  }
+}
+
 // The home page stacks its featured cards, with the link to every project as wide as they are
 .featured-projects {
   display: flex;

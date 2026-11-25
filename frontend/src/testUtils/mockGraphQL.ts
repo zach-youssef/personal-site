@@ -10,9 +10,18 @@ export interface GraphQLRequest {
 }
 
 // Replaces fetch with a fake GraphQL server. Each resolver is keyed by a root field name
-// and answers any request whose query mentions that field.
-export function mockGraphQL(resolvers: Record<string, Resolver>) {
+// and answers any request whose query mentions that field. A request without a body (a GET) gets
+// the text `files` holds for its URL, or a 404.
+export function mockGraphQL(resolvers: Record<string, Resolver>, files: Record<string, string> = {}) {
     const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.body === undefined) {
+            const text = files[String(url)];
+            return {
+                ok: text !== undefined,
+                status: text === undefined ? 404 : 200,
+                text: async () => text ?? '',
+            } as Response;
+        }
         const { query, variables } = JSON.parse(String(init?.body));
         const data: Record<string, unknown> = {};
         for (const [field, resolve] of Object.entries(resolvers)) {
@@ -29,7 +38,8 @@ export function mockGraphQL(resolvers: Record<string, Resolver>) {
 
     return {
         fetchMock,
-        requests: (): GraphQLRequest[] => fetchMock.mock.calls.map(([url, init]) => {
+        // The GraphQL requests, without the file fetches
+        requests: (): GraphQLRequest[] => fetchMock.mock.calls.filter(([, init]) => init?.body !== undefined).map(([url, init]) => {
             const { query, variables } = JSON.parse(String(init?.body));
             return { url: String(url), query, variables };
         }),
@@ -84,6 +94,12 @@ export const projects = {
         description: 'Rendering for Meta Avatars',
         imagePath: '/assets/projectThumbnail/ava.webp',
     },
+    foundationDbFs: {
+        id: 'foundationDbFs',
+        name: 'A File System',
+        description: 'A file system over a database',
+        imagePath: '/assets/projectThumbnail/fdb.webp',
+    },
 };
 
 // Professional project pages, shaped like graphql-server's projectWriteup; test data, not the site's copy
@@ -91,10 +107,12 @@ export const writeups = {
     broadAR: {
         context: 'Studio, 2024, engineer',
         imageAlt: 'Visitors holding phones up to a sculpture',
+        video: null,
         sections: [
-            { heading: null, paragraphs: ['First paragraph.', 'Second paragraph.'] },
-            { heading: 'The technical work', paragraphs: ['Third paragraph.'] },
+            { heading: null, paragraphs: ['First paragraph.', 'Second paragraph.'], figures: [] },
+            { heading: 'The technical work', paragraphs: ['Third paragraph.'], figures: [] },
         ],
+        links: [],
         articles: [
             {
                 title: 'An article with a month',
@@ -119,6 +137,37 @@ export const writeups = {
             },
         ],
     },
+    // With a video in the image's place, figures and links, and no articles
+    foundationDbFs: {
+        context: 'A university, 2021, a team project',
+        imageAlt: null,
+        video: { youtubeId: 'Q0pc37MOsxI', title: 'The final demo' },
+        sections: [
+            {
+                heading: 'How it works',
+                paragraphs: ['A paragraph.'],
+                figures: [
+                    { src: '/assets/writeups/foundationDbFs/one.svg', alt: 'Boxes and arrows', caption: 'The first diagram' },
+                    { src: '/assets/writeups/foundationDbFs/two.svg', alt: 'Keys and values', caption: 'The second diagram' },
+                ],
+            },
+        ],
+        links: [
+            { title: 'View the code', url: 'https://example.com/repo' },
+            { title: 'Read the proposal', url: 'https://example.com/proposal' },
+        ],
+        articles: [],
+    },
+};
+
+// The figures' SVGs, for mockGraphQL's files
+export const figureFiles = {
+    '/assets/writeups/foundationDbFs/one.svg':
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50" width="100" height="50"><title>One</title>' +
+        '<rect class="wd-node" width="40" height="20" onclick="alert(1)"/><text class="wd-text" x="5" y="15">FUSE</text>' +
+        '<script>alert(1)</script><a href="javascript:alert(1)"><text>link</text></a></svg>',
+    '/assets/writeups/foundationDbFs/two.svg':
+        '<?xml version="1.0"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50"><text class="wd-text wd-mono">(alpha, MODE)</text></svg>',
 };
 
 // A fake backend with the write-ups above: projectInfo and projectWriteup by id, null when unknown
