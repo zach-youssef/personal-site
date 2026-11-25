@@ -320,6 +320,18 @@ class ApplicationTest {
             assertTrue(data.path("projectWriteup").path("sections").size() > 0, id)
             assertTrue(data.path("projectWriteup").path("articles").size() > 0, id)
         }
+        // A university project's page: a video in place of the image, diagrams, links and no articles
+        val fdb = graphQL(query, mapOf("id" to "foundationDbFs"))
+        assertEquals("FoundationDB-FS", fdb.path("projectInfo").path("name").asText())
+        val writeup = fdb.path("projectWriteup")
+        assertTrue(writeup.path("imageAlt").isNull)
+        assertEquals("Q0pc37MOsxI", writeup.path("video").path("youtubeId").asText())
+        assertEquals(6, writeup.path("sections").sumOf { it.path("figures").size() })
+        assertEquals(
+            listOf("https://github.com/zach-youssef/foundationdb-fs", "https://github.com/zach-youssef/foundationdb-fs/blob/master/proposal.md"),
+            writeup.path("links").map { it.path("url").asText() },
+        )
+        assertEquals(0, writeup.path("articles").size())
     }
 
     @Test

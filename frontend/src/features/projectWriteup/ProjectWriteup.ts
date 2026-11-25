@@ -4,7 +4,7 @@
 
 // The projects with a write-up page: graphql-server has a write-up for each PROFESSIONAL project
 // and those in ProjectWriteupLoader.WRITTEN_UP
-export const WRITEUP_IDS = ['broadAR', 'metaAvatars'];
+export const WRITEUP_IDS = ['broadAR', 'metaAvatars', 'foundationDbFs'];
 
 // A diagram: a root-relative SVG among the backend's assets, drawn inline
 export interface WriteupFigure {

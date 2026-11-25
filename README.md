@@ -53,7 +53,7 @@ cd frontend && BACKEND_URL=http://zyoussef.com npm start
 
 The end-to-end tests point the preview server at the test backend, so they never touch the live site.
 
-The professional projects' pages (`/projects/broadAR` and `/projects/metaAvatars`, `frontend/src/features/projectWriteup/`) show the project's card title and image with its write-up from the backend's `projectWriteup` query; "Site copy" below says where that copy lives and how to edit it.
+The write-up pages (the professional projects' `/projects/broadAR` and `/projects/metaAvatars`, and `/projects/foundationDbFs`; `frontend/src/features/projectWriteup/`) show the project's card title and image (or its video) with its write-up from the backend's `projectWriteup` query; "Site copy" below says where that copy lives and how to edit it.
 
 ### Seam carver goldens
 

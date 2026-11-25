@@ -60,7 +60,7 @@ class ProjectWriteupLoaderTest {
 
     @Test
     fun `the site's write-ups are valid, one for each professional project and those listed`() {
-        assertEquals(listOf(ProjectId.broadAR, ProjectId.metaAvatars), ProjectWriteupLoader.PROJECTS)
+        assertEquals(listOf(ProjectId.broadAR, ProjectId.metaAvatars, ProjectId.foundationDbFs), ProjectWriteupLoader.PROJECTS)
         val writeups = ProjectWriteupLoader.fromResources()
         assertEquals(ProjectWriteupLoader.PROJECTS, writeups.keys.toList())
         for ((id, writeup) in writeups) assertEquals(id.id, writeup.id)

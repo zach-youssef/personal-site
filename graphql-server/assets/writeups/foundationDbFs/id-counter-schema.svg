@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 63" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, &quot;Helvetica Neue&quot;, Arial, sans-serif">
+  <!-- The counter new user ids are taken from -->
+  <text class="wd-muted" x="0" y="14" font-size="13" fill="#76626b">key</text>
+  <text class="wd-muted" x="380" y="14" font-size="13" fill="#76626b">value</text>
+  <rect class="wd-dir" x="0.75" y="26" width="300" height="36" rx="6" fill="#d0ddd5" stroke="#0f766e" stroke-width="1.5"/>
+  <text class="wd-text wd-mono" x="14" y="49" font-size="14" font-family="SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, &quot;Courier New&quot;, monospace" fill="#362a30">(., ID_COUNTER)</text>
+  <line class="wd-arrow" x1="310" y1="44.0" x2="365" y2="44.0" stroke="#76626b" stroke-width="1.5"/>
+  <path class="wd-arrowhead" d="M374 44.0 L364 39.0 L364 49.0 Z" fill="#76626b"/>
+  <rect class="wd-value" x="380" y="26" width="219.25" height="36" rx="6" fill="#fbf9f4" stroke="#b3a9ad" stroke-width="1.5"/>
+  <text class="wd-text wd-mono" x="394" y="49" font-size="14" font-family="SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, &quot;Courier New&quot;, monospace" fill="#362a30">70001</text>
+</svg>

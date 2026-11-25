@@ -1,0 +1,123 @@
+# The foundationDbFs project page's copy; its title is its card's, in ../projects.yaml.
+# See "Site copy" in the README. The server refuses to start if this file is invalid.
+#
+#   context:  one line under the title: school, course, year
+#   video:    shown in place of the card's image: the YouTube id and a title
+#   sections: the body, in order; each has a `text` and may have a `heading` and `figures`. Paste
+#             the text into the `|` block, indented; blank lines separate paragraphs, and the line
+#             breaks inside a paragraph are joined with spaces, so hard-wrapped text is fine.
+#             A figure is an SVG in graphql-server/assets/writeups/foundationDbFs/ (see "Write-up
+#             diagrams" in the README), with alt text and a caption.
+#   links:    buttons under the body: a title and an https:// url
+#
+# Adapted from the project's README (github.com/zach-youssef/foundationdb-fs).
+# Quote values YAML would otherwise read as something else: dates, numbers, and words like
+# yes, no, on and off ("2024-09", "yes"). Placeholders start with TODO(copy).
+
+context: "Northeastern University, CS 6620, Fall 2021: a team project"
+video:
+  youtubeId: Q0pc37MOsxI
+  title: "FoundationFS: final demo"
+sections:
+  - text: |
+      FoundationDB is a distributed key-value store with strong ACID guarantees (atomicity,
+      consistency, isolation and durability). FoundationFS is a file system layer on top of it that
+      uses those guarantees to make a reliable, if slow, distributed file store. We built it as a
+      group project for Northeastern University's CS 6620 in Fall 2021.
+
+      Through Linux's Filesystem in Userspace (FUSE), the file system mounts like any other Unix
+      directory, while our client turns its reads and writes into FoundationDB transactions behind
+      the scenes.
+  - heading: "Goals"
+    text: |
+      Each key read or update can be slow, and advanced file system operations such as renaming and
+      hard links need layers of indirection, so that each operation takes several key reads. We
+      therefore designed for functionality and correctness first and speed second. Designing how a
+      tree of files and directories maps onto key-value storage was the most significant part of
+      the project.
+
+      Running more instances of FoundationDB should scale the file system without any change to our layer.
+      We built it in the open, hoping it would be a useful layer to share with the wider
+      FoundationDB community.
+  - heading: "How it works"
+    text: |
+      Our client relies on FoundationDB's ACID guarantees to provide a stable and consistent
+      distributed file system. FUSE passes file system operations to the client, which converts
+      them into key-value operations that read or modify the data stored in FoundationDB.
+    figures:
+      - src: /assets/writeups/foundationDbFs/architecture.svg
+        alt: >-
+          Four layers from top to bottom: a Linux user's programs send file system operations to
+          FUSE, which passes them on to the FoundationFS client, which sends key-value transactions
+          to FoundationDB. Retrieved data, the requested files and directories, and results flow
+          back up.
+        caption: "File system operations pass through FUSE to our client, which turns them into FoundationDB transactions."
+  - heading: "Key-value schema"
+    text: |
+      We use FoundationDB's DirectoryLayer extensively to create and manage a unique key prefix for
+      each file and directory stored.
+
+      A file is a DirectorySubspace. Each fixed-size chunk of its data is stored under the key
+      prefix generated from <path-to-file>/CHUNKS/<index>, and metadata such as its mode, owner and
+      modification time are stored as keys under the file's own prefix.
+    figures:
+      - src: /assets/writeups/foundationDbFs/file-schema.svg
+        alt: >-
+          Four key-value pairs for the file /alpha/hello.txt: (alpha, hello.txt, TIMESTAMP) maps to
+          1635428090, (alpha, hello.txt, MODE) to 0666, and (alpha, hello.txt, CHUNKS, 0) and
+          (alpha, hello.txt, CHUNKS, 1) to its two chunks, "hello" and "world!".
+        caption: "The file /alpha/hello.txt: its metadata and its two chunks of data, under the file's prefix."
+  - text: |
+      Directories are DirectorySubspaces too. Their metadata is stored under the prefix
+      <path-to-dir>/., and the presence of that "." subspace is what tells a directory from a file.
+    figures:
+      - src: /assets/writeups/foundationDbFs/directory-schema.svg
+        alt: >-
+          Six key-value pairs: (alpha, ., TIMESTAMP), (alpha, ., MODE) and (alpha, ., UID) hold
+          the directory /alpha's modification time, mode and owner, and (alpha, bravo, .,
+          TIMESTAMP), (alpha, bravo, ., MODE) and (alpha, bravo, ., UID) hold /alpha/bravo's.
+        caption: "The directories /alpha and /alpha/bravo, each with its metadata under its \".\" subspace."
+  - text: |
+      This schema makes it easy to list a directory's contents by reading its child prefixes, to
+      read a file's data by loading the key range of its chunk subspace, and to reach a file's or
+      directory's information quickly from its path.
+  - heading: "Client caching"
+    text: |
+      Every file's and directory's metadata includes a VERSION counter, stored as its own key-value
+      pair. Each change to a file or its metadata increments its version, and so does each change to
+      a directory's metadata and each file or directory added to it or removed from it.
+    figures:
+      - src: /assets/writeups/foundationDbFs/version-schema.svg
+        alt: "(dir, ., VERSION) maps to 1, and (file, VERSION) maps to 2."
+        caption: "A directory's and a file's VERSION counters."
+  - text: |
+      After reading a file's or directory's contents, the client caches them along with their
+      VERSION. On later reads it compares the cached version with the one in the database, and
+      refreshes its cache if they differ. Because FoundationDB guarantees consistency and atomicity,
+      checking the version means the client always sees the current state of the file system.
+  - heading: "Unix permissions"
+    text: |
+      Each user who logs in through the client is assigned a user id, starting at 70001, which the
+      file system uses to evaluate ownership and permissions. Logging in with a new user name
+      registers it with the password given.
+
+      Group membership isn't supported: files and directories may still show group permissions,
+      but every user other than a file's owner is evaluated by its "other" permissions.
+
+      The mapping from user names to user ids is stored under ./IDMAP/<username>, and each user's
+      PBKDF2 password hash under ./AUTH/<username>.
+    figures:
+      - src: /assets/writeups/foundationDbFs/permission-schema.svg
+        alt: "(., AUTH, username) maps to the user's password hash, and (., IDMAP, username) maps to their user id."
+        caption: "A user's password hash and user id, under the root directory."
+  - text: |
+      The key ./ID_COUNTER holds the counter that new user ids are taken from.
+    figures:
+      - src: /assets/writeups/foundationDbFs/id-counter-schema.svg
+        alt: "(., ID_COUNTER) maps to 70001."
+        caption: "The counter of user ids."
+links:
+  - title: View on GitHub
+    url: https://github.com/zach-youssef/foundationdb-fs
+  - title: Read the project proposal
+    url: https://github.com/zach-youssef/foundationdb-fs/blob/master/proposal.md

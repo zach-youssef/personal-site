@@ -40,7 +40,7 @@ describe('ProjectsPage', () => {
         expect(screen.getByRole('heading', { name: 'Gaussian Splatting' })).toBeInTheDocument();
     });
 
-    for (const id of ['broadAR', 'metaAvatars'] as const) {
+    for (const id of ['broadAR', 'metaAvatars', 'foundationDbFs'] as const) {
         it(`routes /projects/${id} to its write-up, in place of the external page it redirected to`, async () => {
             // Every project gets the same write-up: the page itself is tested in ProjectWriteupPage.test
             const server = mockGraphQL({

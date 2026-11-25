@@ -23,10 +23,10 @@ class ProjectWriteupRepositoryTest {
         ProjectWriteup(id, "context", "alt", null, listOf(WriteupSection(null, listOf("p"))), emptyList(), listOf(Article("t", "s", null, "https://example.com", "n")))
 
     @Test
-    fun `every professional project has a write-up, and every write-up is a professional project's`() {
+    fun `every professional project has a write-up, and so does FoundationDB-FS`() {
         val professional = SimpleProjectInfoRepository.fromResource().getAllProjects(category = ProjectCategory.PROFESSIONAL).map { it.id }
         assertEquals(listOf("broadAR", "metaAvatars"), professional)
-        assertEquals(professional, writeups.map { it.id })
+        assertEquals(professional + listOf("foundationDbFs"), writeups.map { it.id })
     }
 
     @Test
@@ -39,7 +39,7 @@ class ProjectWriteupRepositoryTest {
 
     @Test
     fun `is null for a project without a write-up`() {
-        for (id in ProjectId.entries.filter { it.category != ProjectCategory.PROFESSIONAL }) {
+        for (id in ProjectId.entries.filter { it.category != ProjectCategory.PROFESSIONAL && it != ProjectId.foundationDbFs }) {
             assertNull(repository.getWriteup(id), id.id)
         }
     }

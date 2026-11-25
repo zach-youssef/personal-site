@@ -55,10 +55,6 @@ function ProjectsPage() {
                 <Route path={`${match.path}/webglDemo`}>
                     <ProjectPage><WebGLDemoPage /></ProjectPage>
                 </Route>
-                <Route path={`${match.path}/foundationDbFs`} component={ () => { 
-                    window.location.href="https://github.com/zach-youssef/foundationdb-fs";
-                    return null;
-                }}/>
                 <Route path={`${match.path}/vkPPU`}>
                     <ProjectPage><PpuPage /></ProjectPage>
                 </Route>

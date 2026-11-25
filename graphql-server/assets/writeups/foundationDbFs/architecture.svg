@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 482" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, &quot;Helvetica Neue&quot;, Arial, sans-serif">
+  <!-- The architecture: file system operations pass through FUSE to our client, which turns them into FoundationDB transactions -->
+  <rect class="wd-node" x="170.0" y="0.75" width="260" height="56" rx="8" fill="#fbf9f4" stroke="#9a8f94" stroke-width="1.5"/>
+  <text class="wd-text" x="300" y="25" font-size="16" text-anchor="middle" font-weight="600" fill="#362a30">Linux user</text>
+  <text class="wd-muted" x="300" y="44" font-size="12.5" text-anchor="middle" fill="#76626b">programs using the mounted directory</text>
+  <rect class="wd-node" x="170.0" y="136.75" width="260" height="56" rx="8" fill="#fbf9f4" stroke="#9a8f94" stroke-width="1.5"/>
+  <text class="wd-text" x="300" y="161" font-size="16" text-anchor="middle" font-weight="600" fill="#362a30">FUSE</text>
+  <text class="wd-muted" x="300" y="180" font-size="12.5" text-anchor="middle" fill="#76626b">Filesystem in Userspace</text>
+  <rect class="wd-node" x="170.0" y="272.75" width="260" height="56" rx="8" fill="#fbf9f4" stroke="#9a8f94" stroke-width="1.5"/>
+  <text class="wd-text" x="300" y="297" font-size="16" text-anchor="middle" font-weight="600" fill="#362a30">FoundationFS client</text>
+  <text class="wd-muted" x="300" y="316" font-size="12.5" text-anchor="middle" fill="#76626b">our file system layer, in Java</text>
+  <path class="wd-db" d="M170.0 420 A130.0 12 0 0 1 430.0 420 L430.0 468 A130.0 12 0 0 1 170.0 468 Z" fill="#e9d2d2" stroke="#9d174d" stroke-width="1.5"/>
+  <path class="wd-db" d="M170.0 420 A130.0 12 0 0 0 430.0 420" fill="none" stroke="#9d174d" stroke-width="1.5"/>
+  <text class="wd-text" x="300" y="453" font-size="16" text-anchor="middle" font-weight="600" fill="#362a30">FoundationDB</text>
+  <text class="wd-muted" x="300" y="470" font-size="12.5" text-anchor="middle" fill="#76626b">distributed key-value store</text>
+  <line class="wd-arrow" x1="250" y1="59.75" x2="250" y2="124" stroke="#76626b" stroke-width="1.5"/>
+  <path class="wd-arrowhead" d="M250 133 L245 123 L255 123 Z" fill="#76626b"/>
+  <line class="wd-arrow" x1="350" y1="133" x2="350" y2="68.75" stroke="#76626b" stroke-width="1.5"/>
+  <path class="wd-arrowhead" d="M350 59.75 L345 69.75 L355 69.75 Z" fill="#76626b"/>
+  <text class="wd-muted" x="238" y="100.375" font-size="13" text-anchor="end" fill="#76626b">file system operations</text>
+  <text class="wd-muted" x="362" y="100.375" font-size="13" fill="#76626b">results</text>
+  <line class="wd-arrow" x1="250" y1="195.75" x2="250" y2="260" stroke="#76626b" stroke-width="1.5"/>
+  <path class="wd-arrowhead" d="M250 269 L245 259 L255 259 Z" fill="#76626b"/>
+  <line class="wd-arrow" x1="350" y1="269" x2="350" y2="204.75" stroke="#76626b" stroke-width="1.5"/>
+  <path class="wd-arrowhead" d="M350 195.75 L345 205.75 L355 205.75 Z" fill="#76626b"/>
+  <text class="wd-muted" x="238" y="236.375" font-size="13" text-anchor="end" fill="#76626b">operations, passed through</text>
+  <text class="wd-muted" x="362" y="236.375" font-size="13" fill="#76626b">requested files and directories</text>
+  <line class="wd-arrow" x1="250" y1="331.75" x2="250" y2="398" stroke="#76626b" stroke-width="1.5"/>
+  <path class="wd-arrowhead" d="M250 407 L245 397 L255 397 Z" fill="#76626b"/>
+  <line class="wd-arrow" x1="350" y1="413" x2="350" y2="340.75" stroke="#76626b" stroke-width="1.5"/>
+  <path class="wd-arrowhead" d="M350 331.75 L345 341.75 L355 341.75 Z" fill="#76626b"/>
+  <text class="wd-muted" x="238" y="373.375" font-size="13" text-anchor="end" fill="#76626b">key-value transactions</text>
+  <text class="wd-muted" x="362" y="373.375" font-size="13" fill="#76626b">retrieved data</text>
+</svg>

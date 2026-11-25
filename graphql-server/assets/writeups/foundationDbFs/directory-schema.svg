@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 293" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, &quot;Helvetica Neue&quot;, Arial, sans-serif">
+  <!-- The directories /alpha and /alpha/bravo: each one's metadata under its "." subspace -->
+  <text class="wd-muted" x="0" y="14" font-size="13" fill="#76626b">key</text>
+  <text class="wd-muted" x="380" y="14" font-size="13" fill="#76626b">value</text>
+  <rect class="wd-dir" x="0.75" y="26" width="300" height="36" rx="6" fill="#d0ddd5" stroke="#0f766e" stroke-width="1.5"/>
+  <text class="wd-text wd-mono" x="14" y="49" font-size="14" font-family="SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, &quot;Courier New&quot;, monospace" fill="#362a30">(alpha, ., TIMESTAMP)</text>
+  <line class="wd-arrow" x1="310" y1="44.0" x2="365" y2="44.0" stroke="#76626b" stroke-width="1.5"/>
+  <path class="wd-arrowhead" d="M374 44.0 L364 39.0 L364 49.0 Z" fill="#76626b"/>
+  <rect class="wd-value" x="380" y="26" width="219.25" height="36" rx="6" fill="#fbf9f4" stroke="#b3a9ad" stroke-width="1.5"/>
+  <text class="wd-text wd-mono" x="394" y="49" font-size="14" font-family="SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, &quot;Courier New&quot;, monospace" fill="#362a30">1635428090</text>
+  <rect class="wd-dir" x="0.75" y="72" width="300" height="36" rx="6" fill="#d0ddd5" stroke="#0f766e" stroke-width="1.5"/>
+  <text class="wd-text wd-mono" x="14" y="95" font-size="14" font-family="SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, &quot;Courier New&quot;, monospace" fill="#362a30">(alpha, ., MODE)</text>
+  <line class="wd-arrow" x1="310" y1="90.0" x2="365" y2="90.0" stroke="#76626b" stroke-width="1.5"/>
+  <path class="wd-arrowhead" d="M374 90.0 L364 85.0 L364 95.0 Z" fill="#76626b"/>
+  <rect class="wd-value" x="380" y="72" width="219.25" height="36" rx="6" fill="#fbf9f4" stroke="#b3a9ad" stroke-width="1.5"/>
+  <text class="wd-text wd-mono" x="394" y="95" font-size="14" font-family="SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, &quot;Courier New&quot;, monospace" fill="#362a30">0666</text>
+  <rect class="wd-dir" x="0.75" y="118" width="300" height="36" rx="6" fill="#d0ddd5" stroke="#0f766e" stroke-width="1.5"/>
+  <text class="wd-text wd-mono" x="14" y="141" font-size="14" font-family="SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, &quot;Courier New&quot;, monospace" fill="#362a30">(alpha, ., UID)</text>
+  <line class="wd-arrow" x1="310" y1="136.0" x2="365" y2="136.0" stroke="#76626b" stroke-width="1.5"/>
+  <path class="wd-arrowhead" d="M374 136.0 L364 131.0 L364 141.0 Z" fill="#76626b"/>
+  <rect class="wd-value" x="380" y="118" width="219.25" height="36" rx="6" fill="#fbf9f4" stroke="#b3a9ad" stroke-width="1.5"/>
+  <text class="wd-text wd-mono" x="394" y="141" font-size="14" font-family="SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, &quot;Courier New&quot;, monospace" fill="#362a30">70001</text>
+  <rect class="wd-dir" x="0.75" y="164" width="300" height="36" rx="6" fill="#d0ddd5" stroke="#0f766e" stroke-width="1.5"/>
+  <text class="wd-text wd-mono" x="14" y="187" font-size="14" font-family="SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, &quot;Courier New&quot;, monospace" fill="#362a30">(alpha, bravo, ., TIMESTAMP)</text>
+  <line class="wd-arrow" x1="310" y1="182.0" x2="365" y2="182.0" stroke="#76626b" stroke-width="1.5"/>
+  <path class="wd-arrowhead" d="M374 182.0 L364 177.0 L364 187.0 Z" fill="#76626b"/>
+  <rect class="wd-value" x="380" y="164" width="219.25" height="36" rx="6" fill="#fbf9f4" stroke="#b3a9ad" stroke-width="1.5"/>
+  <text class="wd-text wd-mono" x="394" y="187" font-size="14" font-family="SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, &quot;Courier New&quot;, monospace" fill="#362a30">1635427345</text>
+  <rect class="wd-dir" x="0.75" y="210" width="300" height="36" rx="6" fill="#d0ddd5" stroke="#0f766e" stroke-width="1.5"/>
+  <text class="wd-text wd-mono" x="14" y="233" font-size="14" font-family="SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, &quot;Courier New&quot;, monospace" fill="#362a30">(alpha, bravo, ., MODE)</text>
+  <line class="wd-arrow" x1="310" y1="228.0" x2="365" y2="228.0" stroke="#76626b" stroke-width="1.5"/>
+  <path class="wd-arrowhead" d="M374 228.0 L364 223.0 L364 233.0 Z" fill="#76626b"/>
+  <rect class="wd-value" x="380" y="210" width="219.25" height="36" rx="6" fill="#fbf9f4" stroke="#b3a9ad" stroke-width="1.5"/>
+  <text class="wd-text wd-mono" x="394" y="233" font-size="14" font-family="SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, &quot;Courier New&quot;, monospace" fill="#362a30">0764</text>
+  <rect class="wd-dir" x="0.75" y="256" width="300" height="36" rx="6" fill="#d0ddd5" stroke="#0f766e" stroke-width="1.5"/>
+  <text class="wd-text wd-mono" x="14" y="279" font-size="14" font-family="SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, &quot;Courier New&quot;, monospace" fill="#362a30">(alpha, bravo, ., UID)</text>
+  <line class="wd-arrow" x1="310" y1="274.0" x2="365" y2="274.0" stroke="#76626b" stroke-width="1.5"/>
+  <path class="wd-arrowhead" d="M374 274.0 L364 269.0 L364 279.0 Z" fill="#76626b"/>
+  <rect class="wd-value" x="380" y="256" width="219.25" height="36" rx="6" fill="#fbf9f4" stroke="#b3a9ad" stroke-width="1.5"/>
+  <text class="wd-text wd-mono" x="394" y="279" font-size="14" font-family="SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, &quot;Courier New&quot;, monospace" fill="#362a30">70002</text>
+</svg>

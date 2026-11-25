@@ -67,10 +67,59 @@ test('project cards link to their demo pages', async ({ page }) => {
     await expect(page.getByRole('button', { name: 'Level Select' })).toBeVisible();
 });
 
-test('/projects/foundationDbFs redirects to its repository', async ({ page }) => {
-    await page.goto('/projects/foundationDbFs');
+// The FoundationDB-FS page, which used to redirect to its repository: the backend's diagrams,
+// drawn inline in the theme's colours, and links. Its video is tested below.
+test('the FoundationDB-FS card opens its write-up, with its diagrams and links', async ({ page }) => {
+    await page.goto('/projects');
+    await page.locator('.card').filter({ hasText: 'FoundationDB-FS' }).getByRole('link', { name: 'View' }).click();
 
-    await expect(page).toHaveURL('https://github.com/zach-youssef/foundationdb-fs');
+    await expect(page).toHaveURL('/projects/foundationDbFs');
+    await expect(page.getByRole('heading', { level: 2, name: 'FoundationDB-FS', exact: true })).toBeVisible();
+    const diagrams = page.locator('.writeup-figure svg[role="img"]');
+    await expect(diagrams).toHaveCount(6);
+    for (const diagram of await diagrams.all()) {
+        await expect(diagram).toHaveAttribute('aria-label', /\S/);
+        // Laid out, and its text is text, not pixels
+        expect((await diagram.boundingBox())!.width).toBeGreaterThan(200);
+        await expect(diagram.locator('text').first()).toBeAttached();
+    }
+    // The theme's stylesheet colours the diagrams' text like the page's, over the files' own
+    // light-theme colours
+    await page.emulateMedia({ colorScheme: 'dark' });
+    const label = diagrams.first().locator('text.wd-text').first();
+    const bodyColor = () => page.evaluate(() => getComputedStyle(document.body).color);
+    await expect.poll(bodyColor).not.toBe('rgb(54, 42, 48)');
+    expect(await label.evaluate(text => getComputedStyle(text).fill)).toBe(await bodyColor());
+    expect(await label.getAttribute('fill')).toBe('#362a30');
+    await expect(page.getByRole('link', { name: 'View on GitHub' })).toHaveAttribute('href', 'https://github.com/zach-youssef/foundationdb-fs');
+    await expect(page.locator('.writeup-links a')).toHaveCount(2);
+    await expect(page.locator('.article-card')).toHaveCount(0);
+});
+
+// The video loads nothing from YouTube until it's clicked, then exactly the privacy-enhanced
+// player's frame, which is answered locally so the test stays offline
+test('the FoundationDB-FS video loads from youtube-nocookie.com only when clicked @firefox', async ({ page, baseURL }) => {
+    const crossOrigin: string[] = [];
+    page.on('request', request => {
+        if (new URL(request.url()).origin !== new URL(baseURL!).origin) {
+            crossOrigin.push(request.url());
+        }
+    });
+    await page.route(/^https:\/\/www\.youtube-nocookie\.com\//, route =>
+        route.fulfill({ contentType: 'text/html', body: '<p>The player</p>' }));
+    await page.goto('/projects/foundationDbFs');
+    const play = page.getByRole('button', { name: /^Play video: / });
+    await expect(play).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    expect(crossOrigin).toEqual([]);
+    await expect(page.locator('iframe')).toHaveCount(0);
+
+    await play.click();
+
+    const frame = page.locator('.writeup-video iframe');
+    await expect(frame).toHaveAttribute('src', 'https://www.youtube-nocookie.com/embed/Q0pc37MOsxI?autoplay=1');
+    await expect(page.frameLocator('.writeup-video iframe').locator('body')).toHaveText('The player');
+    expect(crossOrigin).toEqual(['https://www.youtube-nocookie.com/embed/Q0pc37MOsxI?autoplay=1']);
 });
 
 // The Professional Work cards, in the backend's order, open their write-ups. Checks the pages'
@@ -109,7 +158,7 @@ test('pages only request their own origin', async ({ page, baseURL }) => {
         }
     });
 
-    for (const path of ['/', '/projects', '/projects/sokoban', '/projects/seamCarver', '/projects/raytracer', '/projects/webglDemo', '/projects/zgal', '/projects/splats', '/projects/broadAR', '/projects/metaAvatars']) {
+    for (const path of ['/', '/projects', '/projects/sokoban', '/projects/seamCarver', '/projects/raytracer', '/projects/webglDemo', '/projects/zgal', '/projects/splats', '/projects/broadAR', '/projects/metaAvatars', '/projects/foundationDbFs']) {
         await page.goto(path);
         await page.waitForLoadState('networkidle');
     }

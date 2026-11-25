@@ -70,7 +70,7 @@ object ProjectWriteupLoader {
     const val DIRECTORY = "content/writeups"
 
     // The projects whose page is a write-up: the professional ones and those listed here
-    private val WRITTEN_UP: Set<ProjectId> = emptySet()
+    private val WRITTEN_UP: Set<ProjectId> = setOf(ProjectId.foundationDbFs)
     val PROJECTS: List<ProjectId> = ProjectId.entries.filter { it.category == ProjectCategory.PROFESSIONAL || it in WRITTEN_UP }
 
     fun resource(id: ProjectId) = "$DIRECTORY/${id.id}.yaml"
