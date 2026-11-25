@@ -27,11 +27,10 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 // The upload route's limits and validation, on the real engine with a directory of its own for
-// uploads, so every test can check that none is left behind
+// uploads and carved images, so every test can check that none is left behind
 class SeamCarverRouteTest {
     private val dir = Files.createTempDirectory("seamcarver-route").toFile()
     private val uploadDir = File(dir, "uploads").apply { mkdirs() }
-    private val outputDir = File(dir, "output")
 
     @AfterTest
     fun cleanUp() {
@@ -39,7 +38,7 @@ class SeamCarverRouteTest {
     }
 
     private fun withRoute(test: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
-        routing { seamCarverUpload(SeamCarvingEngine(outputDir), uploadDir) }
+        routing { seamCarverUpload(SeamCarvingEngine(), uploadDir) }
         test()
         assertEquals(emptyList(), uploadDir.list()!!.toList(), "uploads left behind")
     }
@@ -243,7 +242,7 @@ class SeamCarverRouteTest {
     @Test
     fun `a failure to store the upload is the server's 500, not a malformed upload`() = testApplication {
         // An upload directory that doesn't exist, so no temporary file can be made
-        routing { seamCarverUpload(SeamCarvingEngine(outputDir), File(dir, "missing")) }
+        routing { seamCarverUpload(SeamCarvingEngine(), File(dir, "missing")) }
         upload(testPng(), "width" to "9", "height" to "7")
             .assertRefused(HttpStatusCode.InternalServerError, "The server couldn't store the upload")
     }

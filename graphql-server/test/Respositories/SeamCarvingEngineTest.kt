@@ -8,79 +8,64 @@ import javax.imageio.ImageIO
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class SeamCarvingEngineTest {
     private val dir = Files.createTempDirectory("seamcarver").toFile()
-    private val engine = SeamCarvingEngine(dir)
+    private val engine = SeamCarvingEngine()
 
     @AfterTest
     fun cleanUp() {
         dir.deleteRecursively()
     }
 
-    private fun gradient(name: String, seed: Int): File {
+    private fun gradient(name: String): File {
         val image = BufferedImage(12, 10, BufferedImage.TYPE_INT_RGB)
         for (x in 0 until image.width) for (y in 0 until image.height) {
-            image.setRGB(x, y, Color((x * 20 + seed) % 256, (y * 25) % 256, ((x + y) * 10) % 256).rgb)
+            image.setRGB(x, y, Color((x * 20) % 256, (y * 25) % 256, ((x + y) * 10) % 256).rgb)
         }
         return File(dir, name).also { ImageIO.write(image, "png", it) }
     }
 
     @Test
-    fun `carves to the target size`() {
-        val carved = assertNotNull(engine.carve(gradient("in.png", 0), 9, 7))
+    fun `carves to the target size into the output file`() {
+        val output = File(dir, "out.png")
+        assertTrue(engine.carve(gradient("in.png"), 9, 7, output))
 
-        val image = ImageIO.read(carved)
+        val image = assertNotNull(ImageIO.read(output))
         assertEquals(9, image.width)
         assertEquals(7, image.height)
     }
 
     @Test
-    fun `names output by a hex digest of the input and the target size`() {
-        val carved = assertNotNull(engine.carve(gradient("in.png", 0), 9, 7))
+    fun `replaces what the output file held`() {
+        // As the route's output, a temporary file created empty, or a file left from before
+        val output = File(dir, "out.png").apply { writeText("old") }
+        assertTrue(engine.carve(gradient("in.png"), 9, 7, output))
 
-        assertEquals(dir, carved.parentFile)
-        assertTrue(Regex("[0-9a-f]{64}-9-7\\.png").matches(carved.name), carved.name)
+        assertEquals(9, assertNotNull(ImageIO.read(output)).width)
     }
 
     @Test
-    fun `identical inputs reuse the cached output`() {
-        val first = assertNotNull(engine.carve(gradient("a.png", 0), 9, 7))
-        first.writeText("cached")
+    fun `writes nothing besides the output`() {
+        val input = gradient("in.png")
+        engine.carve(input, 9, 7, File(dir, "out.png"))
 
-        // Same content under a different name
-        val second = assertNotNull(engine.carve(gradient("b.png", 0), 9, 7))
-
-        assertEquals(first, second)
-        assertEquals("cached", second.readText())
+        assertEquals(setOf("in.png", "out.png"), dir.list()!!.toSet())
     }
 
     @Test
-    fun `different inputs or sizes get different outputs`() {
-        val original = assertNotNull(engine.carve(gradient("a.png", 0), 9, 7))
+    fun `returns false for a file that isn't an image`() {
+        val input = File(dir, "in.png").apply { writeText("not a PNG") }
 
-        assertNotEquals(original, engine.carve(gradient("b.png", 1), 9, 7))
-        assertNotEquals(original, engine.carve(gradient("a.png", 0), 8, 7))
+        assertFalse(engine.carve(input, 9, 7, File(dir, "out.png")))
     }
 
     @Test
-    fun `creates the output directory if it is missing`() {
-        val outputDir = File(dir, "nested/output")
-        val carved = assertNotNull(SeamCarvingEngine(outputDir).carve(gradient("in.png", 0), 9, 7))
-
-        assertEquals(outputDir, carved.parentFile)
-        assertTrue(carved.exists())
-    }
-
-    @Test
-    fun `returns null when the output can't be written`() {
-        // A file where the output directory should be
-        val blocked = File(dir, "blocked").apply { writeText("") }
-
-        assertNull(SeamCarvingEngine(blocked).carve(gradient("in.png", 0), 9, 7))
+    fun `returns false when the output can't be written`() {
+        // In a directory that doesn't exist
+        assertFalse(engine.carve(gradient("in.png"), 9, 7, File(dir, "missing/out.png")))
     }
 }

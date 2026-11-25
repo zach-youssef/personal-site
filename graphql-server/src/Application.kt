@@ -56,7 +56,7 @@ fun Application.module(testing: Boolean = false) {
     val projectInfoRepository: IProjectInfoRepository = SimpleProjectInfoRepository.fromResource()
     val projectWriteupRepository: IProjectWriteupRepository = ProjectWriteupRepository.fromResource()
 
-    // Where uploads are written while they're carved: the system's temporary directory unless the
+    // Where uploads and their carved images are written while they're carved: the system's temporary directory unless the
     // config names one (the tests do, to check that none is left behind)
     val uploadDir = environment.config.propertyOrNull("seamcarver.uploadDir")?.getString()?.let(::File)
 
@@ -94,7 +94,7 @@ fun Application.module(testing: Boolean = false) {
         // only: HEAD requests are answered with 404, as before.
         get("{...}") { call.respondFrontendFile("index.html") }
 
-        seamCarverUpload(SeamCarvingEngine(File("assets/seamcarver/output")), uploadDir)
+        seamCarverUpload(SeamCarvingEngine(), uploadDir)
     }
     install(GraphQL) {
         playground = true

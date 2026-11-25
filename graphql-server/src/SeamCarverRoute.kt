@@ -126,8 +126,9 @@ private fun target(name: String, value: String?, max: Int): Int {
 }
 
 // The seam carver page's endpoint: carves an uploaded image ("file") to the target "width" and
-// "height", each from 1 to the image's. Uploads are written to uploadDir (the system's temporary
-// directory if null) while they're carved, and deleted however the request ends. Refusals are
+// "height", each from 1 to the image's, and answers the PNG. The upload and the carved image are
+// written to uploadDir (the system's temporary directory if null) while they're carved, and deleted
+// however the request ends. Refusals are
 // plain text, which the page shows: 413 for a file over the limits, 400 for anything else wrong
 // with the upload.
 internal fun Route.seamCarverUpload(seamCarvingRepository: ISeamCarvingRepository, uploadDir: File?) {
@@ -135,6 +136,7 @@ internal fun Route.seamCarverUpload(seamCarvingRepository: ISeamCarvingRepositor
         install(UploadBodyLimit)
         post {
             var imageFile: File? = null
+            var outputFile: File? = null
             try {
                 // Refused before reading anything when the request says how long it is
                 val length = call.request.contentLength()
@@ -198,15 +200,21 @@ internal fun Route.seamCarverUpload(seamCarvingRepository: ISeamCarvingRepositor
                 val targetWidth = target("width", width, imageWidth)
                 val targetHeight = target("height", height, imageHeight)
 
-                try {
-                    val carved = seamCarvingRepository.carve(image, targetWidth, targetHeight)
-                    if (carved != null) {
-                        call.respondFile(carved)
-                    } else {
-                        call.respondText("Unknown error ocurred", status = HttpStatusCode(500, "Internal server error"))
-                    }
+                // Carved to a temporary file, sent and deleted: nothing is kept, so no visitor's image
+                // stays reachable on the server
+                val output = storing { File.createTempFile("seamcarver-output", ".png", uploadDir) }
+                outputFile = output
+                val carved = try {
+                    seamCarvingRepository.carve(image, targetWidth, targetHeight, output)
                 } catch (e: OutOfMemoryError) {
-                    call.respondText("Ran out of memory, try a smaller image", status = HttpStatusCode(413, "Input image too large"))
+                    throw BadUpload(HttpStatusCode.PayloadTooLarge, "Ran out of memory, try a smaller image")
+                }
+                if (carved) {
+                    // Read whole (it's at most SEAM_CARVER_MAX_PIXELS pixels), so the file can be
+                    // deleted as soon as the response is made
+                    call.respondBytes(storing { output.readBytes() }, ContentType.Image.PNG)
+                } else {
+                    call.respondText("The image couldn't be carved", status = HttpStatusCode.InternalServerError)
                 }
             } catch (e: BadUpload) {
                 call.respondText(e.message!!, status = e.status)
@@ -215,6 +223,7 @@ internal fun Route.seamCarverUpload(seamCarvingRepository: ISeamCarvingRepositor
                 call.respondText("The server couldn't store the upload", status = HttpStatusCode.InternalServerError)
             } finally {
                 imageFile?.delete()
+                outputFile?.delete()
             }
         }
     }

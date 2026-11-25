@@ -5,41 +5,32 @@ import SeamCarving.SeamCarver
 import SeamCarving.SeamCarverAPI
 import SeamCarving.WorldImage
 import java.io.File
-import java.nio.file.Files
-import java.security.MessageDigest
+import java.io.IOException
+import javax.imageio.ImageIO
 
-// Carved images are cached in outputDir, keyed by the input's content and the target size
-class SeamCarvingEngine(private val outputDir: File) : ISeamCarvingRepository {
+// The original SeamCarving Java. Nothing is cached: every carve is the caller's to keep or delete.
+class SeamCarvingEngine : ISeamCarvingRepository {
     val carver: SeamCarverAPI = SeamCarver()
 
-    override fun carve(image: File, targetWidth: Int, targetHeight: Int): File? {
-        val output = File(outputDir, "${sha256(image)}-$targetWidth-$targetHeight.png")
-        if (output.exists()) {
-            return output
-        }
-
+    override fun carve(image: File, targetWidth: Int, targetHeight: Int, output: File): Boolean {
         var outputImage: WorldImage? = null
 
-        try{
-
+        try {
             outputImage = carver.carve(FromFileImage(image.absolutePath), targetWidth, targetHeight)
-
-        } catch (e: Exception) { System.err.println(e.message) }
-
-        if (outputImage == null) {
-            return null;
+        } catch (e: Exception) {
+            System.err.println(e.message)
         }
 
-        outputDir.mkdirs()
-        outputImage.saveImage(output.path);
-        // saveImage logs and swallows write failures
-        return if (output.exists()) output else null
-    }
+        if (outputImage == null) {
+            return false
+        }
 
-    companion object{
-        private fun sha256(file: File): String {
-            val hash: ByteArray = MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(file.toPath()))
-            return hash.joinToString("") { "%02x".format(it) }
+        // Not WorldImage.saveImage, which logs and swallows write failures
+        return try {
+            ImageIO.write(outputImage.image, "png", output)
+        } catch (e: IOException) {
+            System.err.println(e.message)
+            false
         }
     }
 }

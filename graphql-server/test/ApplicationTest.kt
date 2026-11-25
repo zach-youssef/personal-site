@@ -435,16 +435,13 @@ class ApplicationTest {
         append(HttpHeaders.ContentType, ContentType.Image.PNG.toString())
     })
 
-    // Carved images are written to this gitignored directory, which the server creates if needed;
-    // removes what the test adds to it
+    // Carved images used to be cached, publicly, in this directory (served under /assets); checks
+    // that the test adds nothing to it
     private inline fun withCarvingOutputs(test: () -> Unit) {
         val outputDir = File("assets/seamcarver/output")
         val existingOutputs = outputDir.listFiles()?.toSet() ?: emptySet()
-        try {
-            test()
-        } finally {
-            outputDir.listFiles()?.filter { it !in existingOutputs }?.forEach { it.delete() }
-        }
+        test()
+        assertEquals(existingOutputs, outputDir.listFiles()?.toSet() ?: emptySet(), "carved images kept")
     }
 
     @Test
