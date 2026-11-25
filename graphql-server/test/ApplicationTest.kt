@@ -16,6 +16,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import org.slf4j.LoggerFactory
 
 // Exercises the real application module over HTTP, including the GraphQL schema and resolvers
 class ApplicationTest {
@@ -39,6 +40,40 @@ class ApplicationTest {
     private fun withApp(test: TestApplicationEngine.() -> Unit) = withTestApplication({ module(testing = true) }, test)
 
     private fun JsonNode.texts(): List<String> = map { it.asText() }
+
+    // Runs a query that is expected to fail, and checks the error reply's shape: KGraphQL answers 200
+    // with a JSON body (sent as text/plain) holding errors with messages and no data. The frontend
+    // parses the body whatever the status or type, but a port to another GraphQL library may change
+    // either, which should be deliberate.
+    private fun TestApplicationEngine.graphQLErrors(query: String, variables: Map<String, Any?> = emptyMap()): JsonNode {
+        val call = postGraphQL(query, variables)
+        assertEquals(HttpStatusCode.OK, call.response.status())
+        assertEquals("text/plain; charset=UTF-8", call.response.headers[HttpHeaders.ContentType])
+        val body = mapper.readTree(call.response.content)
+        val errors = body.path("errors")
+        assertTrue(errors.isArray && errors.size() > 0, "Expected errors, got ${call.response.content}")
+        assertTrue(errors.all { it.path("message").isTextual }, "Expected error messages, got $errors")
+        assertTrue(body.path("data").isMissingNode, "Expected no data, got ${call.response.content}")
+        return errors
+    }
+
+    // Stands in a file of the frontend's build (which ./bundle puts in build/) unless it's there,
+    // and removes it afterwards
+    private fun withFrontendFile(name: String, content: String, test: (File) -> Unit) {
+        val file = File("build", name)
+        val stubbed = !file.exists()
+        if (stubbed) {
+            file.parentFile.mkdirs()
+            file.writeText(content)
+        }
+        try {
+            test(file)
+        } finally {
+            if (stubbed) {
+                file.delete()
+            }
+        }
+    }
 
     @Test
     fun `projectInfos returns the featured projects`() = withApp {
@@ -159,20 +194,10 @@ class ApplicationTest {
     @Test
     fun `the app's page stays HTML at a path ending in zgal`() = withApp {
         // The frontend's build, which ./bundle puts here; without it, the test stands in a page
-        val index = File("build/index.html")
-        val stubbed = !index.exists()
-        if (stubbed) {
-            index.parentFile.mkdirs()
-            index.writeText("<title>Zoey</title>")
-        }
-        try {
+        withFrontendFile("index.html", "<title>Zoey</title>") {
             val call = handleRequest(HttpMethod.Get, "/projects/zgal/particles.zgal")
             assertEquals(HttpStatusCode.OK, call.response.status())
             assertTrue(ContentType.parse(assertNotNull(call.response.headers[HttpHeaders.ContentType])).match(ContentType.Text.Html))
-        } finally {
-            if (stubbed) {
-                index.delete()
-            }
         }
     }
 
@@ -313,5 +338,129 @@ class ApplicationTest {
         } finally {
             outputDir.listFiles()?.filter { it !in existingOutputs }?.forEach { it.delete() }
         }
+    }
+
+    // Characterization of Ktor 1.5.4 and KGraphQL 0.17.8, pinned before the port to Ktor 3 so it
+    // can't change them silently
+
+    @Test
+    fun `a missing asset is a 404, not the app's page`() = withApp {
+        withFrontendFile("index.html", "<title>Zoey</title>") {
+            for (path in listOf("/assets/does-not-exist.png", "/assets/missing/does-not-exist.js")) {
+                assertEquals(HttpStatusCode.NotFound, handleRequest(HttpMethod.Get, path).response.status(), path)
+            }
+        }
+    }
+
+    @Test
+    fun `HEAD requests are answered with 404`() = withApp {
+        // deploy.yml's live check relies on GET for this reason
+        withFrontendFile("index.html", "<title>Zoey</title>") {
+            assertEquals(HttpStatusCode.NotFound, handleRequest(HttpMethod.Head, "/").response.status())
+        }
+    }
+
+    @Test
+    fun `the GraphQL playground is served at the endpoint`() = withApp {
+        val call = handleRequest(HttpMethod.Get, "/graphql")
+        assertEquals(HttpStatusCode.OK, call.response.status())
+        assertTrue(ContentType.parse(assertNotNull(call.response.headers[HttpHeaders.ContentType])).match(ContentType.Text.Html))
+        assertTrue(assertNotNull(call.response.content).contains("<html", ignoreCase = true))
+    }
+
+    @Test
+    fun `the frontend's top-level files are served from its build`() = withApp {
+        withFrontendFile("robots.txt", "User-agent: *\n") { file ->
+            val call = handleRequest(HttpMethod.Get, "/robots.txt")
+            assertEquals(HttpStatusCode.OK, call.response.status())
+            assertTrue(ContentType.parse(assertNotNull(call.response.headers[HttpHeaders.ContentType])).match(ContentType.Text.Plain))
+            assertEquals("max-age=86400", call.response.headers[HttpHeaders.CacheControl])
+            assertEquals(file.readText(), call.response.content)
+        }
+    }
+
+    @Test
+    fun `malformed and invalid queries are reported as GraphQL errors`() = withApp {
+        graphQLErrors("{ levels ")
+        graphQLErrors("{ notAField }")
+    }
+
+    @Test
+    fun `enum variables must name a value exactly`() = withApp {
+        val query = "query Q(\$level: SokobanLevelId!) { aStarSolution(levelId: \$level) }"
+        // Unknown, and in the wrong case
+        for (level in listOf("LEVEL_99", "level_0")) {
+            graphQLErrors(query, mapOf("level" to level))
+        }
+        graphQLErrors(
+            "query Q(\$category: ProjectCategory) { projectInfos(category: \$category) { id } }",
+            mapOf("category" to "NOT_A_CATEGORY"),
+        )
+        // A list of enums, as GetStateAfterActionsQuery sends
+        graphQLErrors(
+            "query Q(\$level: SokobanLevelId!, \$actions: [SokobanMove!]!) { levelAfterActions(levelId: \$level, actions: \$actions) { level { row } } }",
+            mapOf("level" to "LEVEL_0", "actions" to listOf("JUMP")),
+        )
+    }
+
+    @Test
+    fun `a missing required variable is a GraphQL error`() = withApp {
+        graphQLErrors("query Q(\$level: SokobanLevelId!) { aStarSolution(levelId: \$level) }")
+    }
+
+    @Test
+    fun `an omitted optional variable is null`() = withApp {
+        // FetchProjectsQuery sends {"category": undefined} for the page of all projects, which
+        // JSON.stringify drops; all three forms must list every project, as the query without the
+        // argument does
+        val query = "query FetchProjectsQuery(\$category: ProjectCategory) { projectInfos(category: \$category) { id } }"
+        fun JsonNode.ids() = path("projectInfos").map { it.path("id").asText() }
+        val all = graphQL("{ projectInfos { id } }").ids()
+        // So that matching it means no filter was applied
+        assertTrue(all.size > graphQL(query, mapOf("category" to "PROFESSIONAL")).ids().size, "$all")
+        assertEquals(all, graphQL(query).ids())
+        assertEquals(all, graphQL(query, mapOf("category" to null)).ids())
+
+        val call = handleRequest(HttpMethod.Post, "/graphql") {
+            addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(mapper.writeValueAsString(mapOf("query" to query)))
+        }
+        assertEquals(HttpStatusCode.OK, call.response.status())
+        assertEquals(all, mapper.readTree(call.response.content).path("data").ids())
+    }
+
+    @Test
+    fun `illegal sokoban moves are a GraphQL error`() = withApp {
+        // LEVEL_0's player starts against the wall on its left (row 1 is WALL, PLAYER, ...)
+        graphQLErrors(
+            "query Q(\$level: SokobanLevelId!, \$actions: [SokobanMove!]!) { levelAfterActions(levelId: \$level, actions: \$actions) { level { row } } }",
+            mapOf("level" to "LEVEL_0", "actions" to listOf("LEFT")),
+        )
+    }
+
+    @Test
+    fun `an upload missing a field falls through to a 404`() = withApp {
+        val boundary = "seam-carver-test"
+        fun upload(vararg fields: Pair<String, String>) = handleRequest(HttpMethod.Post, "/seamCarver/upload") {
+            addHeader(HttpHeaders.ContentType, ContentType.MultiPart.FormData.withParameter("boundary", boundary).toString())
+            setBody(boundary, fields.map { (name, value) ->
+                PartData.FormItem(value, {}, Headers.build {
+                    append(HttpHeaders.ContentDisposition, ContentDisposition.Inline.withParameter(ContentDisposition.Parameters.Name, name).toString())
+                })
+            })
+        }
+        // No file, and nothing at all: the handler responds with nothing, which Ktor answers with 404
+        assertEquals(HttpStatusCode.NotFound, upload("width" to "9", "height" to "7").response.status())
+        assertEquals(HttpStatusCode.NotFound, upload().response.status())
+    }
+
+    @Test
+    fun `logging goes to logback`() {
+        // Ktor 3 logs through SLF4J 2, which an old logback doesn't bind: logging would silently
+        // stop (callTrace.log included) with only a warning on stderr
+        assertTrue(
+            LoggerFactory.getILoggerFactory() is ch.qos.logback.classic.LoggerContext,
+            "SLF4J is bound to ${LoggerFactory.getILoggerFactory().javaClass}",
+        )
     }
 }
