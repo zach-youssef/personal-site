@@ -10,3 +10,7 @@ graphql-server/assets/zgal/
 # the release splat-scene.json locks, and the lock's fixture for the end-to-end tests
 graphql-server/assets/splat/
 e2e/fixtures/splat/
+
+# The seam carver's web engines' Gradle build (seamcarver-web)
+seamcarver-web/build/
+seamcarver-web/.gradle/

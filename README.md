@@ -6,6 +6,9 @@
 # Backend unit and API tests
 cd graphql-server && ./gradlew test
 
+# Seam carver goldens: the original Java must reproduce testdata/seamcarver
+graphql-server/gradlew -p seamcarver-web check
+
 # Frontend component tests
 cd frontend && npm test
 
@@ -47,19 +50,23 @@ cd frontend && BACKEND_URL=http://zyoussef.com npm start
 
 The end-to-end tests point the preview server at the test backend, so they never touch the live site.
 
+### Seam carver goldens
+
+The seam carver's engines (the server's today; the browser's to come) must give exactly what the original Java gives. `testdata/seamcarver/` holds that oracle: for each fixture an input (`<case>.in`) and the result of the SeamCarving submodule (`graphql-server/src/java/SeamCarving`), compiled untouched, carving it to the case's target (`<case>.out`). Its `README.md` gives the file format (little-endian int32 width and height, then `0x00RRGGBB` int32 pixels, rows top to bottom) and the cases, which include the end-to-end tests' 60x40 `gradientPng`. The Gradle project `seamcarver-web/` (built with the backend's wrapper, `graphql-server/gradlew -p seamcarver-web`, on a JDK 21 toolchain) compiles the submodule into its `oracle` source set beside `GoldenWriter.java`, which draws the fixtures in memory and encodes them. Its `check` carves every case again, both from the in-memory image and from a PNG file that ImageIO decodes (the server's path), and fails on any pixel that differs from the committed golden, naming the first ones. When the Java changes on purpose, or a case is added to `GoldenWriter.CASES`, regenerate the goldens with `graphql-server/gradlew -p seamcarver-web check -Pgoldens.write=true` (or the `writeGoldens` task alone) and commit them with the change; never edit them by hand.
+
 ## Site copy
 
 The project cards' copy lives in `graphql-server/resources/content/projects.yaml`, one entry per project keyed by its id: `title` (the card's heading), `description` (its one-line summary) and `thumbnail` (its image, a root-relative URL such as `/assets/projectThumbnail/zgal.webp`). The projects themselves are the `ProjectId` enum (`graphql-server/src/Models/ProjectInfo/ProjectId.kt`): a constant's name is the project's public id (its URL, its GraphQL `id` and its key in the YAML), and its declaration order, category and `featured` flag set where and in which order the site lists it. Adding a project means a constant there and an entry in the YAML. The backend reads the file from its classpath at startup and refuses to start if it is malformed, misses a project, has a key that isn't a project, repeats a key or field, has a field it doesn't know, or misses a field or leaves one blank; `ProjectCopyLoaderTest` covers each case and `SimpleProjectInfoRepositoryTest` holds the expected copy, so a copy edit updates that test too.
 
 ## CI
 
-GitHub Actions (`.github/workflows/ci.yml`) builds and tests every commit a push brings, each in its own job on `ubuntu-24.04`: on `master` the commits the push added, on any other branch every commit that `master` doesn't have; in either case the newest 20 at most. A newer push to a working branch cancels the checks still running for its older one, while every push to `master` is checked in full. Each job runs `tests/deploy-test.sh` (with its lock tests, as the runner has `flock`), the frontend tests, `./build-ppu`, `./build-zgal`, `./build-splat`, the backend tests and the end-to-end tests, and its commit gets a `CI / test` commit status, so a branch shows which of its commits pass.
+GitHub Actions (`.github/workflows/ci.yml`) builds and tests every commit a push brings, each in its own job on `ubuntu-24.04`: on `master` the commits the push added, on any other branch every commit that `master` doesn't have; in either case the newest 20 at most. A newer push to a working branch cancels the checks still running for its older one, while every push to `master` is checked in full. Each job runs `tests/deploy-test.sh` (with its lock tests, as the runner has `flock`), the frontend tests, `./build-ppu`, `./build-zgal`, `./build-splat`, the backend tests, the seam carver goldens (see "Testing") and the end-to-end tests, and its commit gets a `CI / test` commit status, so a branch shows which of its commits pass.
 
 - The public submodules are checked out over https. SeamCarving is private, so it's checked out with a read-only deploy key on [SeamCarving](https://github.com/zach-youssef/SeamCarving), whose private half is the repository secret `SEAMCARVING_DEPLOY_KEY`.
 - Without a GPU, `./build-zgal` and `./build-splat` draw their screenshots on Mesa's software Vulkan driver (lavapipe), so they can differ from those drawn on a Mac. Each job uploads them as the `screenshots-<sha>` artifact (`zgal/<name>/screenshot.webp`, `zgal/image_filter/blur_edges.png` and `splat/screenshot.webp`).
 - `./build-splat`'s downloads of the locked scene are cached (`actions/cache` on `~/.cache/personal-site/splat`, which setup-build hands `./build-splat` as `SPLAT_CACHE_DIR`) under a key made of the sha256s in `splat-scene.json`, so a job downloads the scene only when the lock names a new one; `./build-splat` checks every cached file against the lock anyway.
 - The end-to-end tests run in Chromium, and the tests tagged `@firefox` in Firefox too (see "Testing"); the GPU specs (`e2e/tests/gpu/`) run in Chromium only. Those run Chromium's WebGPU on SwiftShader rather than a GPU, so CI and a Mac run them the same way (see `e2e/tests/gpu/webgpu.ts`).
-- Tests print a dot each and their failures in full when `CI` is set. On a failure, the job uploads the Playwright report with the failures' traces (`e2e-report-<sha>`) and the backend's test report (`backend-test-report-<sha>`); `gh run download <run id>` fetches them.
+- Tests print a dot each and their failures in full when `CI` is set. On a failure, the job uploads the Playwright report with the failures' traces (`e2e-report-<sha>`), the backend's test report (`backend-test-report-<sha>`) and the goldens' (`seamcarver-web-test-report-<sha>`); `gh run download <run id>` fetches them.
 
 Notes for editing the workflow:
 
@@ -74,7 +81,7 @@ Notes for editing the workflow:
 
 ## Dependency updates
 
-Dependabot (`.github/dependabot.yml`) opens weekly (Monday) version-update PRs: one grouped PR per ecosystem for minor and patch updates (npm in `frontend/` and `e2e/`, Gradle in `graphql-server/`, GitHub Actions in the workflows and in `.github/actions/setup-build`), and a separate PR for each major update. Merging to `master` deploys through CD, so each merge is a deliberate decision: read the PR and let CI pass first. Dependabot security updates are on too (a repository setting, not in the file). Submodule pins aren't managed by Dependabot; they're bumped by hand.
+Dependabot (`.github/dependabot.yml`) opens weekly (Monday) version-update PRs: one grouped PR per ecosystem for minor and patch updates (npm in `frontend/` and `e2e/`, Gradle in `graphql-server/` and `seamcarver-web/`, GitHub Actions in the workflows and in `.github/actions/setup-build`), and a separate PR for each major update. Merging to `master` deploys through CD, so each merge is a deliberate decision: read the PR and let CI pass first. Dependabot security updates are on too (a repository setting, not in the file). Submodule pins aren't managed by Dependabot; they're bumped by hand.
 
 - Dependabot's Gradle support reads literal versions in `build.gradle.kts` (the Kotlin plugin, which also sets kotlin-stdlib and kotlin-reflect, and `jackson-bom`). Whether it follows the `$ktor_version`-style variables in `gradle.properties` (Ktor, Logback and KGraphQL) isn't guaranteed, so check that its PRs cover them; if one never appears, update that version by hand.
 - Workflow runs that Dependabot triggers see only Dependabot secrets, not the repository's Actions secrets. CI's SeamCarving checkout needs `SEAMCARVING_DEPLOY_KEY`, so a second read-only deploy key on SeamCarving (titled `personal-site-dependabot`, revocable on its own) is stored as the Dependabot secret of the same name (`gh secret set SEAMCARVING_DEPLOY_KEY --app dependabot < key`); without it, CI on Dependabot's branches fails at the checkout. Deploy secrets (`SSH_KEY`, `KNOWN_HOSTS`) stay out of Dependabot, since only `master` ships.
