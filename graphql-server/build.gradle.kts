@@ -53,14 +53,8 @@ dependencies {
     // The maintained fork of KGraphQL (github.com/stuebingerb/KGraphQL); com.apurebase stopped at Ktor 2
     implementation("de.stuebingerb:kgraphql:$KGraphQLVersion")
     implementation("de.stuebingerb:kgraphql-ktor:$KGraphQLVersion")
-    // Ktor 1.5.4 and KGraphQL 0.17.8 pull in netty 4.1.63, jackson 2.12.2 and gson 2.8.0, which
-    // have published vulnerabilities. These constraints raise them within the same major lines
-    // (logback 1.2.13 is set directly in gradle.properties).
-    implementation(platform("io.netty:netty-bom:4.1.141.Final"))
-    implementation(platform("com.fasterxml.jackson:jackson-bom:2.18.12"))
-    constraints {
-        implementation("com.google.code.gson:gson:2.15.0")
-    }
+    // Aligns jackson for KGraphQL (2.23.0) and the YAML loader below
+    implementation(platform("com.fasterxml.jackson:jackson-bom:2.23.0"))
     // Reads the site copy (resources/content/projects.yaml); versions come from the jackson BOM above
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
