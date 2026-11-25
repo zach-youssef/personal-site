@@ -2,12 +2,13 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val logback_version: String by project
 val ktor_version: String by project
-val kotlin_version: String by project
 val KGraphQLVersion: String by project
 
 plugins {
     application
-    kotlin("jvm") version "2.2.20"
+    // The one place the Kotlin version is set: the plugin adds the matching kotlin-stdlib, and
+    // kotlin("reflect") below takes it too. A literal, so Dependabot can update it.
+    kotlin("jvm") version "2.4.21"
 }
 
 group = "com.zyoussef"
@@ -40,7 +41,9 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version")
+    // KGraphQL and jackson-module-kotlin use kotlin-reflect, which they would otherwise pull in at
+    // an old version of their own (1.8.10) against the newer stdlib; versionless, it follows the plugin
+    implementation(kotlin("reflect"))
     implementation("io.ktor:ktor-server-netty:$ktor_version")
     implementation("ch.qos.logback:logback-classic:$logback_version")
     implementation("com.apurebase:kgraphql:$KGraphQLVersion")
