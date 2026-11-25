@@ -1,5 +1,5 @@
 import React from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { act, cleanup, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, RouteComponentProps } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
@@ -564,7 +564,7 @@ describe('ImageFilterDemo', () => {
     // A run of the fake program: its options, and ways to make it report as the runtime would
     interface FakeRun {
         options: HeadlessOptions,
-        stop: ReturnType<typeof vi.fn>,
+        stop: Mock<() => Promise<void>>,
         // Settles done with the state it ended in
         end(state: 'stopped' | 'failed'): void,
         // Reports running, captures a PNG, and ends stopped
