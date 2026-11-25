@@ -18,7 +18,8 @@ cd seamcarver-web/flat && cargo test && ./build.sh target/web && node node-check
 # Frontend component tests
 cd frontend && npm test
 
-# End-to-end tests: starts the backend and a production build of the frontend
+# End-to-end tests: type-checks the specs (npm run typecheck; Playwright strips types without checking
+# them), then starts the backend and a production build of the frontend
 cd e2e && npm install && npx playwright install chromium firefox && npm test
 ```
 
