@@ -21,6 +21,9 @@ enum SiteText {
     SeamCarverSlowWarning,
     SeamCarverCarveAnyway,
     SeamCarverDecodeNote,
+    SeamCarverWhat,
+    SeamCarverHow,
+    SeamCarverThisImplementation,
 }
 
 const SiteTextContents: { [key in SiteText]: string } = {
@@ -48,6 +51,11 @@ const SiteTextContents: { [key in SiteText]: string } = {
     [SiteText.SeamCarverSlowWarning] : "This will take about {time}.",
     [SiteText.SeamCarverCarveAnyway] : "Carve anyway",
     [SiteText.SeamCarverDecodeNote] : "Carving runs in your browser. Colour PNGs without an embedded colour profile carve exactly as the original Java does; other PNGs, JPEGs and other formats may decode slightly differently.",
+    // The seam carver's explanation, one entry per section: an empty entry hides its section, and
+    // the whole explanation is hidden while all three are empty. A blank line starts a new paragraph.
+    [SiteText.SeamCarverWhat] : "",
+    [SiteText.SeamCarverHow] : "",
+    [SiteText.SeamCarverThisImplementation] : "",
 };
 
 export { SiteText, SiteTextContents }
