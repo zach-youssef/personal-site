@@ -8,10 +8,18 @@ npm run start
 
 ## Bootstrap and react-bootstrap
 
-The themes in `src/theme` compile Bootstrap 5.3's Sass, and the components use react-bootstrap 2. Two behaviours differ from what the markup suggests:
+The themes in `src/theme` compile Bootstrap 5.3's Sass, and the components use react-bootstrap 2. Three behaviours differ from what the markup suggests:
 
 - **`<Button href>` renders `role="button"`.** A link drawn as a button would be announced as an action and missed by `getByRole('link')`, so use `ButtonLink` (a plain `<a class="btn ...">`).
 - **`Dropdown.Item`'s `onSelect` fires only through a Dropdown-level `onSelect`.** Put a handler on the item itself in `onClick`.
+- **`<ProgressBar now aria-label>` puts the label on the outer `.progress` box**, while the inner bar has `role="progressbar"`, so the progressbar has no name. Nest one: `<ProgressBar><ProgressBar now aria-label/></ProgressBar>` (a child takes the props itself), as the seam carver page does, or write the markup out (the splat page).
+
+## TypeScript and module resolution
+
+The type check targets ES2022 with `"bundler"` resolution (`tsconfig.json`); Vite and Vitest compile with esbuild and don't type-check.
+
+- **`vite-tsconfig-paths` applies `tsconfig.json`'s `paths` to Vite's and Vitest's resolution too**, not just the type check. A `paths` entry that points a package at a `.d.ts` (to find types the package doesn't expose) makes the runtime import load that `.d.ts`: give the types with an ambient `declare module '<package>'` in a `.d.ts` under `src/` instead.
+- **Class fields have define semantics** (`useDefineForClassFields` is on for ES2022). A subclass that redeclares a base class's field without initialising it resets that field to `undefined` after `super()`; declare it with `declare` or don't redeclare it (the WebGL scene graph nodes and `CanonicalMesh` initialise only their own fields).
 
 ## Component tests
 
