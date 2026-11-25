@@ -1,6 +1,6 @@
 # Seam carver goldens
 
-What the original SeamCarving Java (the `graphql-server/src/java/SeamCarving` submodule, compiled
+What the original SeamCarving Java (the `seamcarver-web/SeamCarving` submodule, compiled
 untouched) makes of each fixture. Every seam carver engine must reproduce them pixel for pixel. They
 are written by `seamcarver-web/src/oracle/java/GoldenWriter.java` and checked by
 `../graphql-server/gradlew -p seamcarver-web check` (see "Seam carver goldens" in the top-level

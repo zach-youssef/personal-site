@@ -1,5 +1,5 @@
 //! The seam carver's flat-array engine: what the original SeamCarving Java
-//! (`graphql-server/src/java/SeamCarving`, a graph of `Pixel` objects) computes, on plain arrays.
+//! (`seamcarver-web/SeamCarving`, a graph of `Pixel` objects) computes, on plain arrays.
 //! Pixel-identical by construction and by the goldens in `testdata/seamcarver` (`tests/goldens.rs`).
 //!
 //! # What the Java does, and where this does the same

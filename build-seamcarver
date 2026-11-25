@@ -20,7 +20,7 @@
 # visit reads the manifest afresh. Both loaders take the URLs to load explicitly, so nothing in the
 # built files names another by its path.
 #
-# The Java is the graphql-server/src/java/SeamCarving submodule, untouched: the Gradle project
+# The Java is the seamcarver-web/SeamCarving submodule, untouched: the Gradle project
 # seamcarver-web copies it with its AWT import pointed at a shim (and refuses a change there the shim
 # doesn't cover). Before anything is put in place, seamcarver-web/golden-check.mjs runs every built
 # engine over testdata/seamcarver under Node; a differing pixel fails the build. The output is
@@ -38,8 +38,8 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 WEB_DIR=${SCRIPT_DIR}/seamcarver-web
 OUT_DIR=${SCRIPT_DIR}/graphql-server/assets/seamcarver-web
 
-if [ ! -f "${SCRIPT_DIR}/graphql-server/src/java/SeamCarving/SeamCarver.java" ]; then
-    echo "No SeamCarving checkout in graphql-server/src/java; run: git submodule update --init graphql-server/src/java/SeamCarving" >&2
+if [ ! -f "${WEB_DIR}/SeamCarving/SeamCarver.java" ]; then
+    echo "No SeamCarving checkout in seamcarver-web; run: git submodule update --init seamcarver-web/SeamCarving" >&2
     exit 1
 fi
 

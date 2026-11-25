@@ -1,5 +1,5 @@
 [submodule "graphql-server/src/java/SeamCarving"]
-	path = graphql-server/src/java/SeamCarving
+	path = seamcarver-web/SeamCarving
 	url = git@github.com:zach-youssef/SeamCarving.git
 [submodule "external/vk_ppu"]
 	path = external/vk_ppu

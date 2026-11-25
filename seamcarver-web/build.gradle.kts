@@ -20,12 +20,23 @@ java {
     }
 }
 
-// The SeamCarving submodule, compiled as it is: the oracle that every other engine must match
-val seamCarvingSources = layout.projectDirectory.dir("../graphql-server/src/java")
+// The SeamCarving submodule (package SeamCarving), compiled as it is: the oracle that every other
+// engine must match. It sits in this project's directory, which isn't a source root, so its sources
+// are copied, unchanged, under one.
+val seamCarvingDir = layout.projectDirectory.dir("SeamCarving")
 val goldensDir = layout.projectDirectory.dir("../testdata/seamcarver")
 
+val copyOracleSources by tasks.registering(Sync::class) {
+    description = "Copies the SeamCarving Java, unchanged, for the oracle"
+    from(seamCarvingDir) {
+        include("*.java")
+        into("SeamCarving")
+    }
+    into(layout.buildDirectory.dir("generated/oracle"))
+}
+
 val oracle: SourceSet by sourceSets.creating {
-    java.srcDirs("src/oracle/java", seamCarvingSources)
+    java.srcDirs("src/oracle/java", copyOracleSources)
 }
 
 // The browser build (the main source set, which TeaVM compiles): the same SeamCarving Java, copied
@@ -39,7 +50,7 @@ val shimImport = "import shim.awt.*;"
 
 val transformSeamCarving by tasks.registering {
     description = "Copies the SeamCarving Java for the browser build, with its AWT import pointed at the shim"
-    val sources = seamCarvingSources.dir("SeamCarving")
+    val sources = seamCarvingDir
     val generated = layout.buildDirectory.dir("generated/seamcarving")
     inputs.dir(sources).withPathSensitivity(PathSensitivity.RELATIVE)
     inputs.property("boundaryFiles", boundaryFiles)
@@ -53,7 +64,7 @@ val transformSeamCarving by tasks.registering {
         val files = sources.asFile.listFiles { f -> f.isFile && f.name.endsWith(".java") }
             ?.sortedBy { it.name } ?: emptyList()
         if (files.isEmpty()) {
-            throw GradleException("No SeamCarving sources in ${sources.asFile}: run git submodule update --init graphql-server/src/java/SeamCarving")
+            throw GradleException("No SeamCarving sources in ${sources.asFile}: run git submodule update --init seamcarver-web/SeamCarving")
         }
         val names = files.map { it.name }
         boundaryFiles.filter { it !in names }.forEach { problems += "src/main/java replaces $it, which the submodule no longer has" }

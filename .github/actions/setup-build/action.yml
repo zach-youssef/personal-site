@@ -38,7 +38,7 @@ runs:
         # GitHub's published host key, rather than whatever answers
         echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' > "${ssh_dir}/known_hosts"
         GIT_SSH_COMMAND="ssh -i ${ssh_dir}/key -o IdentitiesOnly=yes -o UserKnownHostsFile=${ssh_dir}/known_hosts -o StrictHostKeyChecking=yes" \
-            git submodule update --init graphql-server/src/java/SeamCarving
+            git submodule update --init seamcarver-web/SeamCarving
 
     - name: Key the splat scene's download cache
       # By the sha256s of the release assets splat-scene.json locks, so only a new scene downloads
