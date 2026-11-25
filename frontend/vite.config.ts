@@ -25,6 +25,9 @@ export default defineConfig(({ mode }) => {
       
       
     ],
+    // Workers build as ES modules (the seam carver's is a module worker, which imports its engines
+    // at run time)
+    worker: { format: "es" },
     css: {
       preprocessorOptions: {
         scss: {
