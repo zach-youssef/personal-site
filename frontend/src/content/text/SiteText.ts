@@ -12,6 +12,15 @@ enum SiteText {
     WriteupLoadFailed,
     PlayVideo,
     VideoLoadsFromYouTube,
+    SeamCarverCarvedByJavaWasm,
+    SeamCarverCarvedByJavaJs,
+    SeamCarverCarvedByRust,
+    SeamCarverJavaRanOutOfMemory,
+    SeamCarverUseFastEngine,
+    SeamCarverJavaTooLarge,
+    SeamCarverSlowWarning,
+    SeamCarverCarveAnyway,
+    SeamCarverDecodeNote,
 }
 
 const SiteTextContents: { [key in SiteText]: string } = {
@@ -28,6 +37,17 @@ const SiteTextContents: { [key in SiteText]: string } = {
     [SiteText.WriteupLoadFailed] : "This project's page couldn't be loaded. Please try again later.",
     [SiteText.PlayVideo] : "Play video",
     [SiteText.VideoLoadsFromYouTube] : "Plays from YouTube (youtube-nocookie.com)",
+    // The seam carver page: which engine carved the result (the time taken follows), and the
+    // engine switch. {pixels} and {time} are filled in by the page.
+    [SiteText.SeamCarverCarvedByJavaWasm] : "Carved by the original Java (WebAssembly via TeaVM)",
+    [SiteText.SeamCarverCarvedByJavaJs] : "Carved by the original Java (JavaScript fallback via TeaVM)",
+    [SiteText.SeamCarverCarvedByRust] : "Carved by the Rust engine (WebAssembly), checked pixel-identical to the Java",
+    [SiteText.SeamCarverJavaRanOutOfMemory] : "The original Java ran out of memory, so the Rust engine carved the image instead.",
+    [SiteText.SeamCarverUseFastEngine] : "Use the fast engine",
+    [SiteText.SeamCarverJavaTooLarge] : "The original Java needs about 3.4 KB per pixel, so it carves images up to {pixels} pixels; this one uses the fast engine.",
+    [SiteText.SeamCarverSlowWarning] : "This will take about {time}.",
+    [SiteText.SeamCarverCarveAnyway] : "Carve anyway",
+    [SiteText.SeamCarverDecodeNote] : "Carving runs in your browser. Colour PNGs without an embedded colour profile carve exactly as the original Java does; other PNGs, JPEGs and other formats may decode slightly differently.",
 };
 
 export { SiteText, SiteTextContents }

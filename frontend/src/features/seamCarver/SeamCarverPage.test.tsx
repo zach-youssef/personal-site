@@ -1,75 +1,106 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import SeamCarverPage, { MAX_UPLOAD_BYTES } from './SeamCarverPage';
+import SeamCarverPage, { formatDuration } from './SeamCarverPage';
+import { StartMessage, WorkerMessage } from './engine/protocol';
+import { OUT_OF_MEMORY_MESSAGE } from './useSeamCarver';
 
-// jsdom doesn't decode images, so fake Image loads using dimensions keyed by the object URL's name;
-// an unknown name fails to decode
+// jsdom decodes no images and has no 2D canvas, so decoding gives sizes keyed by the file's name (an
+// unknown name fails to decode), drawing records what it drew, and the PNG is a fixed blob
 const imageSizes: Record<string, { width: number, height: number }> = {
     'small.png': { width: 100, height: 80 },
     'other.png': { width: 60, height: 40 },
-    'huge.png': { width: 400, height: 300 },
-    'carved': { width: 50, height: 40 },
+    // JAVA_MAX_PIXELS exactly, and one pixel over it
+    'java-max.png': { width: 96048, height: 1 },
+    'java-over.png': { width: 96049, height: 1 },
+    'huge.png': { width: 2000, height: 1500 },
 };
 
-let decodes: string[] = [];
-// Loads of these names wait until released, to order decodes by hand
-let held: Record<string, () => void> = {};
+const decode = vi.hoisted(() => ({
+    decodes: [] as string[],
+    // Decodes of these names wait until released, to order decodes by hand
+    held: {} as Record<string, () => void>,
+    drawn: [] as { width: number, height: number, rgb: Int32Array }[],
+}));
 
-class FakeImage {
-    width = 0;
-    height = 0;
-    onload: (() => void) | null = null;
-    onerror: (() => void) | null = null;
-    private source = '';
-
-    get src() {
-        return this.source;
-    }
-
-    set src(url: string) {
-        this.source = url;
-        const name = url.replace('blob:', '');
-        decodes.push(name);
-        const size = imageSizes[name];
-        if (size) Object.assign(this, size);
-        const finish = () => size ? this.onload?.() : this.onerror?.();
-        if (name in held) held[name] = () => setTimeout(finish);
+vi.mock('./engine/decode', () => ({
+    decodePixels: (file: File) => new Promise((resolve, reject) => {
+        decode.decodes.push(file.name);
+        const size = imageSizes[file.name];
+        const finish = () => size
+            ? resolve({ ...size, rgb: new Int32Array(size.width * size.height).fill(5) })
+            : reject(new Error('not an image'));
+        if (file.name in decode.held) decode.held[file.name] = () => setTimeout(finish);
         else setTimeout(finish);
+    }),
+    drawPixels: (canvas: HTMLCanvasElement, pixels: { width: number, height: number, rgb: Int32Array }) => {
+        canvas.width = pixels.width;
+        canvas.height = pixels.height;
+        decode.drawn.push(pixels);
+    },
+}));
+
+// A worker the test drives: it records what the page sends and whether it was terminated, and
+// emit() delivers a message from the "engine"
+class FakeWorker {
+    static instances: FakeWorker[] = [];
+    onmessage: ((event: MessageEvent<WorkerMessage>) => void) | null = null;
+    onerror: ((event: ErrorEvent) => void) | null = null;
+    sent: StartMessage[] = [];
+    terminated = false;
+
+    constructor(public url: URL | string, public options?: WorkerOptions) {
+        FakeWorker.instances.push(this);
+    }
+
+    postMessage(message: StartMessage) {
+        this.sent.push(message);
+    }
+
+    terminate() {
+        this.terminated = true;
+    }
+
+    emit(message: WorkerMessage) {
+        act(() => {
+            this.onmessage?.({ data: message } as MessageEvent<WorkerMessage>);
+        });
+    }
+
+    finish(width: number, height: number, variant: 'java-wasm' | 'java-js' | 'rust', ms = 1234) {
+        this.emit({
+            type: 'done', rgb: new Int32Array(width * height).fill(9), png: Uint8Array.from([0x89, 0x50]),
+            width, height, variant, ms,
+        });
     }
 }
 
-function deferred<T>() {
-    let resolve!: (value: T) => void;
-    const promise = new Promise<T>(r => { resolve = r; });
-    return { promise, resolve };
-}
+const lastWorker = () => FakeWorker.instances[FakeWorker.instances.length - 1];
 
-// A response as fetch gives it, with only what the page reads
-function fakeResponse(status: number, body: string, contentType: string) {
-    return {
-        ok: status >= 200 && status < 300,
-        status,
-        headers: { get: (name: string) => name.toLowerCase() === 'content-type' ? contentType : null },
-        text: async () => body,
-        blob: async () => new Blob([body], { type: contentType }),
-    } as unknown as Response;
-}
-
-const SPINNER_TEXT = 'Carving image (this might take a while)';
+const JAVA_WASM_LABEL = 'Carved by the original Java (WebAssembly via TeaVM), in 1.2 s.';
+const RUST_LABEL = 'Carved by the Rust engine (WebAssembly), checked pixel-identical to the Java, in 1.2 s.';
 
 describe('SeamCarverPage', () => {
     let revoked: string[];
+    let warn: ReturnType<typeof vi.spyOn>;
+    let fetchMock: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
-        decodes = [];
-        held = {};
+        decode.decodes = [];
+        decode.held = {};
+        decode.drawn = [];
         revoked = [];
-        vi.stubGlobal('Image', FakeImage);
+        FakeWorker.instances = [];
+        vi.stubGlobal('Worker', FakeWorker);
+        warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        // No carve may reach the server
+        fetchMock = vi.fn();
+        vi.stubGlobal('fetch', fetchMock);
+        let blobs = 0;
         Object.defineProperty(URL, 'createObjectURL', {
             configurable: true,
-            value: vi.fn((obj: Blob | MediaSource) => obj instanceof File ? `blob:${obj.name}` : 'blob:carved'),
+            value: vi.fn((obj: Blob | MediaSource) => obj instanceof File ? `blob:${obj.name}` : `blob:png-${++blobs}`),
         });
         Object.defineProperty(URL, 'revokeObjectURL', {
             configurable: true,
@@ -78,9 +109,12 @@ describe('SeamCarverPage', () => {
     });
 
     afterEach(() => {
-        // Unmount (which revokes URLs) while the URL stubs still exist
+        // Unmount (which revokes URLs and terminates the worker) while the stubs still exist
         cleanup();
+        expect(fetchMock).not.toHaveBeenCalled();
+        window.history.replaceState(null, '', '/');
         vi.unstubAllGlobals();
+        warn.mockRestore();
         delete (URL as Partial<typeof URL>).createObjectURL;
         delete (URL as Partial<typeof URL>).revokeObjectURL;
     });
@@ -93,9 +127,10 @@ describe('SeamCarverPage', () => {
             ...view,
             width,
             height,
-            async choose(fileName: string, file?: File) {
+            fastSwitch: () => screen.getByLabelText('Use the fast engine'),
+            async choose(fileName: string) {
                 await userEvent.upload(screen.getByLabelText('Image File'),
-                    file ?? new File(['png'], fileName, { type: 'image/png' }));
+                    new File(['png'], fileName, { type: 'image/png' }));
             },
             async fill(fileName: string, w: string, h: string) {
                 await this.choose(fileName);
@@ -107,12 +142,17 @@ describe('SeamCarverPage', () => {
                 await userEvent.type(height(), h);
             },
             submit: () => userEvent.click(screen.getByRole('button', { name: 'Carve' })),
+            // Fills in, submits and waits for the carve to reach the worker
+            async carve(fileName: string, w: string, h: string) {
+                await this.fill(fileName, w, h);
+                await this.submit();
+                await waitFor(() => expect(lastWorker()?.sent.length).toBeGreaterThan(0));
+                return lastWorker();
+            },
         };
     }
 
     it('requires a file and target dimensions', async () => {
-        const fetchMock = vi.fn();
-        vi.stubGlobal('fetch', fetchMock);
         const page = renderPage();
 
         await page.submit();
@@ -120,7 +160,7 @@ describe('SeamCarverPage', () => {
         expect(await screen.findByText('An image file is required')).toBeInTheDocument();
         expect(screen.getByText('A target width is required')).toBeInTheDocument();
         expect(screen.getByText('A target height is required')).toBeInTheDocument();
-        expect(fetchMock).not.toHaveBeenCalled();
+        expect(FakeWorker.instances).toEqual([]);
     });
 
     it('labels the inputs and links their errors', async () => {
@@ -154,6 +194,7 @@ describe('SeamCarverPage', () => {
 
         expect(await screen.findByText("Target width must be <= the input image's width, 100")).toBeInTheDocument();
         expect(screen.getByText("Target height must be <= the input image's height, 80")).toBeInTheDocument();
+        expect(FakeWorker.instances).toEqual([]);
     });
 
     it('shows the chosen image with its size and prefills the targets', async () => {
@@ -163,208 +204,342 @@ describe('SeamCarverPage', () => {
 
         expect(await screen.findByAltText('Input image, 100 × 80 px')).toHaveAttribute('src', 'blob:small.png');
         expect(screen.getByText(/Chosen image: 100 × 80 px/)).toBeInTheDocument();
-        expect(screen.getByText(/up to 1 MB and 96,048 pixels \(about 310 × 310 px\)/)).toBeInTheDocument();
+        expect(screen.getByText(/Carving runs in your browser/)).toBeInTheDocument();
         expect(page.width()).toHaveValue(100);
         expect(page.height()).toHaveValue(80);
     });
 
     it('decodes each chosen file once', async () => {
-        const response = deferred<Response>();
-        vi.stubGlobal('fetch', vi.fn(() => response.promise));
         const page = renderPage();
 
-        await page.fill('small.png', '50', '40');
-        await page.submit();
-        await screen.findByText(SPINNER_TEXT);
+        await page.carve('small.png', '50', '40');
 
-        expect(decodes).toEqual(['small.png']);
-    });
-
-    it('rejects images over the pixel limit', async () => {
-        const page = renderPage();
-
-        await page.choose('huge.png');
-
-        expect(await screen.findByText(
-            'This image is 400 × 300 px, too large to carve: the most it takes is 96,048 pixels, about 310 × 310 px.',
-        )).toBeInTheDocument();
-    });
-
-    it('rejects files over the upload limit without decoding or uploading them', async () => {
-        const fetchMock = vi.fn();
-        vi.stubGlobal('fetch', fetchMock);
-        const page = renderPage();
-
-        await page.choose('big.png', new File([new Uint8Array(MAX_UPLOAD_BYTES + 1)], 'big.png', { type: 'image/png' }));
-
-        expect(await screen.findByText('Image file too large (max 1 MB)')).toBeInTheDocument();
-        await userEvent.type(page.width(), '10');
-        await userEvent.type(page.height(), '10');
-        await page.submit();
-
-        expect(screen.getByText('Image file too large (max 1 MB)')).toBeInTheDocument();
-        expect(decodes).toEqual([]);
-        expect(fetchMock).not.toHaveBeenCalled();
+        expect(decode.decodes).toEqual(['small.png']);
     });
 
     it('rejects files that are not images', async () => {
-        const fetchMock = vi.fn();
-        vi.stubGlobal('fetch', fetchMock);
         const page = renderPage();
 
         await page.choose('notes.png');
 
         expect(await screen.findByText("Couldn't read this file as an image. Choose a PNG or JPEG.")).toBeInTheDocument();
         expect(revoked).toContain('blob:notes.png');
-        expect(fetchMock).not.toHaveBeenCalled();
     });
 
-    it('uploads the image and shows the carved result with a download link', async () => {
-        const response = deferred<Response>();
-        const fetchMock = vi.fn(() => response.promise);
-        vi.stubGlobal('fetch', fetchMock);
+    it('carves small images with the original Java in a module worker', async () => {
         const page = renderPage();
 
-        await page.fill('small.png', '50', '40');
-        await page.submit();
+        const worker = await page.carve('small.png', '50', '40');
 
-        const status = await screen.findByRole('status');
-        expect(status).toHaveTextContent(SPINNER_TEXT);
+        expect(String(worker.url)).toContain('/engine/carve.worker.ts');
+        expect(worker.options).toEqual({ type: 'module' });
+        const [message] = worker.sent;
+        expect(message).toMatchObject({
+            type: 'start', engine: 'java', variant: undefined,
+            width: 100, height: 80, targetWidth: 50, targetHeight: 40,
+        });
+        expect(message.rgb).toHaveLength(8000);
+    });
+
+    it('shows progress, then the result on a canvas with the engine that ran and a download link', async () => {
+        const page = renderPage();
+        const worker = await page.carve('small.png', '50', '40');
+
+        expect(screen.getByRole('status')).toHaveTextContent('Carving with the original Java');
         expect(screen.getByRole('button', { name: 'Carve' })).toBeDisabled();
+        expect(page.width()).toBeDisabled();
 
-        const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-        expect(url).toBe('/seamCarver/upload');
-        expect(init.method).toBe('POST');
-        const form = init.body as FormData;
-        expect(form.get('width')).toBe('50');
-        expect(form.get('height')).toBe('40');
-        expect((form.get('file') as File).name).toBe('small.png');
+        worker.emit({ type: 'progress', done: 0, total: 90 });
+        worker.emit({ type: 'progress', done: 45, total: 90 });
+        expect(screen.getByRole('status')).toHaveTextContent('Carving with the original Java: 45 of 90 seams');
+        expect(screen.getByLabelText('Carving progress')).toHaveAttribute('aria-valuenow', '50');
 
-        response.resolve(fakeResponse(200, 'carved', 'image/png'));
+        worker.finish(50, 40, 'java-wasm');
 
-        expect(await screen.findByAltText('Carved image, 50 × 40 px')).toHaveAttribute('src', 'blob:carved');
-        const download = screen.getByRole('link', { name: 'Download PNG' });
-        expect(download).toHaveAttribute('href', 'blob:carved');
+        const canvas = await screen.findByRole('img', { name: 'Carved image, 50 × 40 px' });
+        expect(canvas.tagName).toBe('CANVAS');
+        expect(decode.drawn).toHaveLength(1);
+        expect(decode.drawn[0]).toMatchObject({ width: 50, height: 40 });
+        expect(screen.getByText(JAVA_WASM_LABEL)).toBeInTheDocument();
+        const download = await screen.findByRole('link', { name: 'Download PNG' });
+        expect(download).toHaveAttribute('href', 'blob:png-1');
         expect(download).toHaveAttribute('download', 'small-50x40.png');
         expect(screen.getByRole('status')).toBeEmptyDOMElement();
+        expect(screen.queryByLabelText('Carving progress')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Carve' })).toBeEnabled();
+        expect(worker.terminated).toBe(false);
+    });
+
+    it('names the JavaScript fallback when the Java ran as JavaScript', async () => {
+        const page = renderPage();
+        const worker = await page.carve('small.png', '50', '40');
+
+        worker.finish(50, 40, 'java-js', 25_000);
+
+        expect(await screen.findByText('Carved by the original Java (JavaScript fallback via TeaVM), in 25 s.')).toBeInTheDocument();
+    });
+
+    it('reuses the worker for the next carve', async () => {
+        const page = renderPage();
+        const worker = await page.carve('small.png', '50', '40');
+        worker.finish(50, 40, 'java-wasm');
+        await screen.findByRole('img', { name: 'Carved image, 50 × 40 px' });
+
+        await page.submit();
+
+        await waitFor(() => expect(worker.sent).toHaveLength(2));
+        expect(FakeWorker.instances).toHaveLength(1);
+        // The previous result's download is revoked as it goes
+        await waitFor(() => expect(revoked).toContain('blob:png-1'));
+    });
+
+    it('cancels by terminating the worker, and carves again on a fresh one', async () => {
+        const page = renderPage();
+        const worker = await page.carve('small.png', '50', '40');
+        worker.emit({ type: 'progress', done: 3, total: 90 });
+
+        await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+        expect(worker.terminated).toBe(true);
+        expect(screen.getByRole('status')).toHaveTextContent('Carve cancelled.');
+        expect(screen.getByRole('button', { name: 'Carve' })).toBeEnabled();
+        expect(page.width()).toBeEnabled();
+        expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
+        // A message the old worker had already sent changes nothing
+        worker.finish(50, 40, 'java-wasm');
+        expect(screen.queryByRole('img', { name: /Carved image/ })).not.toBeInTheDocument();
+
+        await page.submit();
+        await waitFor(() => expect(FakeWorker.instances).toHaveLength(2));
+        expect(lastWorker().sent).toHaveLength(1);
+    });
+
+    it('shows a failed carve and discards its worker', async () => {
+        const page = renderPage();
+        const worker = await page.carve('small.png', '50', '40');
+
+        worker.emit({ type: 'error', reason: 'failed', engine: 'java', message: 'boom' });
+
+        expect(await screen.findByText("Couldn't carve the image: boom")).toBeInTheDocument();
+        expect(worker.terminated).toBe(true);
         expect(screen.getByRole('button', { name: 'Carve' })).toBeEnabled();
     });
 
-    it('keeps the status region mounted so changes to it are announced', async () => {
-        const response = deferred<Response>();
-        vi.stubGlobal('fetch', vi.fn(() => response.promise));
+    it('shows a worker that dies', async () => {
         const page = renderPage();
-        const before = screen.getByRole('status');
-        expect(before).toBeEmptyDOMElement();
+        const worker = await page.carve('small.png', '50', '40');
 
-        await page.fill('small.png', '50', '40');
-        await page.submit();
+        act(() => worker.onerror?.({ message: 'Script error', preventDefault() {} } as ErrorEvent));
 
-        await waitFor(() => expect(before).toHaveTextContent(SPINNER_TEXT));
-        expect(screen.getByRole('status')).toBe(before);
+        expect(await screen.findByText("Couldn't carve the image: Script error")).toBeInTheDocument();
+        expect(worker.terminated).toBe(true);
+        // Not memory: no rerun
+        expect(FakeWorker.instances).toHaveLength(1);
+        expect(warn).not.toHaveBeenCalled();
     });
 
-    it('shows plain-text errors returned by the server', async () => {
-        vi.stubGlobal('fetch', vi.fn(async () => fakeResponse(413, 'Ran out of memory, try a smaller image', 'text/plain')));
+    it('reruns on the Rust engine when the Java runs out of memory', async () => {
         const page = renderPage();
+        const java = await page.carve('small.png', '50', '40');
 
-        await page.fill('small.png', '50', '40');
-        await page.submit();
+        java.emit({ type: 'error', reason: 'out-of-memory', engine: 'java', message: 'unreachable' });
 
-        expect(await screen.findByText('Ran out of memory, try a smaller image')).toBeInTheDocument();
-        expect(screen.queryByText(SPINNER_TEXT)).not.toBeInTheDocument();
-        expect(screen.queryByAltText(/Carved image/)).not.toBeInTheDocument();
+        expect(java.terminated).toBe(true);
+        // A trap may be a bug rather than memory: its message is kept for devtools
+        expect(warn).toHaveBeenCalledWith("The seam carver's java engine ran out of memory: unreachable");
+        await waitFor(() => expect(FakeWorker.instances).toHaveLength(2));
+        const rust = lastWorker();
+        expect(rust.sent[0]).toMatchObject({ engine: 'rust', variant: undefined, width: 100, targetWidth: 50 });
+        expect(screen.getByRole('status')).toHaveTextContent('Carving with the Rust engine');
+
+        rust.finish(50, 40, 'rust');
+
+        expect(await screen.findByText(RUST_LABEL)).toBeInTheDocument();
+        expect(screen.getByText('The original Java ran out of memory, so the Rust engine carved the image instead.'))
+            .toBeInTheDocument();
     });
 
-    it('replaces an HTML error page with a generic message', async () => {
-        vi.stubGlobal('fetch', vi.fn(async () =>
-            fakeResponse(502, '<html><body><h1>502 Bad Gateway</h1></body></html>', 'text/html; charset=utf-8')));
+    it('says so when the Rust engine runs out of memory', async () => {
         const page = renderPage();
-
         await page.fill('small.png', '50', '40');
+        await userEvent.click(page.fastSwitch());
         await page.submit();
+        await waitFor(() => expect(lastWorker()?.sent).toHaveLength(1));
 
-        expect(await screen.findByText("The server couldn't carve the image (error 502). Try again later.")).toBeInTheDocument();
-        expect(screen.queryByText(/Bad Gateway/)).not.toBeInTheDocument();
-        expect(screen.queryByText(SPINNER_TEXT)).not.toBeInTheDocument();
+        lastWorker().emit({ type: 'error', reason: 'out-of-memory', engine: 'rust', message: 'unreachable' });
+
+        expect(await screen.findByText(OUT_OF_MEMORY_MESSAGE)).toBeInTheDocument();
+        expect(FakeWorker.instances).toHaveLength(1);
+        expect(warn).toHaveBeenCalledWith("The seam carver's rust engine ran out of memory: unreachable");
     });
 
-    it('replaces any non-plain-text error body with the generic message', async () => {
-        vi.stubGlobal('fetch', vi.fn(async () =>
-            fakeResponse(500, '{"error":"boom","trace":"at Foo.bar"}', 'application/json')));
+    it('reruns on the Rust engine when the Java worker dies of running out of memory', async () => {
         const page = renderPage();
+        const java = await page.carve('small.png', '50', '40');
 
-        await page.fill('small.png', '50', '40');
-        await page.submit();
+        // As SpiderMonkey ends a worker's script whose heap is exhausted
+        act(() => java.onerror?.({ message: 'out of memory', preventDefault() {} } as ErrorEvent));
 
-        expect(await screen.findByText("The server couldn't carve the image (error 500). Try again later.")).toBeInTheDocument();
-        expect(screen.queryByText(/boom/)).not.toBeInTheDocument();
+        expect(java.terminated).toBe(true);
+        await waitFor(() => expect(FakeWorker.instances).toHaveLength(2));
+        expect(lastWorker().sent[0]).toMatchObject({ engine: 'rust', variant: undefined });
+        lastWorker().finish(50, 40, 'rust');
+        expect(await screen.findByText('The original Java ran out of memory, so the Rust engine carved the image instead.'))
+            .toBeInTheDocument();
     });
 
-    it('stops the spinner and says so when the server is unreachable', async () => {
-        vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch'); }));
+    it('says so when the Rust worker dies of running out of memory', async () => {
         const page = renderPage();
-
         await page.fill('small.png', '50', '40');
+        await userEvent.click(page.fastSwitch());
         await page.submit();
+        await waitFor(() => expect(lastWorker()?.sent).toHaveLength(1));
 
-        expect(await screen.findByText("Couldn't reach the server, try again.")).toBeInTheDocument();
-        expect(screen.queryByText(SPINNER_TEXT)).not.toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Carve' })).toBeEnabled();
+        act(() => lastWorker().onerror?.({ message: 'Uncaught InternalError: out of memory', preventDefault() {} } as ErrorEvent));
+
+        expect(await screen.findByText(OUT_OF_MEMORY_MESSAGE)).toBeInTheDocument();
+        expect(FakeWorker.instances).toHaveLength(1);
     });
 
-    it('revokes object URLs it replaces and those it holds on unmount', async () => {
-        vi.stubGlobal('fetch', vi.fn(async () => fakeResponse(200, 'carved', 'image/png')));
+    it('carves on the Rust engine when the visitor asks for the fast one', async () => {
+        const page = renderPage();
+        await page.fill('small.png', '50', '40');
+        expect(page.fastSwitch()).not.toBeChecked();
+        expect(page.fastSwitch()).toBeEnabled();
+
+        await userEvent.click(page.fastSwitch());
+        await page.submit();
+
+        await waitFor(() => expect(lastWorker()?.sent[0]).toMatchObject({ engine: 'rust' }));
+    });
+
+    it('gives the Java an image of exactly its pixel limit', async () => {
+        const page = renderPage();
+
+        await page.choose('java-max.png');
+        await screen.findByText(/Chosen image: 96048 × 1 px/);
+        expect(page.fastSwitch()).toBeEnabled();
+        expect(page.fastSwitch()).not.toBeChecked();
+
+        // Removing nothing, so no slow warning
+        const worker = await page.carve('java-max.png', '96048', '1');
+        expect(worker.sent[0]).toMatchObject({ engine: 'java' });
+        // An image the Java takes leaves the worker small enough to keep
+        worker.finish(96048, 1, 'java-wasm');
+        await screen.findByRole('img', { name: 'Carved image, 96048 × 1 px' });
+        expect(worker.terminated).toBe(false);
+    });
+
+    it('carves an image over the limit on the Rust engine and says why the Java is off', async () => {
+        const page = renderPage();
+
+        const worker = await page.carve('java-over.png', '96049', '1');
+
+        expect(worker.sent[0]).toMatchObject({ engine: 'rust' });
+        // WebAssembly memory never shrinks: a worker that carved a large image isn't kept
+        worker.finish(96049, 1, 'rust');
+        await screen.findByRole('img', { name: 'Carved image, 96049 × 1 px' });
+        expect(worker.terminated).toBe(true);
+        expect(page.fastSwitch()).toBeChecked();
+        expect(page.fastSwitch()).toBeDisabled();
+        expect(page.fastSwitch()).toHaveAccessibleDescription(
+            'The original Java needs about 3.4 KB per pixel, so it carves images up to 96,048 pixels; this one uses the fast engine.');
+    });
+
+    it('warns before a slow carve and starts it only when asked', async () => {
+        const page = renderPage();
+        await page.fill('huge.png', '1000', '1500');
+
+        await page.submit();
+
+        // 2000 x 1500 to half its width: 2.25 billion pixel-seams at 5 ns
+        expect(await screen.findByText('This will take about 11 s.')).toBeInTheDocument();
+        expect(FakeWorker.instances).toEqual([]);
+
+        await userEvent.click(screen.getByRole('button', { name: 'Carve anyway' }));
+
+        await waitFor(() => expect(lastWorker()?.sent[0]).toMatchObject({ engine: 'rust', targetWidth: 1000 }));
+        expect(screen.queryByText(/This will take about/)).not.toBeInTheDocument();
+    });
+
+    it('drops a slow warning when the targets change', async () => {
+        const page = renderPage();
+        await page.fill('huge.png', '1000', '1500');
+        await page.submit();
+        await screen.findByText(/This will take about/);
+
+        await userEvent.clear(page.width());
+        await userEvent.type(page.width(), '1990');
+
+        expect(screen.queryByText(/This will take about/)).not.toBeInTheDocument();
+        await page.submit();
+        await waitFor(() => expect(lastWorker()?.sent[0]).toMatchObject({ targetWidth: 1990 }));
+    });
+
+    it.each(['java-wasm', 'java-js', 'rust'] as const)('forces the %s variant with ?engine=', async variant => {
+        window.history.replaceState(null, '', `/projects/seamCarver?engine=${variant}`);
+        const page = renderPage();
+
+        const worker = await page.carve('small.png', '50', '40');
+
+        expect(worker.sent[0]).toMatchObject({ engine: variant === 'rust' ? 'rust' : 'java', variant });
+    });
+
+    it('ignores an unknown ?engine=', async () => {
+        window.history.replaceState(null, '', '/projects/seamCarver?engine=cobol');
+        const page = renderPage();
+
+        const worker = await page.carve('small.png', '50', '40');
+
+        expect(worker.sent[0]).toMatchObject({ engine: 'java', variant: undefined });
+    });
+
+    it('revokes object URLs it replaces and those it holds on unmount, and stops the worker', async () => {
         const page = renderPage();
 
         await page.choose('other.png');
         await screen.findByAltText('Input image, 60 × 40 px');
-        await page.fill('small.png', '50', '40');
+        const worker = await page.carve('small.png', '50', '40');
         expect(revoked).toEqual(['blob:other.png']);
-
-        await page.submit();
-        await screen.findByAltText('Carved image, 50 × 40 px');
-        expect(revoked).toEqual(['blob:other.png']);
+        worker.finish(50, 40, 'java-wasm');
+        await screen.findByRole('link', { name: 'Download PNG' });
 
         page.unmount();
-        expect(revoked.sort()).toEqual(['blob:carved', 'blob:other.png', 'blob:small.png']);
-    });
-
-    it('validates a newly chosen file against its own decode after a failed submit', async () => {
-        vi.stubGlobal('fetch', vi.fn());
-        const page = renderPage();
-
-        await page.choose('big.png', new File([new Uint8Array(MAX_UPLOAD_BYTES + 1)], 'big.png', { type: 'image/png' }));
-        await page.submit();
-        await screen.findByText('Image file too large (max 1 MB)');
-
-        held['small.png'] = () => {};
-        await page.choose('small.png');
-        // While small.png decodes, RHF's revalidation must wait for it rather than call it unreadable
-        await new Promise(resolve => setTimeout(resolve, 20));
-        expect(screen.queryByText(/Couldn't read this file/)).not.toBeInTheDocument();
-        held['small.png']();
-        await screen.findByAltText('Input image, 100 × 80 px');
-
-        await waitFor(() => expect(screen.queryByText('Image file too large (max 1 MB)')).not.toBeInTheDocument());
-        expect(screen.queryByText(/Couldn't read this file/)).not.toBeInTheDocument();
+        expect(revoked.sort()).toEqual(['blob:other.png', 'blob:png-1', 'blob:small.png']);
+        expect(worker.terminated).toBe(true);
     });
 
     it('ignores a decode that finishes after another file was chosen', async () => {
         const page = renderPage();
 
-        held['small.png'] = () => {};
+        decode.held['small.png'] = () => {};
         await page.choose('small.png');
         await page.choose('other.png');
         await screen.findByAltText('Input image, 60 × 40 px');
         expect(page.width()).toHaveValue(60);
 
-        held['small.png']();
+        decode.held['small.png']();
         await waitFor(() => expect(revoked).toEqual(['blob:small.png']));
         expect(screen.getByAltText('Input image, 60 × 40 px')).toBeInTheDocument();
         expect(screen.queryByAltText(/100 × 80/)).not.toBeInTheDocument();
         expect(page.width()).toHaveValue(60);
         expect(page.height()).toHaveValue(40);
+    });
+
+    it('validates a newly chosen file against its own decode', async () => {
+        const page = renderPage();
+
+        await page.choose('notes.png');
+        await screen.findByText(/Couldn't read this file/);
+
+        decode.held['small.png'] = () => {};
+        await page.choose('small.png');
+        // While small.png decodes, RHF's revalidation must wait for it rather than call it unreadable
+        await new Promise(resolve => setTimeout(resolve, 20));
+        decode.held['small.png']();
+        await screen.findByAltText('Input image, 100 × 80 px');
+
+        await waitFor(() => expect(screen.queryByText(/Couldn't read this file/)).not.toBeInTheDocument());
     });
 
     it('clears stale target errors when a new image prefills the targets', async () => {
@@ -379,5 +554,14 @@ describe('SeamCarverPage', () => {
 
         expect(screen.queryByText(/Target width must be/)).not.toBeInTheDocument();
         expect(page.width()).toHaveAttribute('aria-invalid', 'false');
+    });
+});
+
+describe('formatDuration', () => {
+    it('gives short times in tenths, then seconds, then minutes', () => {
+        expect(formatDuration(0.001)).toBe('0.1 s');
+        expect(formatDuration(1.234)).toBe('1.2 s');
+        expect(formatDuration(17.4)).toBe('17 s');
+        expect(formatDuration(200)).toBe('3 min');
     });
 });

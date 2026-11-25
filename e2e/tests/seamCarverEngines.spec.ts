@@ -1,27 +1,14 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { Page } from '@playwright/test';
 import { test, expect } from './fixtures';
+import { GoldenImage as Image, readGolden } from './seamCarverGoldens';
 
 // The seam carver's engines for the browser, as ./build-seamcarver puts them in the backend's assets
 // (see its header for the files and manifest.json): each must carve a golden in a real browser
 // exactly as the original Java did on the JVM. The page's worker isn't involved: a bare page loads
-// the modules from the served assets and drives the stepwise exports as the worker does.
+// the modules from the served assets and drives the stepwise exports as the worker does
+// (seamCarver.spec.ts carves through the page).
 
-const GOLDENS = resolve(__dirname, '../../testdata/seamcarver');
 const ASSETS = '/assets/seamcarver-web';
-
-// A .in or .out golden: little-endian int32 width and height, then 0x00RRGGBB int32 pixels
-function readGolden(name: string) {
-    const bytes = readFileSync(resolve(GOLDENS, name));
-    const width = bytes.readInt32LE(0);
-    const height = bytes.readInt32LE(4);
-    expect(bytes.length).toBe(8 + 4 * width * height);
-    const rgb: number[] = [];
-    for (let i = 0; i < width * height; i++) rgb.push(bytes.readInt32LE(8 + 4 * i));
-    return { width, height, rgb };
-}
-type Image = ReturnType<typeof readGolden>;
 
 interface Manifest {
     java: { wasm: string, wasmRuntime: string, js: string },
