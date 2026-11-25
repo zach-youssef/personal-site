@@ -42,7 +42,7 @@ export const failedMessage = (detail: string) => `Couldn't carve the image: ${de
 // engine.
 export function useSeamCarver(makeWorker: () => Worker = createCarveWorker) {
     const [state, setState] = useState<CarveState>({ status: 'idle' });
-    const worker = useRef<Worker>();
+    const worker = useRef<Worker | undefined>(undefined);
 
     const discard = useCallback(() => {
         worker.current?.terminate();

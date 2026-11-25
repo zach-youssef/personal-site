@@ -19,7 +19,7 @@ export function useSeamView(makeWorker: () => Worker = createCarveWorker) {
     const [frame, setFrame] = useState<FrameMessage>();
     const [error, setError] = useState<string>();
     const [busy, setBusy] = useState(false);
-    const worker = useRef<Worker>();
+    const worker = useRef<Worker | undefined>(undefined);
     // Tags the messages of one view of one image; replies from an earlier one are dropped
     const session = useRef(0);
     // Whether the worker has this session's image

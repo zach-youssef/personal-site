@@ -171,7 +171,7 @@ function ImageFilterDemo({ sample, webGPU, run = 0, load = importHeadless }: Pro
 	// changes reach it RERUN_DELAY_MS after the last one
 	const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 	const [applied, setApplied] = useState(DEFAULT_SETTINGS);
-	const timer = useRef<ReturnType<typeof setTimeout>>();
+	const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 	const [state, setState] = useState<FilterState>('loading');
 	const [capture, setCapture] = useState<Blob | null>(null);
 	// Why the last run failed: its messages, or why its main didn't load (may be empty)

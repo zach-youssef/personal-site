@@ -99,7 +99,7 @@ function SeamCarverPage() {
 
     // The chosen file's decode, which every validator awaits rather than decoding the file again;
     // undefined while no file is chosen
-    const decoding = useRef<Promise<ChosenImage | undefined>>();
+    const decoding = useRef<Promise<ChosenImage | undefined> | undefined>(undefined);
     const [chosen, setChosen] = useState<ChosenImage>();
     const [preferFast, setPreferFast] = useState(false);
     // A carve estimated to be slow, waiting for the visitor to go ahead
@@ -110,7 +110,7 @@ function SeamCarverPage() {
     const carving = state.status === 'carving';
 
     // The object URL to revoke as the component unmounts
-    const chosenUrl = useRef<string>();
+    const chosenUrl = useRef<string | undefined>(undefined);
     useEffect(() => () => {
         // A decode still running revokes its URL when it finds itself replaced
         decoding.current = undefined;
