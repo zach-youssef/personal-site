@@ -7,3 +7,7 @@
 *.iws
 .kotlin
 *.log
+
+# The seam carver's engines for the browser, which ./build-seamcarver builds from the SeamCarving
+# submodule (TeaVM) and seamcarver-web/flat
+/assets/seamcarver-web/

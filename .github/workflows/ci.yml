@@ -194,6 +194,17 @@ jobs:
           cargo test
           ./build.sh "${RUNNER_TEMP}/seamcarver-flat"
           node node-check.mjs "${RUNNER_TEMP}/seamcarver-flat"
+      - name: Build the seam carver's web engines
+        # The SeamCarving Java built by TeaVM (WebAssembly and JavaScript), checked against the
+        # goldens under Node by the build itself; the end-to-end tests then run them in the browsers.
+        # Every job runs the pushed tip's steps, so a commit from before the script, lower in the
+        # same push, has nothing to build here.
+        run: |
+          if [[ -x ./build-seamcarver ]]; then
+              ./build-seamcarver
+          else
+              echo "::notice::No ./build-seamcarver at this commit; nothing to build"
+          fi
 
       - name: End-to-end tests
         working-directory: e2e

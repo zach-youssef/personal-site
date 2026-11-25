@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# Builds the seam carver's engines for the browser into the backend's assets, which it serves under
+# /assets/seamcarver-web/ for the seam carver page's worker:
+#
+#   java/carver.<hash>.wasm, java/carver.wasm-runtime.<hash>.js
+#                            the original SeamCarving Java, built to WebAssembly (GC) by TeaVM, and
+#                            its loader (an ES module exporting load(url))
+#   java/carver.<hash>.js    the same Java built to JavaScript by TeaVM (an ES module), for browsers
+#                            without WasmGC or exnref
+#   manifest.json            the paths above by engine and part
+#
+# <hash> is the first 16 hex digits of the file's sha256, so a file's name changes with its content:
+# a cached copy under a name is always right, a new manifest never names a file a browser may hold
+# stale, and a deploy can't pair old JavaScript with new WebAssembly (at worst a page that read the
+# manifest before the deploy gets a 404 for a file it named). Both loaders take the URLs to load
+# explicitly, so nothing in the built files names another by its path.
+#
+# The Java is the graphql-server/src/java/SeamCarving submodule, untouched: the Gradle project
+# seamcarver-web copies it with its AWT import pointed at a shim (and refuses a change there the shim
+# doesn't cover). Before anything is put in place, seamcarver-web/golden-check.mjs runs every built
+# engine over testdata/seamcarver under Node; a differing pixel fails the build. The output is
+# ignored by git; ./bundle runs this and ships it with the other backend assets.
+#
+#   ./build-seamcarver
+#
+# Needs Java (the Gradle wrapper picks a JDK 21 toolchain), Node 24 and jq.
+set -euo pipefail
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+WEB_DIR=${SCRIPT_DIR}/seamcarver-web
+OUT_DIR=${SCRIPT_DIR}/graphql-server/assets/seamcarver-web
+
+if [ ! -f "${SCRIPT_DIR}/graphql-server/src/java/SeamCarving/SeamCarver.java" ]; then
+    echo "No SeamCarving checkout in graphql-server/src/java; run: git submodule update --init graphql-server/src/java/SeamCarving" >&2
+    exit 1
+fi
+
+sha256() {
+    if command -v sha256sum > /dev/null; then
+        sha256sum "$1" | cut -d ' ' -f 1
+    else
+        shasum -a 256 "$1" | cut -d ' ' -f 1
+    fi
+}
+
+# Node 24's V8 keeps the exception handling TeaVM's WebAssembly uses (exnref) behind a flag; a Node
+# that has it on by default, and so no longer knows the flag, needs none
+node_flags=()
+if node --experimental-wasm-exnref -e '' 2> /dev/null; then
+    node_flags=(--experimental-wasm-exnref)
+fi
+
+"${SCRIPT_DIR}/graphql-server/gradlew" -p "${WEB_DIR}" buildWasmGC generateJavaScript --console=plain --quiet
+
+# Staged, checked, then put in place, so a failed build leaves no half-built assets behind
+STAGE=$(mktemp -d)
+trap 'rm -rf "${STAGE}"' EXIT
+
+teavm_out=${WEB_DIR}/build/generated/teavm
+
+# Copies a built file into the stage's <subdir> as <stem>.<hash>.<ext> and prints that path, for
+# the manifest
+place() {
+    local src=$1 subdir=$2 name hash dest
+    name=$(basename -- "${src}")
+    hash=$(sha256 "${src}")
+    dest="${subdir}/${name%.*}.${hash:0:16}.${name##*.}"
+    cp "${src}" "${STAGE}/${dest}"
+    echo "${dest}"
+}
+
+mkdir "${STAGE}/java"
+java_wasm=$(place "${teavm_out}/wasm-gc/carver.wasm" java)
+java_runtime=$(place "${teavm_out}/wasm-gc/carver.wasm-runtime.js" java)
+java_js=$(place "${teavm_out}/js/carver.js" java)
+
+# manifest.json: {"java": {"wasm": <path>, "wasmRuntime": <path>, "js": <path>}}
+jq -n --arg wasm "${java_wasm}" --arg runtime "${java_runtime}" --arg js "${java_js}" '{
+    java: {wasm: $wasm, wasmRuntime: $runtime, js: $js}
+}' > "${STAGE}/manifest.json"
+
+node "${node_flags[@]}" "${WEB_DIR}/golden-check.mjs" "${STAGE}"
+
+rm -rf "${OUT_DIR}"
+mkdir -p "$(dirname "${OUT_DIR}")"
+cp -R "${STAGE}" "${OUT_DIR}"
+echo "Built ${OUT_DIR} ($(find "${OUT_DIR}" -type f | wc -l | tr -d ' ') files)"
