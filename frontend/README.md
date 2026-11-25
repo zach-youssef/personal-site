@@ -6,6 +6,13 @@
 npm run start
 ```
 
+## Bootstrap and react-bootstrap
+
+The themes in `src/theme` compile Bootstrap 5.3's Sass, and the components use react-bootstrap 2. Two behaviours differ from what the markup suggests:
+
+- **`<Button href>` renders `role="button"`.** A link drawn as a button would be announced as an action and missed by `getByRole('link')`, so use `ButtonLink` (a plain `<a class="btn ...">`).
+- **`Dropdown.Item`'s `onSelect` fires only through a Dropdown-level `onSelect`.** Put a handler on the item itself in `onClick`.
+
 ## Component tests
 
 ```

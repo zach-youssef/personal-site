@@ -214,14 +214,14 @@ function SeamCarverPage() {
     return (
         <Container>
             <Form noValidate onSubmit={handleSubmit(onSubmit)}>
-                <Form.Group>
+                <Form.Group className="form-field">
                     <Form.Label htmlFor="seamCarverFile">Image File</Form.Label>
-                    <Form.Control
+                    <input
                         type="file"
                         id="seamCarverFile"
                         accept="image/*"
                         disabled={carving}
-                        isInvalid={!!errors.file}
+                        className={errors.file ? 'file-picker is-invalid' : 'file-picker'}
                         aria-invalid={!!errors.file}
                         aria-describedby={describedBy('seamCarverFileHelp', errors.file && 'seamCarverFileError')}
                         {...fileRegistration}
@@ -241,12 +241,12 @@ function SeamCarverPage() {
                         </Form.Control.Feedback>
                     }
                 </Form.Group>
-                <Form.Row>
+                <Row className="field-row">
                     {(['width', 'height'] as const).map(side => {
                         const id = `seamCarverTarget-${side}`;
                         const label = side === 'width' ? 'Target Width' : 'Target Height';
                         return (
-                            <Form.Group as={Col} xs={12} sm={6} key={side}>
+                            <Form.Group as={Col} xs={12} sm={6} key={side} className="form-field">
                                 <Form.Label htmlFor={id}>{label}</Form.Label>
                                 <Form.Control
                                     type="number"
@@ -272,7 +272,7 @@ function SeamCarverPage() {
                             </Form.Group>
                         );
                     })}
-                </Form.Row>
+                </Row>
                 <Form.Group>
                     <Form.Check
                         type="switch"
@@ -294,14 +294,14 @@ function SeamCarverPage() {
                 </Form.Group>
                 {slow &&
                     <Alert variant="warning" className="d-flex align-items-center flex-wrap">
-                        <span className="mr-3">{text(SiteText.SeamCarverSlowWarning, { time: formatDuration(slow.seconds) })}</span>
+                        <span className="me-3">{text(SiteText.SeamCarverSlowWarning, { time: formatDuration(slow.seconds) })}</span>
                         <Button variant="warning" onClick={() => chosen && start(slow.request, chosen.name)}>
                             {text(SiteText.SeamCarverCarveAnyway)}
                         </Button>
                     </Alert>
                 }
                 <Button type="submit" disabled={carving}>Carve</Button>
-                {carving && <Button variant="secondary" className="ml-2" onClick={cancel}>Cancel</Button>}
+                {carving && <Button variant="secondary" className="ms-2" onClick={cancel}>Cancel</Button>}
             </Form>
             <Row className="mt-3">
                 <Col xs={12} md={6}>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Col, Container, Row } from 'react-bootstrap';
+import { Col, Container, Row } from 'react-bootstrap';
+import ButtonLink from '../ButtonLink';
 import { fetchGraphQL } from '../../FetchHelper';
 import { SiteText, SiteTextContents } from '../../content/text/SiteText';
 import ArticleCards from './ArticleCards';
@@ -64,7 +65,7 @@ function ProjectWriteupPage({ id }: { id: string }) {
                     {links.length > 0 && (
                         <div className="writeup-links mb-4">
                             {links.map(link => (
-                                <Button key={link.url} variant="primary" href={link.url} className="mr-2 mb-2">{link.title}</Button>
+                                <ButtonLink key={link.url} variant="primary" href={link.url} className="me-2 mb-2">{link.title}</ButtonLink>
                             ))}
                         </div>
                     )}

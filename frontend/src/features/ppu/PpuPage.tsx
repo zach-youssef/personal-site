@@ -1,5 +1,6 @@
 import React from 'react';
-import { Alert, Button, Col, Container, Row } from 'react-bootstrap';
+import { Alert, Col, Container, Row } from 'react-bootstrap';
+import ButtonLink from '../ButtonLink';
 import ZgalFrame, { hasWebGPU } from '../zgal/ZgalFrame';
 
 export const GITHUB_URL = 'https://github.com/zach-youssef/vk_ppu';
@@ -37,7 +38,7 @@ function PpuPage() {
 				The games are written in ZGAL, a language I made for declaring shaders, render graphs and
 				apps, which compiles them to Vulkan and, for this page, to WebGPU.
 			</p>
-			<Button variant="primary" href={GITHUB_URL} className="mb-4">View on GitHub</Button>
+			<ButtonLink variant="primary" href={GITHUB_URL} className="mb-4">View on GitHub</ButtonLink>
 			{!webGPU && (
 				<Alert variant="warning">
 					These games need a browser that supports WebGPU, so below is a frame from each.

@@ -43,7 +43,7 @@ h1, h2, h3 {
 }
 
 // Narrow phones fit the brand, theme switch and menu button on one row
-@include media-breakpoint-down(xs) {
+@include media-breakpoint-down(sm) {
   .navbar {
     padding-right: .75rem;
     padding-left: .75rem;
@@ -81,7 +81,7 @@ h1, h2, h3 {
     display: none;
   }
 
-  .theme-toggle .custom-switch {
+  .theme-toggle .form-switch {
     margin-left: 0 !important;
   }
 }
@@ -94,6 +94,18 @@ h1, h2, h3 {
   &:focus {
     background-color: $nav-link-hover-bg;
   }
+}
+
+// The GitHub and LinkedIn links side by side, reaching into the bar's padding
+.navbar-logos {
+  display: flex;
+  flex-wrap: wrap;
+  margin-right: $grid-gutter-width * -.5;
+  margin-left: $grid-gutter-width * -.5;
+  // Bootstrap 5 sets a link's padding from variables that only .nav and .navbar-nav define, so these
+  // links, outside both, would lose it; Bootstrap 4 gave every .nav-link its own padding
+  --#{$prefix}nav-link-padding-x: #{$nav-link-padding-x};
+  --#{$prefix}nav-link-padding-y: #{$nav-link-padding-y};
 }
 
 // The GitHub and LinkedIn marks are drawn in the button colour, using the official
@@ -132,13 +144,14 @@ h1, h2, h3 {
 }
 
 // Light isn't "off", so the switch is filled in either position, with the knob marking the theme
-.theme-toggle .custom-control-input:not(:disabled) ~ .custom-control-label::before {
-  background-color: $primary;
-  border-color: $primary;
-}
-
-.theme-toggle .custom-control-label::after {
-  background-color: $custom-control-indicator-bg;
+.theme-toggle .form-switch .form-check-input {
+  &,
+  &:focus,
+  &:checked {
+    background-color: $primary;
+    background-image: escape-svg(url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'><circle r='#{$form-switch-knob-radius}' fill='#{$form-check-input-bg}'/></svg>"));
+    border-color: $primary;
+  }
 }
 
 // The icon for the current theme takes the button colour: the sun in light, the moon in dark
@@ -146,25 +159,22 @@ h1, h2, h3 {
   color: $primary;
 }
 
-// Bootstrap draws the switch to the left of an empty label, which leaves nothing to click
-// but the track; draw it inside a label sized to the track instead
-.theme-toggle .custom-switch {
+// The switch's label is for screen readers only, so the track sits where the label's gap would be.
+// The label is stretched over a 1.5rem-tall box around the track, as the v4 label was, so a tap
+// just above or below the 1rem track still toggles it.
+.theme-toggle .form-switch {
+  position: relative;
+  margin-bottom: 0;
   padding-left: 0;
 
-  .custom-control-label {
-    display: block;
-    width: $custom-switch-width;
-    min-height: $font-size-base * $line-height-base;
-    margin-bottom: 0;
+  .form-check-label {
+    position: absolute;
+    inset: -.25rem 0;
     cursor: pointer;
+  }
 
-    &::before {
-      left: 0;
-    }
-
-    &::after {
-      left: $custom-control-indicator-border-width * 2;
-    }
+  .form-check-input {
+    margin-left: 0;
   }
 }
 
@@ -361,12 +371,29 @@ h1, h2, h3 {
   margin-bottom: 2rem;
 
   > .card,
-  > .btn-block {
+  > .btn {
     margin: 0;
   }
 }
 
 // Buttons =====================================================================
+
+// Hovered and pressed buttons darken as in Bootstrap 4, rather than mixing with black or white
+@each $color, $value in $theme-colors {
+  .btn-#{$color} {
+    --#{$prefix}btn-hover-bg: #{color.adjust($value, $lightness: -7.5%)};
+    --#{$prefix}btn-hover-border-color: #{color.adjust($value, $lightness: -10%)};
+    --#{$prefix}btn-active-bg: #{color.adjust($value, $lightness: -10%)};
+    --#{$prefix}btn-active-border-color: #{color.adjust($value, $lightness: -12.5%)};
+  }
+}
+
+// An open dropdown's button stays pressed, as in Bootstrap 4
+.show > .btn.dropdown-toggle {
+  color: var(--#{$prefix}btn-active-color);
+  background-color: var(--#{$prefix}btn-active-bg);
+  border-color: var(--#{$prefix}btn-active-border-color);
+}
 
 .btn {
   transition: color .15s, background-color .15s, border-color .15s, box-shadow .15s, transform .1s;
@@ -384,7 +411,8 @@ h1, h2, h3 {
 // Clicking a button or switch focuses it; the focus ring is only for keyboard users, who need to
 // see where they are, rather than a glow left behind on whatever was last clicked
 .btn:focus:not(:focus-visible),
-.custom-control-input:focus:not(:focus-visible) ~ .custom-control-label::before {
+.navbar-toggler:focus:not(:focus-visible),
+.form-check-input:focus:not(:focus-visible) {
   box-shadow: none;
 }
 
@@ -405,7 +433,8 @@ h1, h2, h3 {
 // Forms =======================================================================
 
 // Bootstrap leaves the default cursor on switches and checkboxes, so they don't look clickable
-.custom-control-input:not(:disabled) ~ .custom-control-label {
+.form-check-input:not(:disabled),
+.form-check-input:not(:disabled) ~ .form-check-label {
   cursor: pointer;
 }
 
@@ -416,27 +445,45 @@ label {
 
 // Sliders are clickable and dragged by their thumb; as with buttons, the focus ring is for keyboard
 // focus only
-.custom-range:not(:disabled) {
+.form-range:not(:disabled) {
   cursor: pointer;
 }
 
 // A disabled slider fades as a disabled button does, so that it doesn't look like it takes input
-.custom-range:disabled {
+.form-range:disabled {
   opacity: $btn-disabled-opacity;
 }
 
-.custom-range:focus:not(:focus-visible) {
+.form-range:focus:not(:focus-visible) {
   &::-webkit-slider-thumb { box-shadow: none; }
   &::-moz-range-thumb { box-shadow: none; }
 }
 
-// Fields placed directly in a form row, without columns, need their own gutter
-.form-row > .form-group {
-  padding-right: $form-grid-gutter-width * .5;
-  padding-left: $form-grid-gutter-width * .5;
+// A form's field (Form.Group): its label, control, help and feedback, spaced from the next
+.form-field {
+  margin-bottom: $form-field-margin-bottom;
 }
 
-.form-control-file {
+// Fields side by side, closer together than the page's columns
+.field-row {
+  --#{$prefix}gutter-x: #{$field-row-gutter-width};
+}
+
+// Number fields have a fixed height, as in Bootstrap 4: in a field sized by its content, Chrome
+// stretches the spin buttons to the full line height
+input[type="number"].form-control {
+  height: $input-height;
+}
+
+// Help text sits on its own line under its field, as in Bootstrap 4
+.form-text {
+  display: block;
+}
+
+// A file input as a plain line, with a button in the theme's colours, rather than a text field
+.file-picker {
+  display: block;
+  width: 100%;
   color: $card-text-color;
 
   &::file-selector-button {
@@ -445,7 +492,7 @@ label {
     border: 1px solid $btn-secondary-border-color;
     border-radius: $border-radius-sm;
     background-color: $secondary;
-    color: color-yiq($secondary);
+    color: color-contrast($secondary);
     font-weight: 500;
     cursor: pointer;
     transition: background-color .15s;
@@ -500,6 +547,15 @@ label {
 iframe {
   border: 1px solid $border-subtle;
   border-radius: $border-radius-lg;
+}
+
+// A write-up's video fills its 16:9 box edge to edge, clipped to its rounded corners
+.writeup-video {
+  overflow: hidden;
+
+  > * {
+    border: 0;
+  }
 }
 
 // Source listings ============================================================

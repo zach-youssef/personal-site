@@ -29,7 +29,7 @@ describe('ProjectsPage', () => {
         expect(screen.getByRole('heading', { name: 'Browser Raytracer' })).toBeInTheDocument();
         const back = screen.getByRole('link', { name: 'Back to Projects' });
         expect(back).toHaveAttribute('href', '/projects');
-        expect(back).toHaveClass('btn-block');
+        expect(back).toHaveClass('w-100');
         expect(container.querySelector(':scope > :last-child a:last-child')).toBe(back);
     });
 

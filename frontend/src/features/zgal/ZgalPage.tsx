@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, Button, ButtonGroup, ButtonToolbar, Col, Container, Row } from 'react-bootstrap';
+import ButtonLink from '../ButtonLink';
 import { useHistory, useLocation } from 'react-router-dom';
 import ZgalFrame, { hasWebGPU } from './ZgalFrame';
 import ProgramSource from './ProgramSource';
@@ -109,8 +110,8 @@ function ZgalPage() {
 					: 'Below, a frame from one of its examples is shown beside the program it was compiled from. Choose an example to switch to it.'}
 			</p>
 			<ButtonToolbar className="mb-4">
-				<Button variant="primary" href={GITHUB_URL} className="mr-2 mb-2">View on GitHub</Button>
-				<Button variant="outline-primary" href={DOCS_URL} className="mb-2">Read the documentation</Button>
+				<ButtonLink variant="primary" href={GITHUB_URL} className="me-2 mb-2">View on GitHub</ButtonLink>
+				<ButtonLink variant="outline-primary" href={DOCS_URL} className="mb-2">Read the documentation</ButtonLink>
 			</ButtonToolbar>
 			{!webGPU && (
 				<Alert variant="warning">

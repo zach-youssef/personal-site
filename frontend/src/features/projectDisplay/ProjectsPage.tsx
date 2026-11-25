@@ -17,7 +17,7 @@ import ZgalPage from '../zgal/ZgalPage';
 import SplatPage from '../splat/SplatPage';
 import ProjectWriteupPage from '../projectWriteup/ProjectWriteupPage';
 import { WRITEUP_IDS } from '../projectWriteup/ProjectWriteup';
-import { Container, Row } from 'react-bootstrap';
+import { Container } from 'react-bootstrap';
 
 // A project shown on this site, ending with a way back to the list
 function ProjectPage({children}: {children: React.ReactNode}) {
@@ -70,18 +70,19 @@ function ProjectsPage() {
                     </Route>
                 ))}
                 <Route path={match.path}>
-                    <Container>
+                    {/* The categories reach the edges of the page's container, without a gutter of their own */}
+                    <Container className="px-0">
                         {
                             categoryLabels.map(entry => (
                                 <div key={entry[0]} style={{padding: "0em 0em 2em"}}>
-                                    <Row>
+                                    <div className="d-flex flex-wrap">
                                         <div className="mb-3">
                                             <h2>{entry[1]}</h2>
                                         </div>
-                                    </Row>
-                                    <Row>
+                                    </div>
+                                    <div className="d-flex flex-wrap">
                                         <ProjectDisplayContainer category={entry[0]}/>
-                                    </Row>
+                                    </div>
                                 </div>
                             ))
                         }

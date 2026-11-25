@@ -146,9 +146,7 @@ function Slider({ id, label, value, range, step, disabled, format, onChange }: {
 }) {
 	return (
 		<div className="filter-slider">
-			<Form.Control
-				type="range"
-				custom
+			<Form.Range
 				id={id}
 				aria-label={label}
 				min={range[0]}
@@ -265,11 +263,12 @@ function ImageFilterDemo({ sample, webGPU, run = 0, load = importHeadless }: Pro
 	return (
 		<div className="image-filter" data-zgal={state}>
 			<Form onSubmit={event => event.preventDefault()}>
-				<Form.Group>
+				<Form.Group className="form-field">
 					<Form.Label htmlFor="image-filter-picture">Picture</Form.Label>
-					<Form.Control
+					<input
 						key={pickerKey}
 						type="file"
+						className="file-picker"
 						id="image-filter-picture"
 						accept={PICTURE_TYPES}
 						onChange={(event: React.ChangeEvent<HTMLInputElement>) => {

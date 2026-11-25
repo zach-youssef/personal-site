@@ -22,11 +22,10 @@ function WriteupVideo({ video }: { video: Video }) {
     }, [playing]);
 
     return (
-        <div className="writeup-video embed-responsive embed-responsive-16by9 rounded mb-4">
+        <div className="writeup-video ratio ratio-16x9 rounded mb-4">
             {playing
                 ? <iframe
                     ref={player}
-                    className="embed-responsive-item"
                     src={embedUrl(video.youtubeId)}
                     title={video.title}
                     allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
@@ -35,7 +34,7 @@ function WriteupVideo({ video }: { video: Video }) {
                 />
                 : <button
                     type="button"
-                    className="writeup-video-poster embed-responsive-item"
+                    className="writeup-video-poster"
                     onClick={() => setPlaying(true)}
                     aria-label={`${SiteTextContents[SiteText.PlayVideo]}: ${video.title}`}
                 >

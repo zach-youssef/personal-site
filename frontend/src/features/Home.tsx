@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Row, Container } from 'react-bootstrap';
+import { Container } from 'react-bootstrap';
 import { SiteTextContents, SiteText } from '../content/text/SiteText';
 import { ProjectDisplayFeatured } from './projectDisplay/ProjectDisplay';
 import ProjectInfo from './projectDisplay/ProjectInfo';
@@ -37,12 +37,13 @@ function Home() {
 
     useEffect(loadFeaturedProjects, []);
 
+    // The sections reach the edges of the page's container, without a gutter of their own
     return (
-        <Container >
-          <Row>
+        <Container className="px-0">
+          <div className="d-flex flex-wrap">
               <h2>{SiteTextContents[SiteText.AboutMeHeader]}</h2>
-          </Row>
-          <Row>
+          </div>
+          <div className="d-flex flex-wrap">
             <p>
               {SiteTextContents[SiteText.AboutDesc].split("\n").map((line, index) =>
                 <React.Fragment key={index}>
@@ -51,13 +52,13 @@ function Home() {
                 </React.Fragment>
               )}
             </p>
-          </Row>
+          </div>
           {featuredProjects.length > 0 &&
             <>
-              <Row>
+              <div className="d-flex flex-wrap">
                 <h2>{SiteTextContents[SiteText.FeaturedProjectHeader]}</h2>
-              </Row>
-              <Row>
+              </div>
+              <div className="d-flex flex-wrap">
                 <div className="featured-projects">
                   {featuredProjects.map((projectInfo, index) =>
                     <ProjectDisplayFeatured key={projectInfo.id} projectInfo={projectInfo} index={index}/>
@@ -66,7 +67,7 @@ function Home() {
                     {SiteTextContents[SiteText.SeeMoreProjects]}
                   </ProjectsLinkButton>
                 </div>
-              </Row>
+              </div>
             </>
           }
         </Container>

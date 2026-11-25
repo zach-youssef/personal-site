@@ -38,7 +38,8 @@ function LevelSelector({onLevelSelect}: Props) {
                 {levelIds.map(levelId => (
                     <Dropdown.Item
                         key={levelId}
-                        onSelect = {() => onLevelSelect(levelId)}
+                        // onClick, not onSelect: see AgentSelect
+                        onClick={() => onLevelSelect(levelId)}
                     >
                         {levelId}
                     </Dropdown.Item>

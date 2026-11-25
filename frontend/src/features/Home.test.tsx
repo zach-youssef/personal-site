@@ -43,7 +43,7 @@ describe('Home', () => {
         const seeMore = await screen.findByRole('link', { name: 'See more' });
         expect(seeMore).toHaveAttribute('href', '/projects');
         // Full width, after the last card
-        expect(seeMore).toHaveClass('btn-block');
+        expect(seeMore).toHaveClass('w-100');
         expect(container.querySelector('.featured-projects > :last-child')).toBe(seeMore);
     });
 

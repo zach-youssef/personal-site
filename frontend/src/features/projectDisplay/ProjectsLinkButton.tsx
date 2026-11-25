@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button } from 'react-bootstrap';
+import ButtonLink from '../ButtonLink';
 
 interface Props {
     children: React.ReactNode
@@ -8,9 +8,9 @@ interface Props {
 // A full-width link to the list of every project
 function ProjectsLinkButton({children}: Props) {
     return (
-        <Button variant="secondary" href="/projects" block>
+        <ButtonLink variant="secondary" href="/projects" className="d-block w-100">
             {children}
-        </Button>
+        </ButtonLink>
     );
 }
 

@@ -17,7 +17,7 @@ test.describe('with a light system theme', () => {
         expect(await bodyBackground(page)).toBe(LIGHT_BACKGROUND);
         await expect(page.locator('.navbar')).toHaveClass(/navbar-light/);
 
-        // The custom switch hides the input behind its label, so click what visitors see
+        // The label is stretched over the switch as its tap target, so click what visitors see
         await page.locator('label[for="theme-toggle"]').click();
         await expect(themeSwitch(page)).toBeChecked();
         expect(await bodyBackground(page)).toBe(DARK_BACKGROUND);

@@ -1,5 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { Alert, Button, ButtonToolbar, Container } from 'react-bootstrap';
+import ButtonLink from '../ButtonLink';
 import ZgalCanvas, { CanvasState } from '../zgal/ZgalCanvas';
 import { hasWebGPU } from '../zgal/ZgalFrame';
 import type { ZgalLoader } from '../zgal/zgalMount';
@@ -232,8 +233,8 @@ function SplatPage({ load }: Props) {
 				{loaded && ` Streamed in a compact format, it's a ${megabytes(scene.bytes)} download.`}
 			</p>
 			<ButtonToolbar className="mb-4">
-				<Button variant="primary" href={GITHUB_URL} className="mr-2 mb-2">View on GitHub</Button>
-				<Button variant="outline-primary" href={ZGAL_PAGE} className="mb-2">About ZGAL</Button>
+				<ButtonLink variant="primary" href={GITHUB_URL} className="me-2 mb-2">View on GitHub</ButtonLink>
+				<ButtonLink variant="outline-primary" href={ZGAL_PAGE} className="mb-2">About ZGAL</ButtonLink>
 			</ButtonToolbar>
 			{view}
 			{loaded && <ViewerSource scene={scene} />}

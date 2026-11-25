@@ -46,7 +46,7 @@ function ThemeToggle({ className = '' }: Props) {
                 className="mx-2"
                 checked={theme === 'dark'}
                 onChange={(event: React.ChangeEvent<HTMLInputElement>) => setTheme(event.target.checked ? 'dark' : 'light')}
-                label={<span className="sr-only">Dark mode</span>}
+                label={<span className="visually-hidden">Dark mode</span>}
             />
             <MoonIcon onClick={() => setTheme('dark')}/>
         </div>

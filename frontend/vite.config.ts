@@ -31,7 +31,7 @@ export default defineConfig(({ mode }) => {
     css: {
       preprocessorOptions: {
         scss: {
-          // Bootstrap 4 predates the Sass module system, so its sources raise deprecation
+          // Bootstrap 5.3 doesn't use the Sass module system yet, so its sources raise deprecation
           // warnings and the theme has to @import it. Our own code otherwise warns as usual.
           quietDeps: true,
           silenceDeprecations: ["import"],
