@@ -2,6 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <!-- Frames may show only the site's own pages (ZGAL's demos) and YouTube's privacy-enhanced
+         player, which a write-up's video loads once it's clicked. Only frame-src is set: nothing else
+         is restricted. See "Content-Security-Policy" in the README. -->
+    <meta http-equiv="Content-Security-Policy" content="frame-src 'self' https://www.youtube-nocookie.com" />
     <!-- Browsers keep favicons in their own cache, so bump v whenever the icons change -->
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico?v=2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

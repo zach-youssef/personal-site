@@ -117,6 +117,36 @@ test('pages only request their own origin', async ({ page, baseURL }) => {
     expect(crossOrigin).toEqual([]);
 });
 
+// index.html's Content-Security-Policy: frames from the site and youtube-nocookie.com load, any
+// other origin's are blocked. The allowed ones are answered locally, so the test stays offline.
+test('frames may come only from the site and youtube-nocookie.com @firefox', async ({ page }) => {
+    const framed: string[] = [];
+    await page.route(/^https:\/\/(www\.youtube-nocookie\.com|www\.youtube\.com|example\.com)\//, route => {
+        framed.push(route.request().url());
+        return route.fulfill({ contentType: 'text/html', body: '<p>A frame</p>' });
+    });
+    await page.goto('/');
+    await expect(page.getByRole('heading', { level: 2 }).first()).toBeVisible();
+
+    await page.evaluate(() => {
+        (window as any).blocked = [];
+        document.addEventListener('securitypolicyviolation', event => {
+            (window as any).blocked.push(`${event.effectiveDirective} ${new URL(event.blockedURI).origin}`);
+        });
+        for (const src of ['/robots.txt', 'https://www.youtube-nocookie.com/embed/Q0pc37MOsxI', 'https://www.youtube.com/embed/Q0pc37MOsxI', 'https://example.com/']) {
+            const frame = document.createElement('iframe');
+            frame.src = src;
+            document.body.append(frame);
+        }
+    });
+
+    await expect.poll(() => page.evaluate(() => [...(window as any).blocked].sort()))
+        .toEqual(['frame-src https://example.com', 'frame-src https://www.youtube.com']);
+    await expect.poll(() => framed).toEqual(['https://www.youtube-nocookie.com/embed/Q0pc37MOsxI']);
+    // The site's own page loaded in its frame
+    await expect(page.frameLocator('iframe[src="/robots.txt"]').locator('body')).toContainText('User-agent');
+});
+
 test('project thumbnails load from the backend', async ({ page }) => {
     await page.goto('/projects');
     const thumbnails = page.locator('.card-img-top');
