@@ -129,8 +129,25 @@ runs:
         # The MIT cache over actions/cache. v6's default ("enhanced") loads a closed-source
         # component under Gradle's Terms of Use; basic doesn't load it.
         cache-provider: basic
+        # Every branch saves its own cache, not only master, so a branch's later pushes start warm
+        # instead of every matrix job downloading from Maven Central at once (HTTP 429s)
+        cache-read-only: false
         # Gradle's job summary only when a build failed
         add-job-summary: on-failure
+    - name: Retry Maven Central for longer
+      # Gradle tries a download that fails with a 429 or a dropped connection 3 times, 1 s then
+      # 2 s apart, which a cold matrix rate-limited by Maven Central outlasts. These internal,
+      # unsupported properties (read by ErrorHandlingModuleComponentRepository in Gradle 9.9.2;
+      # the similar org.gradle.internal.network.retry.* only cover publishing) make it 6 tries,
+      # 2 s apart and doubling: about a minute. In the user home's gradle.properties, so every
+      # build in the job gets them.
+      shell: bash
+      run: |
+        mkdir -p "${GRADLE_USER_HOME:-${HOME}/.gradle}"
+        cat >> "${GRADLE_USER_HOME:-${HOME}/.gradle}/gradle.properties" <<'EOF'
+        systemProp.org.gradle.internal.repository.max.tentatives=6
+        systemProp.org.gradle.internal.repository.initial.backoff=2000
+        EOF
     - name: Install lavapipe and cwebp
       # Mesa's software Vulkan driver gives Dawn an adapter for build-zgal's and build-splat's
       # screenshots
