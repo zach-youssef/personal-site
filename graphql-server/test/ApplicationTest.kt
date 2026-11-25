@@ -429,6 +429,16 @@ class ApplicationTest {
             for (path in listOf("/assets/does-not-exist.png", "/assets/missing/does-not-exist.js")) {
                 assertEquals(HttpStatusCode.NotFound, get(path).status, path)
             }
+            // A directory has no index page, even with an index.html in it
+            val dir = Files.createTempDirectory(File("assets").toPath(), "dir").toFile()
+            try {
+                File(dir, "index.html").writeText("<title>Index</title>")
+                for (path in listOf("/assets/${dir.name}", "/assets/${dir.name}/")) {
+                    assertEquals(HttpStatusCode.NotFound, get(path).status, path)
+                }
+            } finally {
+                dir.deleteRecursively()
+            }
         }
     }
 

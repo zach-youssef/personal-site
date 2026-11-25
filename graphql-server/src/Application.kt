@@ -14,7 +14,6 @@ import io.ktor.server.plugins.conditionalheaders.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.util.*
 import io.ktor.util.cio.*
 import io.ktor.utils.io.*
 import java.io.File
@@ -23,7 +22,7 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
 // How long browsers may reuse a response before checking it again; null leaves it unset
 internal fun cachingOptions(content: OutgoingContent): CachingOptions? = when {
-    // Files are streamed (static() wraps them in its own type); GraphQL replies are text
+    // Files are streamed; GraphQL replies are text
     content !is OutgoingContent.ReadChannelContent -> null
     // Pages name the current frontend bundle, so they're checked on every visit
     content.contentType?.match(ContentType.Text.Html) == true -> CachingOptions(CacheControl.NoCache(null))
@@ -33,24 +32,19 @@ internal fun cachingOptions(content: OutgoingContent): CachingOptions? = when {
 }
 
 // ZGAL programs (.zgal) are text, but Ktor doesn't know the extension and would send them as
-// application/octet-stream, which browsers download rather than show
-private val ZGAL_SOURCE_TYPE = ContentType.Text.Plain.withParameter("charset", "utf-8")
+// application/octet-stream, which browsers download rather than show. Every other file keeps the
+// type Ktor guesses from its extension; it types WebAssembly (.wasm) itself as application/wasm,
+// which browsers' WebAssembly.instantiateStreaming requires.
+private fun staticFileType(file: File): ContentType? =
+    if (file.extension == "zgal") ContentType.Text.Plain.withParameter("charset", "utf-8") else null
 
-// A file's content as another type. static() wraps the files it sends in a type of its own, which
-// is internal to Ktor, so this wraps that in turn and passes everything but the type through,
-// including the properties (Last-Modified) that caching reads.
-private class RetypedContent(
-    private val original: OutgoingContent.ReadChannelContent,
-    override val contentType: ContentType,
-) : OutgoingContent.ReadChannelContent() {
-    override val contentLength get() = original.contentLength
-    override val status get() = original.status
-    override val headers get() = original.headers
-    override fun readFrom() = original.readFrom()
-    override fun readFrom(range: LongRange) = original.readFrom(range)
-    override fun trailers() = original.trailers()
-    override fun <T : Any> getProperty(key: AttributeKey<T>) = original.getProperty(key)
-    override fun <T : Any> setProperty(key: AttributeKey<T>, value: T?) = original.setProperty(key, value)
+// Sends a file of the frontend's build (which ./bundle puts in build/), or nothing if it's missing,
+// which Ktor answers with 404
+private suspend fun ApplicationCall.respondFrontendFile(name: String) {
+    val file = File("build", name)
+    if (file.isFile) {
+        respondFile(file)
+    }
 }
 
 @Suppress("unused") // Referenced in application.conf
@@ -68,48 +62,33 @@ fun Application.module(testing: Boolean = false) {
     install(CachingHeaders) {
         options { _, content -> cachingOptions(content) }
     }
-    // Static files are sent with the type Ktor guesses from their extension. Only what it couldn't
-    // type is retyped, so the app's page, which the backend serves for any other path, stays HTML.
-    // Ktor types WebAssembly (.wasm) itself as application/wasm, which browsers'
-    // WebAssembly.instantiateStreaming requires.
-    sendPipeline.intercept(ApplicationSendPipeline.Before) { content ->
-        if (content is OutgoingContent.ReadChannelContent && call.request.path().endsWith(".zgal")
-            && content.contentType?.match(ContentType.Application.OctetStream) == true) {
-            proceedWith(RetypedContent(content, ZGAL_SOURCE_TYPE))
-        }
-    }
 
     routing {
-    	static {
-            // CDN Assets
-            static("assets"){
-                files("assets")
-            }
-
-            // ZGAL's documentation, which ./build-zgal builds into the assets. The page names its
-            // stylesheets and scripts relative to itself, so it's served from the directory's URL.
-            static("zgal/docs") {
-                get {
-                    call.respondRedirect("/zgal/docs/", permanent = true)
-                }
-                get("/") {
-                    call.respondFile(File("assets/zgal/docs/zgal.html"))
-                }
-                files("assets/zgal/docs")
-            }
-
-            // Frontend top-level files
-            // TODO - find a way to not need to manualy list out all these routes
-            file("favicon.ico", "build/favicon.ico")
-            file("logo192.png", "build/logo192.png")
-            file("logo512.png", "build/logo512.png")
-            file("manifest.json", "build/manifest.json")
-            file("robots.txt", "build/robots.txt")
-            file("github-mark.svg", "build/github-mark.svg")
-            file("InBug-Black.png", "build/InBug-Black.png")
-
-            file("{...}", "build/index.html")
+        // CDN Assets. A missing file is a 404, not the app's page, and a directory has no index.
+        staticFiles("/assets", File("assets"), index = null) {
+            contentType(::staticFileType)
         }
+
+        // ZGAL's documentation, which ./build-zgal builds into the assets. The page names its
+        // stylesheets and scripts relative to itself, so it's served from the directory's URL.
+        route("/zgal/docs") {
+            get {
+                call.respondRedirect("/zgal/docs/", permanent = true)
+            }
+        }
+        staticFiles("/zgal/docs", File("assets/zgal/docs"), index = "zgal.html")
+
+        // Frontend top-level files, listed so that the rest of build/ isn't served
+        for (name in listOf(
+            "favicon.ico", "logo192.png", "logo512.png", "manifest.json", "robots.txt",
+            "github-mark.svg", "InBug-Black.png",
+        )) {
+            get("/$name") { call.respondFrontendFile(name) }
+        }
+
+        // The app's page for any other path, last, so the frontend's router picks the page. GET
+        // only: HEAD requests are answered with 404, as before.
+        get("{...}") { call.respondFrontendFile("index.html") }
 
         post("/seamCarver/upload") {
             val seamCarvingRepository = SeamCarvingEngine(File("assets/seamcarver/output"))
