@@ -15,9 +15,9 @@
 # stops the deploy; its messages are also in ~/.deploy/log, which holds the last deploy's.
 #
 # Deletion never touches paths that no deploy ships but the server uses: resources/ (the backend's
-# config and Sokoban levels), assets/seamcarver/output/ (seam carver results) and logs (*.log). A
-# bundle that ships any of them, or writes outside the home directory (symlinks resolved), is
-# refused, as is one without server-deploy and server-restart, which deploys need.
+# config and Sokoban levels) and logs (*.log). A bundle that ships any of them, or writes outside
+# the home directory (symlinks resolved), is refused, as is one without server-deploy and
+# server-restart, which deploys need.
 #
 # Deploys take a lock with flock (util-linux), so they run one at a time; without flock they
 # refuse to run, unless SERVER_DEPLOY_NO_LOCK=1, which only the tests set.
@@ -184,7 +184,6 @@ check_deployable() {
         ''|/*|.|..|./*|../*|*/.|*/..|*/./*|*/../*|*//*|*/) return 1;;
         .deploy|.deploy/*) return 1;;
         resources|resources/*) return 1;;
-        assets/seamcarver/output|assets/seamcarver/output/*) return 1;;
         *.log) return 1;;
     esac
     return 0

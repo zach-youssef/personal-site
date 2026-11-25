@@ -144,9 +144,8 @@ grep -qx 'assets/index-A.js' "${TEST_HOME}/.deploy/MANIFEST" && fail "${CURRENT}
 # Deletion never touches what the server keeps for itself, or anything outside the home
 # directory, even if the previous manifest lists it
 start safety
-mkdir -p "${TEST_HOME}/resources" "${TEST_HOME}/assets/seamcarver/output" "${WORK}/${CURRENT}/outside"
+mkdir -p "${TEST_HOME}/resources" "${TEST_HOME}/assets" "${WORK}/${CURRENT}/outside"
 echo config > "${TEST_HOME}/resources/application.conf"
-echo carved > "${TEST_HOME}/assets/seamcarver/output/x.png"
 echo log > "${TEST_HOME}/server.log"
 echo log > "${TEST_HOME}/assets/callTrace.log"
 echo outside > "${WORK}/${CURRENT}/outside.txt"
@@ -156,23 +155,21 @@ mkdir -p "${TEST_HOME}/.deploy"
 echo state > "${TEST_HOME}/.deploy/other"
 cat > "${TEST_HOME}/.deploy/MANIFEST" <<LIST
 resources/application.conf
-assets/seamcarver/output/x.png
 server.log
 assets/callTrace.log
 ../outside.txt
 ${WORK}/${CURRENT}/outside.txt
 link/file.txt
 .deploy/other
-./assets/seamcarver/output/x.png
-assets//seamcarver/output/x.png
-assets/seamcarver/../seamcarver/output/x.png
+./resources/application.conf
+resources//application.conf
+assets/../resources/application.conf
 LIST
 add build/index.html
 add_restart
 deploy "$(pack)"
 expect_status 0
 expect_file "${TEST_HOME}/resources/application.conf"
-expect_file "${TEST_HOME}/assets/seamcarver/output/x.png"
 expect_file "${TEST_HOME}/server.log"
 expect_file "${TEST_HOME}/assets/callTrace.log"
 expect_file "${WORK}/${CURRENT}/outside.txt"
@@ -181,7 +178,7 @@ expect_file "${TEST_HOME}/.deploy/other"
 expect_file "${TEST_HOME}/build/index.html"
 
 # A bundle that ships what the server keeps for itself is refused before anything changes
-for protected in resources/levels.txt assets/seamcarver/output/y.png callTrace.log .deploy/MANIFEST; do
+for protected in resources/levels.txt callTrace.log .deploy/MANIFEST; do
     start "refuses-$(echo "${protected}" | tr '/.' '--')"
     add build/index.html
     add_restart
@@ -283,11 +280,11 @@ expect_no_path "${TEST_HOME}/etc-link"
 # a symlink to a directory
 for case in directory outside protected link-to-directory; do
     start "install-${case}"
-    mkdir -p "${WORK}/${CURRENT}/outside" "${TEST_HOME}/assets/seamcarver/output"
+    mkdir -p "${WORK}/${CURRENT}/outside" "${TEST_HOME}/resources"
     case "${case}" in
         directory) mkdir -p "${TEST_HOME}/target/file";;
         outside) ln -s "${WORK}/${CURRENT}/outside" "${TEST_HOME}/target";;
-        protected) ln -s assets/seamcarver/output "${TEST_HOME}/target";;
+        protected) ln -s resources "${TEST_HOME}/target";;
         link-to-directory) mkdir -p "${TEST_HOME}/target"
             ln -s "${WORK}/${CURRENT}/outside" "${TEST_HOME}/target/file";;
     esac
@@ -297,21 +294,21 @@ for case in directory outside protected link-to-directory; do
     expect_status 1
     expect_no_path "${TEST_HOME}/build/index.html"
     expect_no_path "${WORK}/${CURRENT}/outside/file"
-    expect_no_path "${TEST_HOME}/assets/seamcarver/output/file"
+    expect_no_path "${TEST_HOME}/resources/file"
     [ "$(restarts)" = 0 ] || fail "${CURRENT}: restarted for a refused bundle"
 done
 
 # Deletion through a symlink into what the server keeps for itself is refused
 start delete-through-link
-mkdir -p "${TEST_HOME}/assets/seamcarver/output" "${TEST_HOME}/.deploy"
-echo carved > "${TEST_HOME}/assets/seamcarver/output/x.png"
-ln -s assets/seamcarver/output "${TEST_HOME}/pics"
-echo pics/x.png > "${TEST_HOME}/.deploy/MANIFEST"
+mkdir -p "${TEST_HOME}/resources" "${TEST_HOME}/.deploy"
+echo config > "${TEST_HOME}/resources/application.conf"
+ln -s resources "${TEST_HOME}/config"
+echo config/application.conf > "${TEST_HOME}/.deploy/MANIFEST"
 add build/index.html
 add_restart
 deploy "$(pack)"
 expect_status 0
-expect_file "${TEST_HOME}/assets/seamcarver/output/x.png"
+expect_file "${TEST_HOME}/resources/application.conf"
 
 # A file that can't be deleted doesn't stop the deploy, which restarts the server, keeps the new
 # manifest and then fails
@@ -394,7 +391,7 @@ done
 for case in symlinked-parent foreign-directory line-break; do
     start "blocked-directory-${case}"
     case "${case}" in
-        symlinked-parent) add build/index.html p/seamcarver/output/r.png; next=p/seamcarver;;
+        symlinked-parent) add build/index.html p/resources/r.txt; next=p/resources;;
         foreign-directory) add build/index.html x/y; next=x;;
         line-break) add build/index.html x/a x/b; next=x;;
     esac
@@ -404,10 +401,10 @@ for case in symlinked-parent foreign-directory line-break; do
     case "${case}" in
         symlinked-parent)
             rm -rf "${TEST_HOME}/p"
-            mkdir -p "${TEST_HOME}/assets/seamcarver/output"
-            echo result > "${TEST_HOME}/assets/seamcarver/output/r.png"
-            ln -s assets "${TEST_HOME}/p"
-            kept=${TEST_HOME}/assets/seamcarver/output/r.png;;
+            mkdir -p "${TEST_HOME}/resources"
+            echo config > "${TEST_HOME}/resources/r.txt"
+            ln -s . "${TEST_HOME}/p"
+            kept=${TEST_HOME}/resources/r.txt;;
         foreign-directory)
             mkdir "${TEST_HOME}/x/empty"
             kept=${TEST_HOME}/x/y;;
