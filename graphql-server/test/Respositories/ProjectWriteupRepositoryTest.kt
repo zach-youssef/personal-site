@@ -5,6 +5,7 @@ import com.zyoussef.Content.ProjectWriteup
 import com.zyoussef.Content.WriteupSection
 import com.zyoussef.Models.ProjectInfo.ProjectCategory
 import com.zyoussef.Models.ProjectInfo.ProjectId
+import java.io.File
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.test.Test
@@ -19,7 +20,7 @@ class ProjectWriteupRepositoryTest {
     private val writeups = repository.getAllWriteups()
 
     private fun writeup(id: String) =
-        ProjectWriteup(id, "context", "alt", listOf(WriteupSection(null, listOf("p"))), listOf(Article("t", "s", null, "https://example.com", "n")))
+        ProjectWriteup(id, "context", "alt", null, listOf(WriteupSection(null, listOf("p"))), emptyList(), listOf(Article("t", "s", null, "https://example.com", "n")))
 
     @Test
     fun `every professional project has a write-up, and every write-up is a professional project's`() {
@@ -56,10 +57,12 @@ class ProjectWriteupRepositoryTest {
     }
 
     @Test
-    fun `every write-up has context, alt text and a body`() {
+    fun `every write-up has context, an image's alt text or a video, and a body`() {
         for (writeup in writeups) {
             assertTrue(writeup.context.isNotBlank(), writeup.id)
-            assertTrue(writeup.imageAlt.isNotBlank(), writeup.id)
+            assertTrue((writeup.imageAlt == null) != (writeup.video == null), writeup.id)
+            writeup.imageAlt?.let { assertTrue(it.isNotBlank(), writeup.id) }
+            writeup.video?.let { assertTrue(Regex("[A-Za-z0-9_-]{11}").matches(it.youtubeId) && it.title.isNotBlank(), writeup.id) }
             assertTrue(writeup.sections.isNotEmpty(), writeup.id)
             for (section in writeup.sections) {
                 assertTrue(section.heading?.isNotBlank() ?: true, writeup.id)
@@ -69,9 +72,26 @@ class ProjectWriteupRepositoryTest {
     }
 
     @Test
-    fun `every write-up has articles with https urls, real dates and one-line notes`() {
+    fun `every figure is an SVG the backend serves, with alt text and a caption`() {
         for (writeup in writeups) {
-            assertTrue(writeup.articles.isNotEmpty(), writeup.id)
+            for (figure in writeup.sections.flatMap { it.figures }) {
+                val at = "${writeup.id}: ${figure.src}"
+                // Served from graphql-server/assets/ at /assets/ (the tests run in graphql-server/)
+                val file = File(figure.src.removePrefix("/"))
+                assertTrue(figure.src.startsWith("/assets/writeups/${writeup.id}/") && file.isFile, at)
+                assertTrue(file.readText().trimStart().let { it.startsWith("<svg") || it.startsWith("<?xml") }, at)
+                assertTrue(figure.alt.isNotBlank() && figure.caption.isNotBlank(), at)
+            }
+        }
+    }
+
+    @Test
+    fun `every write-up links somewhere, over https, and its articles have real dates and one-line notes`() {
+        for (writeup in writeups) {
+            assertTrue(writeup.articles.isNotEmpty() || writeup.links.isNotEmpty(), writeup.id)
+            for (link in writeup.links) {
+                assertTrue(link.title.isNotBlank() && link.url.startsWith("https://"), "${writeup.id}: ${link.url}")
+            }
             for (article in writeup.articles) {
                 val at = "${writeup.id}: ${article.url}"
                 assertTrue(article.title.isNotBlank() && article.source.isNotBlank(), at)
@@ -90,8 +110,11 @@ class ProjectWriteupRepositoryTest {
     @Test
     fun `no write-up contains a TODO(copy) placeholder`() {
         for (writeup in writeups) {
-            val strings = listOf(writeup.context, writeup.imageAlt) +
-                writeup.sections.flatMap { listOf(it.heading ?: "") + it.paragraphs } +
+            val strings = listOfNotNull(writeup.context, writeup.imageAlt, writeup.video?.title) +
+                writeup.sections.flatMap { section ->
+                    listOf(section.heading ?: "") + section.paragraphs + section.figures.flatMap { listOf(it.src, it.alt, it.caption) }
+                } +
+                writeup.links.flatMap { listOf(it.title, it.url) } +
                 writeup.articles.flatMap { listOf(it.title, it.source, it.date ?: "", it.url, it.note) }
             for (text in strings) {
                 assertTrue("TODO(copy)" !in text, "${writeup.id}: $text")

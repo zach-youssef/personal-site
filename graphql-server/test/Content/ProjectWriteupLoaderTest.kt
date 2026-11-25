@@ -49,7 +49,9 @@ class ProjectWriteupLoaderTest {
                 id = "broadAR",
                 context = "An employer, 2024, a role",
                 imageAlt = "A picture",
+                video = null,
                 sections = listOf(WriteupSection(null, listOf("First paragraph.")), WriteupSection("A heading", listOf("Second paragraph."))),
+                links = emptyList(),
                 articles = listOf(Article("A headline", "A Publisher", "2024-09", "https://example.com/article", "What it covers")),
             ),
             parse(document()),
@@ -57,7 +59,7 @@ class ProjectWriteupLoaderTest {
     }
 
     @Test
-    fun `the site's write-ups are valid, one for each professional project`() {
+    fun `the site's write-ups are valid, one for each professional project and those listed`() {
         assertEquals(listOf(ProjectId.broadAR, ProjectId.metaAvatars), ProjectWriteupLoader.PROJECTS)
         val writeups = ProjectWriteupLoader.fromResources()
         assertEquals(ProjectWriteupLoader.PROJECTS, writeups.keys.toList())
@@ -133,7 +135,6 @@ class ProjectWriteupLoaderTest {
             "source" to ("    source: A Publisher\n" to ""),
             "url" to ("    url: https://example.com/article\n" to ""),
             "note" to ("    note: What it covers\n" to ""),
-            "articles" to ("articles:\n$article" to ""),
         )
         for ((field, removal) in removals) {
             assertContains(failure(document(removal)), field, message = field)
@@ -166,7 +167,94 @@ class ProjectWriteupLoaderTest {
     fun `refuses no sections or no articles`() {
         assertEquals("test.yaml: sections is empty", failure(document(
             "sections:\n  - text: |\n      First paragraph.\n  - heading: A heading\n    text: |\n      Second paragraph.\n" to "sections: []\n")))
-        assertEquals("test.yaml: articles is empty", failure(document("articles:\n$article" to "articles: []\n")))
+        assertEquals("test.yaml: articles is empty (remove it for none)", failure(document("articles:\n$article" to "articles: []\n")))
+        assertEquals("test.yaml: articles is empty (remove it for none)", failure(document("articles:\n$article" to "articles:\n")))
+    }
+
+    @Test
+    fun `articles are optional`() {
+        assertEquals(emptyList(), parse(document("articles:\n$article" to "")).articles)
+    }
+
+    private val video = "video:\n  youtubeId: Q0pc37MOsxI\n  title: A demo\n"
+
+    @Test
+    fun `a video takes the image's place`() {
+        val writeup = parse(document("imageAlt: A picture\n" to video))
+        assertEquals(WriteupVideo("Q0pc37MOsxI", "A demo"), writeup.video)
+        assertEquals(null, writeup.imageAlt)
+    }
+
+    @Test
+    fun `refuses neither an image's alt text nor a video, or both`() {
+        assertEquals("test.yaml: imageAlt is missing (or a video, to show in place of the image)", failure(document("imageAlt: A picture\n" to "")))
+        assertEquals("test.yaml: imageAlt and video are both given, but a video replaces the image", failure(document("imageAlt: A picture\n" to "imageAlt: A picture\n$video")))
+    }
+
+    @Test
+    fun `refuses a video without a YouTube id or a title`() {
+        for (id in listOf("Q0pc37MOsx", "Q0pc37MOsxIx", "Q0pc37MOs/I", "https://youtu.be/Q0pc37MOsxI", "\"\"")) {
+            assertEquals(
+                "test.yaml: video.youtubeId must be the 11-character id in the video's URL",
+                failure(document("imageAlt: A picture\n" to video.replace("Q0pc37MOsxI", id))),
+                id,
+            )
+        }
+        assertEquals("test.yaml: video.title is blank", failure(document("imageAlt: A picture\n" to video.replace("A demo", "\" \""))))
+        assertContains(failure(document("imageAlt: A picture\n" to video.replace("  title: A demo\n", ""))), "title")
+        assertContains(failure(document("imageAlt: A picture\n" to video + "  poster: x\n")), "poster")
+    }
+
+    private val figure = "    figures:\n      - src: /assets/writeups/broadAR/a-diagram.svg\n        alt: What it shows\n        caption: Under it\n"
+    private fun withFigure(replace: String = "", with: String = "") =
+        document("      Second paragraph.\n" to "      Second paragraph.\n" + figure.replace(replace, with))
+
+    @Test
+    fun `a section's figures follow its paragraphs`() {
+        val writeup = parse(withFigure())
+        assertEquals(emptyList(), writeup.sections[0].figures)
+        assertEquals(listOf(WriteupFigure("/assets/writeups/broadAR/a-diagram.svg", "What it shows", "Under it")), writeup.sections[1].figures)
+    }
+
+    @Test
+    fun `refuses a figure that isn't an SVG under the write-ups' assets`() {
+        for (src in listOf(
+            "/assets/projectThumbnail/a.svg", "/assets/writeups/a.png", "assets/writeups/a.svg", "/assets/writeups/../a.svg",
+            "/assets/writeups/./a.svg", "/assets/writeups//a.svg", "https://example.com/assets/writeups/a.svg", "/assets/writeups/a.svg?x",
+        )) {
+            assertEquals(
+                "test.yaml: sections[1].figures[0].src must be an SVG under /assets/writeups/, such as /assets/writeups/broadAR/diagram.svg",
+                failure(withFigure("/assets/writeups/broadAR/a-diagram.svg", src)),
+                src,
+            )
+        }
+        parse(withFigure("/assets/writeups/broadAR/a-diagram.svg", "/assets/writeups/a_b.svg"))
+    }
+
+    @Test
+    fun `refuses a figure without alt text or a caption, or an empty figures list`() {
+        assertEquals("test.yaml: sections[1].figures[0].alt is blank", failure(withFigure("alt: What it shows", "alt: \" \"")))
+        assertEquals("test.yaml: sections[1].figures[0].caption is blank", failure(withFigure("caption: Under it", "caption: \"\"")))
+        assertContains(failure(withFigure("        caption: Under it\n", "")), "caption")
+        assertContains(failure(withFigure("        caption: Under it\n", "        caption: Under it\n        width: 3\n")), "width")
+        assertEquals("test.yaml: sections[1].figures[0] is empty", failure(withFigure(figure.substringAfter("figures:\n"), "      -\n")))
+        assertEquals("test.yaml: sections[1].figures is empty (remove it for none)", failure(withFigure(figure.substringAfter("figures:\n"), "")))
+        assertEquals("test.yaml: sections[1].figures is empty (remove it for none)", failure(withFigure(figure.substringAfter("figures:"), " []\n")))
+    }
+
+    private val links = "links:\n  - title: The code\n    url: https://github.com/example/repo\n"
+
+    @Test
+    fun `links are optional, each a title and an https url`() {
+        assertEquals(listOf(WriteupLink("The code", "https://github.com/example/repo")), parse(document("articles:\n" to links + "articles:\n")).links)
+        assertEquals(
+            "test.yaml: links[0].url must start with https://",
+            failure(document("articles:\n" to links.replace("https://", "http://") + "articles:\n")),
+        )
+        assertEquals("test.yaml: links[0].title is blank", failure(document("articles:\n" to links.replace("The code", "\"\"") + "articles:\n")))
+        assertEquals("test.yaml: links[0].url is blank", failure(document("articles:\n" to links.replace("https://github.com/example/repo", "\"\"") + "articles:\n")))
+        assertEquals("test.yaml: links is empty (remove it for none)", failure(document("articles:\n" to "links: []\narticles:\n")))
+        assertEquals("test.yaml: links[0] is empty", failure(document("articles:\n" to "links:\n  -\narticles:\n")))
     }
 
     @Test

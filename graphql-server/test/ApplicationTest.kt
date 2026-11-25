@@ -269,8 +269,9 @@ class ApplicationTest {
             """
             {
                 projectWriteup(id: "broadAR") {
-                    id, context, imageAlt, sections { heading, paragraphs },
-                    articles { title, source, date, url, note }
+                    id, context, imageAlt, video { youtubeId, title },
+                    sections { heading, paragraphs, figures { src, alt, caption } },
+                    links { title, url }, articles { title, source, date, url, note }
                 }
             }
             """,
@@ -279,6 +280,8 @@ class ApplicationTest {
         assertEquals("broadAR", writeup.path("id").asText())
         assertTrue(writeup.path("context").asText().isNotBlank())
         assertTrue(writeup.path("imageAlt").asText().isNotBlank())
+        assertTrue(writeup.has("video") && writeup.path("video").isNull)
+        assertTrue(writeup.path("links").isArray)
         val sections = writeup.path("sections")
         assertTrue(sections.size() > 0)
         for (section in sections) {
@@ -286,6 +289,7 @@ class ApplicationTest {
             assertTrue(section.has("heading") && (section.path("heading").isNull || section.path("heading").isTextual), "$section")
             assertTrue(section.path("paragraphs").isArray && section.path("paragraphs").size() > 0, "$section")
             assertTrue(section.path("paragraphs").all { it.isTextual && it.asText().isNotBlank() }, "$section")
+            assertTrue(section.path("figures").isArray, "$section")
         }
         val articles = writeup.path("articles")
         assertTrue(articles.size() > 0)
