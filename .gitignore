@@ -14,3 +14,6 @@ e2e/fixtures/splat/
 # The seam carver's web engines' Gradle build (seamcarver-web)
 seamcarver-web/build/
 seamcarver-web/.gradle/
+
+# The seam carver's Rust engine's cargo build (seamcarver-web/flat)
+seamcarver-web/flat/target/

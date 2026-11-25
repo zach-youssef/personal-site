@@ -1,0 +1,8 @@
+# The toolchain this crate is built and tested with, locally and in CI (`rustup toolchain install`
+# in this directory installs it). Bump it on purpose: the goldens prove the engine, so a new
+# compiler is safe when `cargo test` stays green.
+[toolchain]
+channel = "1.100.0"
+targets = ["wasm32-unknown-unknown"]
+profile = "minimal"
+components = ["clippy", "rustfmt"]

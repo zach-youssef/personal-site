@@ -2,7 +2,7 @@
 # installs the toolchains and packages the builds need. CI's test jobs and the deploy's bundle job
 # share it. See "CI" in README.md.
 name: Set up the build
-description: Checks out the submodules, restores the splat scene's download cache and ZGAL's wasi-sdk and installs Racket, Node, Java, Gradle, lavapipe and cwebp
+description: Checks out the submodules, restores the splat scene's download cache, ZGAL's wasi-sdk and wasm-bindgen, and installs Racket, Node, Java, Gradle, Rust, lavapipe and cwebp
 inputs:
   seamcarving-deploy-key:
     description: The private half of SeamCarving's read-only deploy key (secret SEAMCARVING_DEPLOY_KEY)
@@ -74,6 +74,36 @@ runs:
       with:
         path: ${{ steps.wasi-sdk-cache-key.outputs.dir }}
         key: ${{ steps.wasi-sdk-cache-key.outputs.key }}
+
+    - name: Key the wasm-bindgen cache
+      # seamcarver-web/flat/build.sh builds the seam carver's Rust engine to WebAssembly with
+      # wasm-bindgen-cli, which must be the exact version of the crate's wasm-bindgen (Cargo.lock);
+      # cargo install compiles it from source, minutes, so the binary is cached by that version
+      id: wasm-bindgen-cache-key
+      shell: bash
+      run: |
+        version=$(seamcarver-web/flat/build.sh wasm-bindgen-version)
+        echo "key=wasm-bindgen-cli-${RUNNER_OS}-${RUNNER_ARCH}-${version}" >> "${GITHUB_OUTPUT}"
+        echo "version=${version}" >> "${GITHUB_OUTPUT}"
+    - name: Restore wasm-bindgen
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cargo/bin/wasm-bindgen
+        key: ${{ steps.wasm-bindgen-cache-key.outputs.key }}
+    - name: Install the Rust toolchain and wasm-bindgen
+      # The toolchain and wasm32 target that seamcarver-web/flat/rust-toolchain.toml pins (rustup is
+      # on the image); wasm-bindgen-cli only when the cache didn't bring the right one
+      shell: bash
+      working-directory: seamcarver-web/flat
+      env:
+        VERSION: ${{ steps.wasm-bindgen-cache-key.outputs.version }}
+      run: |
+        rustup toolchain install
+        rustup show active-toolchain
+        if [[ $(wasm-bindgen --version 2>/dev/null) != "wasm-bindgen ${VERSION}" ]]; then
+            cargo install --locked wasm-bindgen-cli --version "${VERSION}"
+        fi
+        wasm-bindgen --version
 
     - uses: Bogdanp/setup-racket@2466913449df77df2bad149d1f2fc4e1ea4795dd # v1.15
       with:
