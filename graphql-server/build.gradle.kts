@@ -7,7 +7,7 @@ val KGraphQLVersion: String by project
 
 plugins {
     application
-    kotlin("jvm") version "2.2.20"
+    kotlin("jvm") version "2.4.21"
 }
 
 group = "com.zyoussef"
@@ -48,8 +48,8 @@ dependencies {
     // Ktor 1.5.4 and KGraphQL 0.17.8 pull in netty 4.1.63, jackson 2.12.2 and gson 2.8.0, which
     // have published vulnerabilities. These constraints raise them within the same major lines
     // (logback 1.2.13 is set directly in gradle.properties).
-    implementation(platform("io.netty:netty-bom:4.1.141.Final"))
-    implementation(platform("com.fasterxml.jackson:jackson-bom:2.18.12"))
+    implementation(platform("io.netty:netty-bom:4.2.21.Final"))
+    implementation(platform("com.fasterxml.jackson:jackson-bom:2.22.4"))
     constraints {
         implementation("com.google.code.gson:gson:2.15.0")
     }
