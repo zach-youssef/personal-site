@@ -6,7 +6,7 @@
 	url = git@github.com:zach-youssef/vk_ppu.git
 [submodule "external/zgal"]
 	path = external/zgal
-	url = git@github.com:zach-youssef/vulkan_testing.git
+	url = git@github.com:zach-youssef/zgal.git
 [submodule "external/vk_splats"]
 	path = external/vk_splats
 	url = git@github.com:zach-youssef/vk_splats.git

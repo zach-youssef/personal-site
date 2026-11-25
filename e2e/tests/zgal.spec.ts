@@ -48,7 +48,7 @@ test('the backend serves image_filter\'s input and its output filtered at build 
 test('shows the program\'s source', async ({ page }) => {
     await page.goto('/projects/zgal');
 
-    await expect(page.getByRole('link', { name: 'View on GitHub', exact: true })).toHaveAttribute('href', 'https://github.com/zach-youssef/vulkan_testing');
+    await expect(page.getByRole('link', { name: 'View on GitHub', exact: true })).toHaveAttribute('href', 'https://github.com/zach-youssef/zgal');
     await expect(page.getByLabel('particles.zgal')).toContainText('(compute-material ParticleSim');
 });
 

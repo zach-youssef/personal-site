@@ -34,7 +34,7 @@ test('source.json names the pinned commit of a clean checkout', async ({ request
     expect(response.ok()).toBe(true);
     expect(response.headers()['content-type']).toContain('application/json');
     expect(await response.json()).toEqual({
-        repository: 'https://github.com/zach-youssef/vulkan_testing',
+        repository: 'https://github.com/zach-youssef/zgal',
         commit: pinned(),
         dirty: false,
     });
@@ -71,7 +71,7 @@ for (const name of programs) {
         await expect.poll(() => listing.textContent()).toBe(sourceAtPin(name));
         const link = page.getByRole('link', { name: `View on GitHub at ${pinned().slice(0, 7)}`, exact: true });
         await expect(link).toHaveAttribute('href',
-            `https://github.com/zach-youssef/vulkan_testing/blob/${pinned()}/examples/${name}/${name}.zgal`);
+            `https://github.com/zach-youssef/zgal/blob/${pinned()}/examples/${name}/${name}.zgal`);
         await expect(page.getByText('local build')).toHaveCount(0);
         // The listing is the backend's copy; nothing is fetched from GitHub
         expect(external).toEqual([]);

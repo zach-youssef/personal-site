@@ -241,7 +241,7 @@ describe('ZgalPage', () => {
     const SCENE = SAMPLES.find(sample => sample.id === 'scene')!;
 
     const COMMIT = '13ffa592b47374862b93d7f5d4c4a9565b64c0af';
-    const MANIFEST: SourceManifest = { repository: 'https://github.com/zach-youssef/vulkan_testing', commit: COMMIT, dirty: false };
+    const MANIFEST: SourceManifest = { repository: 'https://github.com/zach-youssef/zgal', commit: COMMIT, dirty: false };
     const serveManifest = (manifest: unknown): Partial<Response> => ({ ok: true, json: async () => manifest });
 
     // Serves every program's source as the given response, and source.json as the other
@@ -468,7 +468,7 @@ describe('ZgalPage', () => {
 
         const link = await screen.findByRole('link', { name: 'View on GitHub at 13ffa59' });
         expect(link).toHaveAttribute('href',
-            `https://github.com/zach-youssef/vulkan_testing/blob/${COMMIT}/examples/particles/particles.zgal`);
+            `https://github.com/zach-youssef/zgal/blob/${COMMIT}/examples/particles/particles.zgal`);
         expect(link).toHaveAttribute('title', COMMIT);
         // The listing still comes from the backend's copy, not GitHub
         await vi.waitFor(() => expect(screen.getByLabelText('particles.zgal').textContent).toBe(SOURCE));
@@ -477,7 +477,7 @@ describe('ZgalPage', () => {
         await userEvent.click(selector().getByRole('button', { name: 'Scene' }));
 
         expect(screen.getByRole('link', { name: 'View on GitHub at 13ffa59' })).toHaveAttribute('href',
-            `https://github.com/zach-youssef/vulkan_testing/blob/${COMMIT}/examples/scene/scene.zgal`);
+            `https://github.com/zach-youssef/zgal/blob/${COMMIT}/examples/scene/scene.zgal`);
         // Loaded once for the page, not again for each sample
         expect(fetchesOf(fetchMock, MANIFEST_URL)).toBe(1);
     });

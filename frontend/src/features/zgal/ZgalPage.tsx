@@ -8,7 +8,7 @@ import SourceLink, { ManifestState, useSourceManifest } from './SourceLink';
 import ImageFilterDemo from './ImageFilterDemo';
 import { programPage, programSource, SAMPLES, screenshot, WindowSample, ZgalSample } from './samples';
 
-export const GITHUB_URL = 'https://github.com/zach-youssef/vulkan_testing';
+export const GITHUB_URL = 'https://github.com/zach-youssef/zgal';
 // ZGAL's documentation, which ./build-zgal builds and the backend serves
 export const DOCS_URL = '/zgal/docs/';
 // The query parameter that names the selected sample, so a link can open the page on it
