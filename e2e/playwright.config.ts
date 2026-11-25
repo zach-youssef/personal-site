@@ -4,6 +4,14 @@ import { BACKEND_ORIGIN, BACKEND_PORT, FRONTEND_PORT } from './tests/servers';
 // Runs the real backend and a production build of the frontend side by side.
 // The frontend requests the backend relative to the page, and the preview
 // server forwards those requests to the local backend, as Ktor does in production.
+
+// E2E_REUSE_SERVERS=1 (ignored on CI) reuses servers already answering on the ports, for quick
+// reruns against servers kept up by hand; it's off by default since on a shared machine they may
+// be another checkout's
+const reuseServers = !process.env.CI && process.env.E2E_REUSE_SERVERS === '1';
+// Unless reusing, each server's command first refuses a port that's taken
+const requireFreePort = (port: number) => reuseServers ? '' : `node ../e2e/requireFreePort.mjs ${port} && `;
+
 export default defineConfig({
     testDir: './tests',
     fullyParallel: true,
@@ -27,23 +35,25 @@ export default defineConfig({
         { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
         { name: 'firefox', use: { ...devices['Desktop Firefox'] }, grep: /@firefox/ },
     ],
+    // The servers' ports are fixed (tests/servers.ts), so a run refuses ports that are taken rather
+    // than test what answers there, which may be another checkout's servers (see reuseServers)
     webServer: [
         {
-            command: './gradlew run --quiet',
+            command: `${requireFreePort(BACKEND_PORT)}./gradlew run --quiet`,
             cwd: '../graphql-server',
             env: { PORT: String(BACKEND_PORT) },
             url: `http://localhost:${BACKEND_PORT}/graphql`,
             timeout: 180_000,
-            reuseExistingServer: !process.env.CI,
+            reuseExistingServer: reuseServers,
         },
         {
-            command: `npm run build && npx vite preview --port ${FRONTEND_PORT} --strictPort`,
+            command: `${requireFreePort(FRONTEND_PORT)}npm run build && npx vite preview --port ${FRONTEND_PORT} --strictPort`,
             cwd: '../frontend',
             // Stop Vite from opening a browser window, and point its proxy at the test backend
             env: { BROWSER: 'none', BACKEND_URL: BACKEND_ORIGIN },
             url: `http://localhost:${FRONTEND_PORT}`,
             timeout: 120_000,
-            reuseExistingServer: !process.env.CI,
+            reuseExistingServer: reuseServers,
         },
     ],
 });

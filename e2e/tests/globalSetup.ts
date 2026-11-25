@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 // The PPU's games, ZGAL's examples, the splat viewer with its scene and the seam carver's web
@@ -15,7 +15,9 @@ const BUILT_ASSETS = [
 // Refuse to start without the builds, whose absence would fail many specs in unrelated-looking ways
 export default function globalSetup() {
     for (const [dir, script] of BUILT_ASSETS) {
-        if (!existsSync(dir)) {
+        // An empty directory (another worktree's, say) counts as unbuilt, dotfiles such as the
+        // .DS_Store Finder leaves aside
+        if (!existsSync(dir) || readdirSync(dir).every(name => name.startsWith('.'))) {
             throw new Error(`Nothing built in ${dir}: run ${script} first`);
         }
     }
