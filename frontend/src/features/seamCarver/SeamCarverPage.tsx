@@ -5,6 +5,9 @@ import { SiteText, SiteTextContents } from '../../content/text/SiteText';
 import { decodePixels, drawPixels, Pixels } from './engine/decode';
 import { chooseEngine, estimateSeconds, JAVA_MAX_PIXELS, SLOW_SECONDS } from './engine/estimate';
 import { engineOf, Variant, VARIANTS } from './engine/protocol';
+import SeamCarverExplainer from './SeamCarverExplainer';
+import SeamCarverView from './SeamCarverView';
+import { validTarget } from './seamView';
 import { CarveRequest, CarveResult, useSeamCarver } from './useSeamCarver';
 
 type FormValues = {
@@ -209,6 +212,10 @@ function SeamCarverPage() {
     const describedBy = (...ids: (string | false | undefined)[]) => ids.filter(Boolean).join(' ') || undefined;
 
     const tooLargeForJava = !!chosen && !javaTakes(chosen);
+    // The visualisation follows the targets as they're typed, once they're ones the image can take
+    const [typedWidth, typedHeight] = watch(['width', 'height']);
+    const viewTarget = chosen && validTarget(chosen, parseInt(typedWidth), parseInt(typedHeight));
+
     const percent = carving && state.total > 0 ? Math.round(100 * state.done / state.total) : 0;
 
     return (
@@ -338,6 +345,8 @@ function SeamCarverPage() {
                     }
                 </Col>
             </Row>
+            {chosen && <SeamCarverView image={chosen} target={viewTarget}/>}
+            <SeamCarverExplainer/>
         </Container>
     );
 }

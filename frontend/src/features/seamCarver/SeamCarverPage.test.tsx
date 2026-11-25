@@ -21,7 +21,8 @@ const decode = vi.hoisted(() => ({
     decodes: [] as string[],
     // Decodes of these names wait until released, to order decodes by hand
     held: {} as Record<string, () => void>,
-    drawn: [] as { width: number, height: number, rgb: Int32Array }[],
+    // What each draw drew, and the label of the canvas it drew on
+    drawn: [] as { width: number, height: number, rgb: Int32Array, label: string | null }[],
 }));
 
 vi.mock('./engine/decode', () => ({
@@ -37,7 +38,7 @@ vi.mock('./engine/decode', () => ({
     drawPixels: (canvas: HTMLCanvasElement, pixels: { width: number, height: number, rgb: Int32Array }) => {
         canvas.width = pixels.width;
         canvas.height = pixels.height;
-        decode.drawn.push(pixels);
+        decode.drawn.push({ ...pixels, label: canvas.getAttribute('aria-label') });
     },
 }));
 
@@ -258,8 +259,10 @@ describe('SeamCarverPage', () => {
 
         const canvas = await screen.findByRole('img', { name: 'Carved image, 50 × 40 px' });
         expect(canvas.tagName).toBe('CANVAS');
-        expect(decode.drawn).toHaveLength(1);
-        expect(decode.drawn[0]).toMatchObject({ width: 50, height: 40 });
+        // The visualisation draws the input on a canvas of its own
+        const carved = decode.drawn.filter(d => d.label?.startsWith('Carved image'));
+        expect(carved).toHaveLength(1);
+        expect(carved[0]).toMatchObject({ width: 50, height: 40 });
         expect(screen.getByText(JAVA_WASM_LABEL)).toBeInTheDocument();
         const download = await screen.findByRole('link', { name: 'Download PNG' });
         expect(download).toHaveAttribute('href', 'blob:png-1');
@@ -554,6 +557,26 @@ describe('SeamCarverPage', () => {
 
         expect(screen.queryByText(/Target width must be/)).not.toBeInTheDocument();
         expect(page.width()).toHaveAttribute('aria-invalid', 'false');
+    });
+
+    it('shows the visualisation of the chosen image, following the targets as they are typed', async () => {
+        const page = renderPage();
+        const viewStatus = () => document.getElementById('seamCarverViewStatus')?.textContent;
+        expect(screen.queryByRole('heading', { name: 'Step through the carve' })).not.toBeInTheDocument();
+
+        await page.choose('small.png');
+        // The targets start at the image's size: nothing to step through
+        await waitFor(() => expect(viewStatus()).toBe('100 × 80 px, 0 seams removed. At the target size.'));
+        expect(screen.getByRole('img', { name: 'Image being carved, 100 × 80 px' })).toBeInTheDocument();
+
+        await userEvent.clear(page.width());
+        await userEvent.type(page.width(), '90');
+        expect(viewStatus()).toBe('100 × 80 px, 0 seams removed. Next: a vertical seam.');
+        await userEvent.clear(page.width());
+        await userEvent.type(page.width(), '101');
+        expect(viewStatus()).toBe('Choose a target size above to step through its seams.');
+        // Nothing has asked the view for a frame, so it has no worker
+        expect(FakeWorker.instances).toEqual([]);
     });
 });
 
