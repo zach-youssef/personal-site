@@ -1,3 +1,4 @@
+import SeamCarving.EnergyOracle;
 import SeamCarving.FromFileImage;
 import SeamCarving.SeamCarver;
 
@@ -8,14 +9,16 @@ import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 
 /**
  * The seam carver's golden fixtures: each case's input image, built in memory, and what the
  * untouched SeamCarving Java makes of it. Every other engine (TeaVM, Rust) must match the goldens
  * pixel for pixel.
  *
- * <p>{@code main(dir)} writes {@code <case>.in} and {@code <case>.out} for every case into
- * {@code dir}, in the format of {@link #encode}; see testdata/seamcarver/README.md.
+ * <p>{@code main(dir)} writes {@code <case>.in} and {@code <case>.out} for every case, and
+ * {@code <case>.energy} for the {@link #ENERGY_CASES}, into {@code dir}, in the format of
+ * {@link #encode}; see testdata/seamcarver/README.md.
  */
 public final class GoldenWriter {
     private GoldenWriter() {
@@ -54,6 +57,12 @@ public final class GoldenWriter {
             new Case("medium", Pattern.NOISY_GRADIENT, 64, 48, 48, 36, 3),
             new Case("large", Pattern.NOISY_GRADIENT, 120, 90, 90, 70, 4),
             new Case("e2e-gradient", Pattern.E2E_GRADIENT, 60, 40, 45, 32, 0));
+
+    /**
+     * The cases whose input's energy map ({@code GraphImage.toEnergyImage}) is a golden too, for
+     * the page's energy view: one is enough, since the Rust engine's map is checked natively too.
+     */
+    public static final Set<String> ENERGY_CASES = Set.of("e2e-gradient");
 
     /** The case's input, as the server's decoder hands it to the carver: opaque 8-bit RGB. */
     public static BufferedImage input(Case c) {
@@ -95,6 +104,11 @@ public final class GoldenWriter {
                 .getImage();
     }
 
+    /** The untouched Java's energy map of the case's input, before any seam is removed. */
+    public static BufferedImage energy(Case c) {
+        return EnergyOracle.energyImage(new FromFileImage(input(c)));
+    }
+
     /**
      * The golden file format: little-endian int32 width, int32 height, then width * height
      * little-endian int32 pixels 0x00RRGGBB, rows top to bottom, each left to right.
@@ -123,6 +137,10 @@ public final class GoldenWriter {
             Files.write(dir.resolve(c.name() + ".out"), encode(out));
             System.out.printf("%s: %dx%d -> %dx%d%n", c.name(), c.width(), c.height(),
                     out.getWidth(), out.getHeight());
+            if (ENERGY_CASES.contains(c.name())) {
+                Files.write(dir.resolve(c.name() + ".energy"), encode(energy(c)));
+                System.out.printf("%s: energy map%n", c.name());
+            }
         }
     }
 

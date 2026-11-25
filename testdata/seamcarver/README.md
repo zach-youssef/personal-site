@@ -12,7 +12,13 @@ Each case is a pair of files:
 - `<case>.out`: the Java's result. Its size is the case's target size: carve `<case>.in` to the
   width and height in `<case>.out`'s header.
 
-Both use one format, with no compression:
+One case, `e2e-gradient`, also has `<case>.energy`: the Java's energy map of `<case>.in`
+(`GraphImage.toEnergyImage`, before any seam is removed), each pixel grey
+`(int) ((energy / maxEnergy) * 255.0)` in all three channels. The seam carver page's energy view
+must draw exactly it (`e2e/tests/seamCarverView.spec.ts`), as must the Rust engine's `energy_map`
+(`seamcarver-web/flat/tests/goldens.rs`).
+
+All three use one format, with no compression:
 
 | Offset | Size | Content |
 |---|---|---|

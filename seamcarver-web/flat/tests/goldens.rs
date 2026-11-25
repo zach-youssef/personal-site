@@ -243,6 +243,21 @@ fn layout_changes_are_invisible() {
     assert_eq!(a.cached_energies(), a.fresh_energies());
 }
 
+/// The Java's own `toEnergyImage` of a golden input (`<case>.energy`, grey in every channel).
+#[test]
+fn energy_map_matches_the_javas_golden() {
+    let (input, _) = case("e2e-gradient");
+    let golden = read_image(&goldens_dir().join("e2e-gradient.energy"));
+    assert_eq!((golden.width, golden.height), (input.width, input.height));
+    let carver = Carver::new(&input.rgb, input.width, input.height).unwrap();
+    let grey: Vec<u32> = carver
+        .energy_map()
+        .iter()
+        .map(|&v| u32::from(v) * 0x010101)
+        .collect();
+    assert_same_pixels("e2e-gradient.energy", &golden, &grey);
+}
+
 #[test]
 fn energy_map_is_the_javas_grey_scale() {
     let (input, _) = case("medium");

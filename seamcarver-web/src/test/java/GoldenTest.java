@@ -32,6 +32,15 @@ class GoldenTest {
 
     static final List<GoldenWriter.Case> CASES = GoldenWriter.CASES;
 
+    static final List<GoldenWriter.Case> ENERGY_CASES = CASES.stream()
+            .filter(c -> GoldenWriter.ENERGY_CASES.contains(c.name()))
+            .toList();
+
+    @Test
+    void everyEnergyCaseIsACase() {
+        assertEquals(GoldenWriter.ENERGY_CASES.size(), ENERGY_CASES.size(), "ENERGY_CASES names a case");
+    }
+
     @ParameterizedTest(name = "{0}")
     @FieldSource("CASES")
     void inputMatchesTheGolden(GoldenWriter.Case c) throws IOException {
@@ -45,6 +54,12 @@ class GoldenTest {
         assertEquals(c.targetWidth(), out.getWidth(), "width");
         assertEquals(c.targetHeight(), out.getHeight(), "height");
         assertSameImage(c.name() + ".out", out);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @FieldSource("ENERGY_CASES")
+    void energyMatchesTheGolden(GoldenWriter.Case c) throws IOException {
+        assertSameImage(c.name() + ".energy", GoldenWriter.energy(c));
     }
 
     // The server's path: the input as a PNG file, decoded by ImageIO, carved by file name
@@ -67,6 +82,9 @@ class GoldenTest {
         for (GoldenWriter.Case c : CASES) {
             expected.add(c.name() + ".in");
             expected.add(c.name() + ".out");
+        }
+        for (GoldenWriter.Case c : ENERGY_CASES) {
+            expected.add(c.name() + ".energy");
         }
         Set<String> actual;
         try (Stream<Path> files = Files.list(DIR)) {
