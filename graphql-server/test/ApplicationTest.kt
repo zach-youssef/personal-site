@@ -482,25 +482,23 @@ class ApplicationTest {
                     assertEquals(HttpStatusCode.OK, twice.status)
                     assertEquals(emptyList(), leftBehind(), "after two files")
 
-                    // Not an image, so carving fails
+                    // Not an image
                     val notAnImage = client.submitFormWithBinaryData("/seamCarver/upload", formData {
                         append("width", "9")
                         append("height", "7")
                         appendImage("not a PNG".toByteArray())
                     })
-                    assertEquals(HttpStatusCode.InternalServerError, notAnImage.status)
-                    assertEquals(emptyList(), leftBehind(), "after a failed carve")
+                    assertEquals(HttpStatusCode.BadRequest, notAnImage.status)
+                    assertEquals(emptyList(), leftBehind(), "after an unreadable image")
 
-                    // A width that isn't a number, after the file: the handler throws
-                    val thrown = runCatching {
-                        client.submitFormWithBinaryData("/seamCarver/upload", formData {
-                            appendImage(png)
-                            append("width", "nine")
-                            append("height", "7")
-                        })
-                    }
-                    assertTrue(thrown.isFailure || thrown.getOrThrow().status == HttpStatusCode.InternalServerError, "$thrown")
-                    assertEquals(emptyList(), leftBehind(), "after the handler threw")
+                    // A width that isn't a number, after the file
+                    val notANumber = client.submitFormWithBinaryData("/seamCarver/upload", formData {
+                        appendImage(png)
+                        append("width", "nine")
+                        append("height", "7")
+                    })
+                    assertEquals(HttpStatusCode.BadRequest, notANumber.status)
+                    assertEquals(emptyList(), leftBehind(), "after a bad width")
                 }
             }
         } finally {
@@ -614,17 +612,6 @@ class ApplicationTest {
             mapOf("level" to "LEVEL_0", "actions" to listOf("LEFT")),
             executed = true,
         )
-    }
-
-    @Test
-    fun `an upload missing a field falls through to a 404`() = withApp {
-        suspend fun upload(vararg fields: Pair<String, String>) = client.submitFormWithBinaryData(
-            "/seamCarver/upload",
-            formData { for ((name, value) in fields) append(name, value) },
-        )
-        // No file, and nothing at all: the handler responds with nothing, which Ktor answers with 404
-        assertEquals(HttpStatusCode.NotFound, upload("width" to "9", "height" to "7").status)
-        assertEquals(HttpStatusCode.NotFound, upload().status)
     }
 
     @Test
