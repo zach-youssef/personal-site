@@ -12,26 +12,45 @@ interface Props {
 // The kinds of token the listing colours, by their class; the theme styles .zgal-<kind>
 const COLOURED: TokenKind[] = ['comment', 'string', 'number', 'boolean', 'keyword', 'head'];
 
-// The source as text with its coloured tokens in spans, never as HTML, so the listing's text (and
-// what selecting and copying it gives) is the source exactly
+// The source as one span per line, each line's text with its coloured tokens in spans, never as
+// HTML, so the listing's text (and what selecting and copying it gives) is the source exactly. A
+// line's span ends with its newline; the theme numbers the lines with a CSS counter, which isn't
+// part of the text. A token across lines (a multi-line comment or string) is split at each newline.
 function highlight(source: string): ReactNode[] {
-	const nodes: ReactNode[] = [];
+	const lines: ReactNode[] = [];
+	let line: ReactNode[] = [];
 	let plain = '';
-	tokenizeZgal(source).forEach(({ kind, text }, i) => {
-		if (COLOURED.includes(kind)) {
-			if (plain) {
-				nodes.push(plain);
-				plain = '';
-			}
-			nodes.push(<span key={i} className={`zgal-${kind}`}>{text}</span>);
-		} else {
-			plain += text;
+	const flush = () => {
+		if (plain) {
+			line.push(plain);
+			plain = '';
 		}
+	};
+	const endLine = () => {
+		flush();
+		lines.push(<span key={lines.length} className="code-line">{line}</span>);
+		line = [];
+	};
+	tokenizeZgal(source).forEach(({ kind, text }, i) => {
+		const coloured = COLOURED.includes(kind);
+		text.split(/(?<=\n)/).forEach((part, j) => {
+			if (coloured) {
+				flush();
+				line.push(<span key={`${i}.${j}`} className={`zgal-${kind}`}>{part}</span>);
+			} else {
+				plain += part;
+			}
+			if (part.endsWith('\n')) {
+				endLine();
+			}
+		});
 	});
-	if (plain) {
-		nodes.push(plain);
+	// A last line without its newline; a source ending with one has no empty line after it
+	flush();
+	if (line.length > 0) {
+		endLine();
 	}
-	return nodes;
+	return lines;
 }
 
 // Lists a ZGAL program's source, fetched from the backend. Give each program its own instance (key
@@ -66,7 +85,7 @@ function ProgramSource({ url, name }: Props) {
 		return <Alert variant="danger">The program's source couldn't be loaded.</Alert>;
 	}
 	return (
-		<pre className="code-listing" aria-label={name} tabIndex={0}>
+		<pre className={highlighted ? 'code-listing numbered' : 'code-listing'} aria-label={name} tabIndex={0}>
 			<code>{highlighted ?? 'Loading…'}</code>
 		</pre>
 	);

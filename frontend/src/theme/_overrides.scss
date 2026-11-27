@@ -574,6 +574,43 @@ iframe {
   line-height: 1.5;
 }
 
+// A listing's lines, numbered by a counter in a gutter that stays put when the listing scrolls
+// sideways. The numbers are generated content, so selecting and copying the code leaves them out.
+// The code is as wide as its longest line, so that every line (and its sticky number) spans it.
+.code-listing.numbered {
+  padding-left: 0;
+
+  code {
+    display: block;
+    min-width: 100%;
+    width: max-content;
+    counter-reset: code-line;
+  }
+
+  .code-line {
+    display: block;
+    counter-increment: code-line;
+
+    &::before {
+      // Shown, not read out: a screen reader reads the code without them
+      content: counter(code-line) / "";
+      position: sticky;
+      left: 0;
+      display: inline-block;
+      // Three digits, as ZGAL's examples are a few hundred lines; longer ones widen it
+      min-width: 3ch;
+      margin-right: 1rem;
+      padding: 0 .75rem;
+      box-sizing: content-box;
+      text-align: right;
+      color: $text-muted;
+      background-color: $surface;
+      border-right: 1px solid $border-subtle;
+      user-select: none;
+    }
+  }
+}
+
 // ZGAL's syntax, as highlightZgal's tokens; brackets, fields and other symbols keep the text colour
 .zgal-comment {
   color: $code-comment;
