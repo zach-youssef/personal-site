@@ -27,10 +27,6 @@ export const DEFAULT_SETTINGS: FilterSettings = {
 export const BLUR_RANGE: [number, number] = [1, 64];
 export const LEVEL_RANGE: [number, number] = [0, 1];
 
-// How long after a slider's last change the filter runs again, so dragging one doesn't start a GPU
-// run (and a WebGPU device) at every step. Switches and the file picker run it at once.
-export const RERUN_DELAY_MS = 300;
-
 // The default input, in assets/ beside the main, where the program's relative paths resolve
 const DEFAULT_INPUT = 'input.png';
 // The pictures the file picker offers: what ZGAL's web runtime decodes, with stb_image built to
@@ -40,6 +36,13 @@ const DEFAULT_INPUT = 'input.png';
 const PICTURE_TYPES = '.png,.jpg,.jpeg,.bmp,.gif,.tga,.psd,.pic,.pnm,.pgm,.ppm';
 // The file the program writes, which names the download
 export const OUTPUT = 'image_filter.png';
+
+// How long a slider's change waits for the run in flight before stopping it: runHeadless has no time
+// limit of its own, and a stalled download of its input or a long run of many frames would otherwise
+// hold every later step back (stopping aborts the downloads and ends the frames). It can't free a run
+// held by hung GPU work: the runtime's stop() waits for the GPU's submitted work, so the next run
+// never starts, as for a switch. Runs of the page's pictures take well under a second.
+export const STALLED_RUN_MS = 3000;
 
 // image_filter's command line for the settings, with the files it reads that the page gives it
 export function filterCommandLine(settings: FilterSettings): { args: string[], files: Record<string, Blob> } {
@@ -162,16 +165,22 @@ function Slider({ id, label, value, range, step, disabled, format, onChange }: {
 }
 
 // Runs ZGAL's image_filter example on WebGPU (its main's runHeadless) with the site's own controls,
-// showing the input beside the PNG it writes, with a link to download it. A changed setting stops the
-// last run and starts another, each with its own WebGPU device, the next starting only once the last
-// has stopped. Without WebGPU, or when a run of the default input fails, the pictures ./build-zgal
-// filtered stand in. The root's data-zgal attribute gives the state, for tests.
+// showing the input beside the PNG it writes, with a link to download it. A changed switch or picture
+// stops the last run and starts another, each with its own WebGPU device, the next starting only once
+// the last has stopped; a slider's changes follow the run in flight instead. Without WebGPU, or when
+// a run of the default input fails, the pictures ./build-zgal filtered stand in. The root's data-zgal
+// attribute gives the state, for tests.
 function ImageFilterDemo({ sample, webGPU, run = 0, load = importHeadless }: Props) {
-	// What the controls show, and what the filter last ran (or is about to run) with: a slider's
-	// changes reach it RERUN_DELAY_MS after the last one
+	// What the controls show, and what the filter last ran (or is about to run) with
 	const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 	const [applied, setApplied] = useState(DEFAULT_SETTINGS);
-	const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+	// Whether the current run hasn't ended yet, and a slider's latest settings meanwhile, which run as
+	// soon as it ends (or once they have waited STALLED_RUN_MS): dragging a slider filters as fast as
+	// runs finish, each run with the slider's value when the last one ended, rather than stopping
+	// every run before it has drawn anything. The run's effect sets and clears inFlight itself.
+	const inFlight = useRef(false);
+	const waiting = useRef<FilterSettings | null>(null);
+	const stalled = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 	const [state, setState] = useState<FilterState>('loading');
 	const [capture, setCapture] = useState<Blob | null>(null);
 	// Why the last run failed: its messages, or why its main didn't load (may be empty)
@@ -183,17 +192,24 @@ function ImageFilterDemo({ sample, webGPU, run = 0, load = importHeadless }: Pro
 	const outputUrl = useObjectUrl(capture);
 	const mainUrl = programMain(sample);
 
-	const change = (next: Partial<FilterSettings>, delay = 0) => {
+	const apply = (updated: FilterSettings) => {
+		clearTimeout(stalled.current);
+		stalled.current = undefined;
+		waiting.current = null;
+		setApplied(updated);
+	};
+	// A slider's change (live) waits for the run in flight; a switch's or the picture's stops it
+	const change = (next: Partial<FilterSettings>, live = false) => {
 		const updated = { ...settings, ...next };
 		setSettings(updated);
-		clearTimeout(timer.current);
-		if (delay > 0) {
-			timer.current = setTimeout(() => setApplied(updated), delay);
+		if (live && inFlight.current) {
+			waiting.current = updated;
+			stalled.current ??= setTimeout(() => waiting.current && apply(waiting.current), STALLED_RUN_MS);
 		} else {
-			setApplied(updated);
+			apply(updated);
 		}
 	};
-	useEffect(() => () => clearTimeout(timer.current), []);
+	useEffect(() => () => clearTimeout(stalled.current), []);
 
 	useEffect(() => {
 		if (!webGPU) {
@@ -201,6 +217,7 @@ function ImageFilterDemo({ sample, webGPU, run = 0, load = importHeadless }: Pro
 		}
 		// Set by the cleanup: this run stops, and nothing of it reaches the page
 		let current = true;
+		inFlight.current = true;
 		let program: HeadlessRun | null = null;
 		const messages: string[] = [];
 		const { args, files } = filterCommandLine(applied);
@@ -240,9 +257,16 @@ function ImageFilterDemo({ sample, webGPU, run = 0, load = importHeadless }: Pro
 		})().catch(error => {
 			fail(`${mainUrl}: ${error instanceof Error ? error.message : String(error)}`);
 		});
+		// However it ends (its main not loading included), a slider's waiting settings run next
 		launched.then(() => program?.done).then(end => {
 			if (end === 'failed') {
 				fail(messages.join('\n'));
+			}
+			if (current) {
+				inFlight.current = false;
+				if (waiting.current) {
+					apply(waiting.current);
+				}
 			}
 		});
 
@@ -290,14 +314,14 @@ function ImageFilterDemo({ sample, webGPU, run = 0, load = importHeadless }: Pro
 				<OptionControl option="--blur" label="Blur" checked={settings.blur} onToggle={blur => change({ blur })}>
 					<Slider id="image-filter-radius" label="Blur radius" value={settings.radius} range={BLUR_RANGE}
 						step={1} disabled={!settings.blur} format={radius => `${radius} px`}
-						onChange={radius => change({ radius }, RERUN_DELAY_MS)} />
+						onChange={radius => change({ radius }, true)} />
 				</OptionControl>
 				<OptionControl option="--edges" label="Edges" checked={settings.edges} onToggle={edges => change({ edges })} />
 				<OptionControl option="--threshold" label="Threshold" checked={settings.threshold}
 					onToggle={threshold => change({ threshold })}>
 					<Slider id="image-filter-level" label="Threshold level" value={settings.level} range={LEVEL_RANGE}
 						step={0.01} disabled={!settings.threshold} format={level => level.toFixed(2)}
-						onChange={level => change({ level }, RERUN_DELAY_MS)} />
+						onChange={level => change({ level }, true)} />
 				</OptionControl>
 			</Form>
 			{failure !== null && (applied.file

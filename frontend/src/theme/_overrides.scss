@@ -622,9 +622,11 @@ iframe {
   border-radius: $border-radius-lg;
 }
 
-// The last output while the next is being made
+// The last output while the next is being made, faded only when that takes a while, so that the
+// quick runs of a moving slider don't make it flicker; it comes back at once
 .filter-picture.stale img {
   opacity: .5;
+  transition: opacity .15s linear .3s;
 }
 
 // A failed run's messages, one per line

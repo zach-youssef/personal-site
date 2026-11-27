@@ -10,7 +10,7 @@ import WebGLDemoPage from './webgl/WebGLDemoPage';
 import PpuPage, { GITHUB_URL } from './ppu/PpuPage';
 import ZgalPage, { GITHUB_URL as ZGAL_GITHUB_URL, SampleView } from './zgal/ZgalPage';
 import { HeadlessSample, SAMPLES, WindowSample } from './zgal/samples';
-import ImageFilterDemo, { DEFAULT_SETTINGS, filterCommandLine, RERUN_DELAY_MS } from './zgal/ImageFilterDemo';
+import ImageFilterDemo, { DEFAULT_SETTINGS, filterCommandLine, STALLED_RUN_MS } from './zgal/ImageFilterDemo';
 import type { HeadlessOptions, ZgalHeadlessModule } from './zgal/zgalMount';
 import { MANIFEST_URL, SourceManifest } from './zgal/SourceLink';
 import { CameraMode, WebGLDemo } from './webgl/WebGLDemo';
@@ -795,24 +795,91 @@ describe('ImageFilterDemo', () => {
         await waitFor(() => expect(runs.at(-1)!.options.args).toEqual(['input.png', 'image_filter.png', '--edges', '--threshold', '0.15']));
     });
 
-    it('filters again once a slider has stopped moving, not at every step', async () => {
+    it('filters as a slider moves, each run following the last one\'s end rather than stopping it', async () => {
+        // Well under the 300 ms debounce slider steps used to wait for, so the test fails on that code
+        const AT_ONCE_MS = 100;
         const { runs, load } = fakeProgram();
         render(<ImageFilterDemo sample={FILTER} webGPU load={load} />);
         await waitFor(() => expect(runs).toHaveLength(1));
         await runs[0].succeed();
 
+        // With no run in flight, a step (an input event, as dragging fires) filters at once
         const radius = screen.getByLabelText('Blur radius');
-        for (const value of ['3', '4', '5']) {
+        fireChange(radius, '3');
+        await waitFor(() => expect(runs).toHaveLength(2), { timeout: AT_ONCE_MS });
+        expect(runs[1].options.args).toEqual(['input.png', 'image_filter.png', '--blur', '3', '--edges']);
+
+        // Steps while it runs wait for it, and its end runs only the latest
+        for (const value of ['4', '5', '6']) {
             fireChange(radius, value);
         }
-        expect(screen.getByText('5 px')).toBeInTheDocument();
-        await new Promise(resolve => setTimeout(resolve, RERUN_DELAY_MS / 2));
-        expect(runs).toHaveLength(1);
-
-        await waitFor(() => expect(runs).toHaveLength(2));
-        expect(runs[1].options.args).toEqual(['input.png', 'image_filter.png', '--blur', '5', '--edges']);
-        await new Promise(resolve => setTimeout(resolve, RERUN_DELAY_MS));
+        expect(screen.getByText('6 px')).toBeInTheDocument();
+        await new Promise(resolve => setTimeout(resolve, 4 * AT_ONCE_MS));
         expect(runs).toHaveLength(2);
+        expect(runs[1].stop).not.toHaveBeenCalled();
+        await runs[1].succeed();
+        await waitFor(() => expect(runs).toHaveLength(3), { timeout: AT_ONCE_MS });
+        expect(runs[2].options.args).toEqual(['input.png', 'image_filter.png', '--blur', '6', '--edges']);
+
+        // The threshold's slider likewise, after a failed run too
+        await userEvent.click(screen.getByRole('switch', { name: 'Threshold' }));
+        await waitFor(() => expect(runs).toHaveLength(4));
+        fireChange(screen.getByLabelText('Threshold level'), '0.3');
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        await act(async () => runs[3].end('failed'));
+        expect(warn).toHaveBeenCalledOnce();
+        await waitFor(() => expect(runs).toHaveLength(5), { timeout: AT_ONCE_MS });
+        expect(runs[4].options.args).toEqual(['input.png', 'image_filter.png', '--blur', '6', '--edges', '--threshold', '0.3']);
+        await runs[4].succeed();
+        await new Promise(resolve => setTimeout(resolve, 50));
+        expect(runs).toHaveLength(5);
+    });
+
+    it('stops a run that hasn\'t ended when a slider\'s step has waited too long for it', async () => {
+        vi.useFakeTimers({ shouldAdvanceTime: true, toFake: ['setTimeout', 'clearTimeout'] });
+        try {
+            const { runs, load } = fakeProgram();
+            render(<ImageFilterDemo sample={FILTER} webGPU load={load} />);
+            await waitFor(() => expect(runs).toHaveLength(1));
+
+            // The first run never ends; the step waits for it, then stops it
+            fireChange(screen.getByLabelText('Blur radius'), '7');
+            act(() => vi.advanceTimersByTime(STALLED_RUN_MS - 100));
+            expect(runs[0].stop).not.toHaveBeenCalled();
+            act(() => vi.advanceTimersByTime(100));
+            await waitFor(() => expect(runs).toHaveLength(2));
+            expect(runs[0].stop).toHaveBeenCalled();
+            expect(runs[1].options.args).toEqual(['input.png', 'image_filter.png', '--blur', '7', '--edges']);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('runs a slider\'s step after runs that fail at once, before React renders them', async () => {
+        // Every run fails as soon as it starts, so a failed run's state never changes before the next
+        const starts: HeadlessOptions[] = [];
+        const module: ZgalHeadlessModule = {
+            runHeadless: vi.fn((options: HeadlessOptions) => {
+                starts.push(options);
+                return { done: Promise.resolve('failed' as const), stop: vi.fn(async () => {}) };
+            }),
+        };
+        const load = vi.fn(async () => module);
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        render(<ImageFilterDemo sample={FILTER} webGPU load={load} />);
+        await waitFor(() => expect(starts).toHaveLength(1));
+        // A chosen picture keeps the controls when its run fails
+        await userEvent.upload(screen.getByLabelText('Picture'), new File(['x'], 'photo.png', { type: 'image/png' }));
+        await waitFor(() => expect(starts).toHaveLength(2));
+        await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+        await userEvent.click(screen.getByRole('switch', { name: 'Edges' }));
+        await waitFor(() => expect(starts).toHaveLength(3));
+        await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+
+        fireChange(screen.getByLabelText('Blur radius'), '9');
+        await waitFor(() => expect(starts).toHaveLength(4));
+        expect(starts[3].args).toEqual(['photo.png', 'image_filter.png', '--blur', '9']);
+        expect(warn).toHaveBeenCalled();
     });
 
     it('filters a picture the visitor chooses, and goes back to the example', async () => {
