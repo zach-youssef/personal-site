@@ -6,6 +6,7 @@ import { withoutWebGPUAdapter } from './pageChecks';
 const PROGRAMS = [
     { name: 'particles', assets: [], source: '(graph ParticlesGraph', screenshot: true },
     { name: 'scene', assets: ['assets/scene.gltf', 'assets/scene.bin'], source: '(graph SceneGraph', screenshot: true },
+    { name: 'raymarch', assets: [], source: '(graph RaymarchGraph', screenshot: true },
     // Its default input, which its page's ?arg=input.png and runHeadless's args name
     { name: 'image_filter', assets: ['assets/input.png'], source: '(graph FilterGraph', screenshot: false },
 ];
@@ -82,6 +83,7 @@ test('redirects the documentation\'s bare URL to its directory', async ({ reques
 const SAMPLES = [
     { title: 'Particles', path: '/projects/zgal', screenshotWidth: 1024 },
     { title: 'Scene', path: '/projects/zgal?sample=scene', screenshotWidth: 1280 },
+    { title: 'Raymarch', path: '/projects/zgal?sample=raymarch', screenshotWidth: 1024 },
 ];
 
 test('switches examples from the selector, and records the choice in the URL', { tag: '@firefox' }, async ({ page }) => {
@@ -109,6 +111,16 @@ test('switches examples from the selector, and records the choice in the URL', {
     await page.reload();
     await expect(selector.getByRole('button', { name: 'Scene' })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('iframe[title="Scene"]')).toHaveCount(1);
+
+    // And on to raymarch, beside its own source
+    await selector.getByRole('button', { name: 'Raymarch' }).click();
+    await expect(page).toHaveURL(/\/projects\/zgal\?sample=raymarch$/);
+    await expect(selector.getByRole('button', { name: 'Raymarch' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(selector.getByRole('button', { name: 'Raymarch' })).toHaveClass(/btn-primary/);
+    await expect(selector.getByRole('button', { name: 'Scene' })).toHaveClass(/btn-secondary/);
+    await expect(page.locator('iframe[title="Raymarch"]')).toHaveAttribute('src', '/assets/zgal/raymarch/raymarch.zgal.html');
+    await expect(page.locator('iframe[title="Scene"]')).toHaveCount(0);
+    await expect(page.getByLabel('raymarch.zgal')).toContainText('(graph RaymarchGraph');
 });
 
 for (const { title, path, screenshotWidth } of SAMPLES) {

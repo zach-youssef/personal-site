@@ -84,6 +84,26 @@ export const SAMPLES: ZgalSample[] = [
 		],
 	},
 	{
+		id: 'raymarch',
+		title: 'Raymarch',
+		kind: 'program',
+		directory: 'raymarch',
+		source: 'raymarch.zgal',
+		width: 1280,
+		height: 800,
+		scaling: 'fit',
+		blurb: 'A scene of signed distance fields drawn by one fragment shader, with no meshes: each ' +
+			'pixel marches a ray until it hits a sphere, a torus or a rounded box, blended with smooth ' +
+			'unions over a checkered floor, and shades it with soft shadows and ambient occlusion.',
+		controls: [
+			['Drag', 'orbit the camera'],
+			['Scroll', 'zoom'],
+			['T', 'toggle the camera turning by itself'],
+			['Space', 'pause or resume the animation'],
+			['Esc', 'stops the program'],
+		],
+	},
+	{
 		id: 'image_filter',
 		title: 'Image filter',
 		kind: 'headless',

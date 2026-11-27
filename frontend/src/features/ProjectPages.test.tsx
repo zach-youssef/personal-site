@@ -266,6 +266,7 @@ describe('ZgalPage', () => {
     const SOURCE = ';; GPU particles\n(graph ParticlesGraph)\n';
     const PARTICLES = SAMPLES.find(sample => sample.id === 'particles')!;
     const SCENE = SAMPLES.find(sample => sample.id === 'scene')!;
+    const RAYMARCH = SAMPLES.find(sample => sample.id === 'raymarch')!;
 
     const COMMIT = '13ffa592b47374862b93d7f5d4c4a9565b64c0af';
     const MANIFEST: SourceManifest = { repository: 'https://github.com/zach-youssef/zgal', commit: COMMIT, dirty: false };
@@ -341,12 +342,12 @@ describe('ZgalPage', () => {
         await loaded('particles.zgal');
     });
 
-    it('offers particles, scene and the image filter, and selects particles by default', async () => {
+    it('offers particles, scene, raymarch and the image filter, and selects particles by default', async () => {
         setWebGPU(true);
         serveSource({ ok: true, text: async () => SOURCE });
         renderPage();
 
-        expect(selector().getAllByRole('button').map(button => button.textContent)).toEqual(['Particles', 'Scene', 'Image filter']);
+        expect(selector().getAllByRole('button').map(button => button.textContent)).toEqual(['Particles', 'Scene', 'Raymarch', 'Image filter']);
         expect(selected()).toEqual(['Particles']);
         // The theme's colours: primary for the selected sample, secondary for the others
         expect(selector().getByRole('button', { name: 'Particles' })).toHaveClass('btn-primary');
@@ -400,6 +401,15 @@ describe('ZgalPage', () => {
         expect(current.location!.search).toBe('?from=home&sample=particles');
         expect(screen.getByTitle('Particles')).toBeInTheDocument();
         expect(screen.queryByTitle('Scene')).not.toBeInTheDocument();
+
+        // And to raymarch, with its own source and blurb
+        await userEvent.click(selector().getByRole('button', { name: 'Raymarch' }));
+        expect(current.location!.search).toBe('?from=home&sample=raymarch');
+        expect(selected()).toEqual(['Raymarch']);
+        expect(screen.getByTitle('Raymarch')).toHaveAttribute('src', '/assets/zgal/raymarch/raymarch.zgal.html');
+        expect(screen.queryByTitle('Particles')).not.toBeInTheDocument();
+        expect(screen.getByText(RAYMARCH.blurb)).toBeInTheDocument();
+        await waitFor(() => expect(screen.getByLabelText('raymarch.zgal').textContent).toBe(SOURCE));
     });
 
     it('restarts the selected sample when it is chosen again', async () => {
@@ -443,11 +453,20 @@ describe('ZgalPage', () => {
         await loaded('scene.zgal');
     });
 
+    it("lists raymarch's controls from its main", async () => {
+        serveSource({ ok: true, text: async () => SOURCE });
+        renderPage('?sample=raymarch');
+
+        const terms = [...document.querySelectorAll('dt')].map(term => term.textContent);
+        expect(terms).toEqual(['Drag', 'Scroll', 'T', 'Space', 'Esc']);
+        await loaded('raymarch.zgal');
+    });
+
     // The samples with a window, which run in frames of their pages
     const WINDOWED = SAMPLES.filter((sample): sample is WindowSample => sample.kind === 'program');
 
     it('runs every sample but the image filter in a frame', () => {
-        expect(WINDOWED.map(sample => sample.id)).toEqual(['particles', 'scene']);
+        expect(WINDOWED.map(sample => sample.id)).toEqual(['particles', 'scene', 'raymarch']);
     });
 
     describe.each(WINDOWED.map(sample => [sample.id, sample] as const))('the %s sample', (id, sample) => {

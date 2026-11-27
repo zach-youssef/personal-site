@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Builds ZGAL's examples that run in a browser (particles, scene and image_filter) for the web
-# (WebGPU) and copies each into the backend's assets, which it serves as
+# Builds ZGAL's examples that run in a browser (particles, scene, raymarch and image_filter) for the
+# web (WebGPU) and copies each into the backend's assets, which it serves as
 # /assets/zgal/<name>/<name>.zgal.html for the ZGAL page's frame, beside the example's source, which
-# the page shows, and what browsers without WebGPU see instead: a screenshot of particles and scene,
-# and image_filter's default input and its output, filtered at build time. Also
+# the page shows, and what browsers without WebGPU see instead: a screenshot of particles, scene and
+# raymarch, and image_filter's default input and its output, filtered at build time. Also
 # builds ZGAL's documentation, which the backend serves at /zgal/docs/, and writes source.json, which
 # names the commit the sources were copied from. The output is ignored by git; ./bundle runs this and
 # ships it with the other backend assets.
@@ -85,6 +85,10 @@ screenshot particles --frames 240 --size 1024x640
 # its last frame is back at full size with shadows
 copy_program scene
 screenshot scene --frames 240 --size 1280x720
+# Its window's aspect ratio, as particles'; with its fixed step, 240 frames are 4 s of animation and
+# of the camera turning
+copy_program raymarch
+screenshot raymarch --frames 240 --size 1024x640
 
 # image_filter has no window, so no screenshot. Its default input is the example's test image, put in
 # its assets/ (where the program's paths resolve: its page's ?arg=input.png, or runHeadless's args),

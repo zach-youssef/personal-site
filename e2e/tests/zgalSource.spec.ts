@@ -26,7 +26,7 @@ const programs = (existsSync(ASSETS) ? readdirSync(ASSETS, { withFileTypes: true
     .map(entry => entry.name);
 
 test('./build-zgal copied the programs\' sources', () => {
-    expect(programs).toContain('particles');
+    expect(programs).toEqual(expect.arrayContaining(['particles', 'scene', 'raymarch', 'image_filter']));
 });
 
 test('source.json names the pinned commit of a clean checkout', async ({ request }) => {

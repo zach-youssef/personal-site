@@ -12,11 +12,13 @@ test.use({ launchOptions: WEBGPU_LAUNCH_OPTIONS });
 const SAMPLES = [
     { title: 'Particles', path: '/projects/zgal' },
     { title: 'Scene', path: '/projects/zgal?sample=scene' },
+    { title: 'Raymarch', path: '/projects/zgal?sample=raymarch' },
 ];
 
 for (const { title, path } of SAMPLES) {
     test(`runs the ${title.toLowerCase()} example in the page`, async ({ page }) => {
-        // Scene's shadow map, PBR and tonemap passes are slow on SwiftShader
+        // Scene's shadow map, PBR and tonemap passes, and raymarch's marching per pixel, are slow on
+        // SwiftShader
         test.setTimeout(90_000);
         const errors = collectErrors(page);
         await page.goto(path);
